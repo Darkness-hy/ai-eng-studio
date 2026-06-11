@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { RoadmapList, RoadmapSpine } from '../components/RoadmapSpine';
 import { fetchIndex } from '../lib/data';
 import { lessonTitle, phaseTitle, useLang } from '../lib/i18n';
-import { loadPlacement } from '../lib/placement';
+import { usePlacement } from '../lib/placement';
 import { useProgress } from '../lib/progress';
 import type { CourseIndex } from '../lib/types';
 
@@ -147,7 +147,7 @@ export function Dashboard() {
 function PlacementCard({ index }: { index: CourseIndex }) {
   const { lang } = useLang();
   const zh = lang === 'zh';
-  const placement = loadPlacement();
+  const placement = usePlacement();
   const entry = placement ? index.phases.find((p) => p.num === placement.entry) : null;
 
   if (placement && entry) {

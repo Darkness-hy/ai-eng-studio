@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../lib/auth';
 import { fetchIndex } from '../lib/data';
 import { phaseTitle, useLang } from '../lib/i18n';
 import {
   AREAS,
   QUESTIONS,
   clearPlacement,
+  deletePlacementCloud,
   entryPhase,
-  loadPlacement,
   phaseStatus,
+  pushPlacementCloud,
   savePlacement,
+  usePlacement,
   type PlacementResult,
 } from '../lib/placement';
 import type { CourseIndex } from '../lib/types';
@@ -19,10 +22,11 @@ const LETTERS = ['A', 'B', 'C', 'D'];
 export function PlacementPage() {
   const { lang } = useLang();
   const zh = lang === 'zh';
+  const { profile } = useAuth();
   const [index, setIndex] = useState<CourseIndex | null>(null);
   const [round, setRound] = useState(0); // 0..4
   const [answers, setAnswers] = useState<(number | null)[]>(() => QUESTIONS.map(() => null));
-  const [result, setResult] = useState<PlacementResult | null>(() => loadPlacement());
+  const result = usePlacement();
 
   useEffect(() => {
     fetchIndex().then(setIndex);
@@ -43,12 +47,12 @@ export function PlacementPage() {
       date: new Date().toISOString(),
     };
     savePlacement(res);
-    setResult(res);
+    if (profile) void pushPlacementCloud(profile.id);
   };
 
   if (result && index) return <ResultView result={result} index={index} onRetake={() => {
     clearPlacement();
-    setResult(null);
+    if (profile) void deletePlacementCloud(profile.id);
     setRound(0);
     setAnswers(QUESTIONS.map(() => null));
   }} />;

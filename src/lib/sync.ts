@@ -1,3 +1,4 @@
+import { syncPlacementCloud } from './placement';
 import {
   getProgress,
   mergeRemote,
@@ -97,6 +98,9 @@ export async function initialSync(userId: string): Promise<void> {
   const remote: Record<string, LessonProgress> = {};
   for (const row of (rows ?? []) as ProgressRow[]) remote[row.lesson_id] = rowToLocal(row);
   mergeRemote(remote, ((acts ?? []) as { day: string }[]).map((a) => a.day));
+
+  // Placement result rides along with the same login sync.
+  await syncPlacementCloud(userId).catch(() => undefined);
 
   // Push the merged state so this account has everything from this device.
   const state = getProgress();

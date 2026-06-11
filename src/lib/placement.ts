@@ -1,5 +1,7 @@
 /** Placement quiz ("find your level") — faithful port of the upstream
  *  /find-your-level agent skill: 10 questions, 5 areas, score → entry phase. */
+import { useSyncExternalStore } from 'react';
+import { cloudEnabled, getSupabase } from './supabase';
 
 export interface AreaDef {
   key: string;
@@ -200,12 +202,9 @@ export interface PlacementResult {
 }
 
 const KEY = 'aes:placement:v1';
+const listeners = new Set<() => void>();
 
-export function savePlacement(result: PlacementResult) {
-  localStorage.setItem(KEY, JSON.stringify(result));
-}
-
-export function loadPlacement(): PlacementResult | null {
+function read(): PlacementResult | null {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
@@ -216,6 +215,90 @@ export function loadPlacement(): PlacementResult | null {
   }
 }
 
+let current: PlacementResult | null = read();
+
+function commit(next: PlacementResult | null) {
+  current = next;
+  if (next) localStorage.setItem(KEY, JSON.stringify(next));
+  else localStorage.removeItem(KEY);
+  listeners.forEach((fn) => fn());
+}
+
+export function savePlacement(result: PlacementResult) {
+  commit(result);
+}
+
+export function loadPlacement(): PlacementResult | null {
+  return current;
+}
+
 export function clearPlacement() {
-  localStorage.removeItem(KEY);
+  commit(null);
+}
+
+export function usePlacement(): PlacementResult | null {
+  return useSyncExternalStore(
+    (cb) => {
+      listeners.add(cb);
+      return () => listeners.delete(cb);
+    },
+    () => current,
+  );
+}
+
+// ── cloud sync (one row per user) ───────────────────────────────────
+interface PlacementRow {
+  user_id: string;
+  answers: number[];
+  area_scores: Record<string, number>;
+  total: number;
+  entry: number;
+  taken_at: string;
+}
+
+export async function pushPlacementCloud(userId: string): Promise<void> {
+  if (!cloudEnabled || !current) return;
+  const row: PlacementRow = {
+    user_id: userId,
+    answers: current.answers,
+    area_scores: current.areaScores,
+    total: current.total,
+    entry: current.entry,
+    taken_at: current.date,
+  };
+  const { error } = await getSupabase().from('placement').upsert(row);
+  if (error) console.warn('[placement] push failed', error);
+}
+
+export async function deletePlacementCloud(userId: string): Promise<void> {
+  if (!cloudEnabled) return;
+  const { error } = await getSupabase().from('placement').delete().eq('user_id', userId);
+  if (error) console.warn('[placement] delete failed', error);
+}
+
+/** Pull on login: the newer of local/remote wins on both sides. */
+export async function syncPlacementCloud(userId: string): Promise<void> {
+  if (!cloudEnabled) return;
+  const { data, error } = await getSupabase()
+    .from('placement')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) {
+    console.warn('[placement] pull failed', error);
+    return;
+  }
+  const remote = data as PlacementRow | null;
+  if (remote && (!current || remote.taken_at > current.date)) {
+    commit({
+      v: 1,
+      answers: remote.answers,
+      areaScores: remote.area_scores,
+      total: remote.total,
+      entry: remote.entry,
+      date: remote.taken_at,
+    });
+  } else if (current && (!remote || current.date > remote.taken_at)) {
+    await pushPlacementCloud(userId);
+  }
 }
