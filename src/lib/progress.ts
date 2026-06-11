@@ -83,8 +83,11 @@ export function setLessonDone(id: string, done: boolean) {
   );
 }
 
+/** Records the FIRST attempt only — retakes are practice and never overwrite. */
 export function saveQuizScore(id: string, stage: 'pre' | 'post', score: number, total: number) {
   const prev = state.lessons[id] ?? {};
+  const alreadyRecorded = stage === 'pre' ? prev.preTotal != null : prev.postTotal != null;
+  if (alreadyRecorded) return;
   const patch =
     stage === 'pre' ? { preScore: score, preTotal: total } : { postScore: score, postTotal: total };
   commit(

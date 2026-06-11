@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLang } from '../lib/i18n';
-import { saveQuizScore } from '../lib/progress';
+import { getProgress, saveQuizScore } from '../lib/progress';
 import type { QuizQuestion } from '../lib/types';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -12,8 +12,14 @@ interface QuizProps {
 }
 
 export function Quiz({ lessonId, stage, questions }: QuizProps) {
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const [picked, setPicked] = useState<(number | null)[]>(() => questions.map(() => null));
+  // Score policy: first attempt counts; anything after is practice.
+  const [hadRecordAtMount] = useState<boolean>(() => {
+    const p = getProgress().lessons[lessonId];
+    return stage === 'pre' ? p?.preTotal != null : p?.postTotal != null;
+  });
+  const [retried, setRetried] = useState(false);
 
   // Reset only when the question COUNT changes (e.g. zh/en fallback differs).
   // Same-length swaps (re-renders, language toggle) keep the user's answers —
@@ -110,16 +116,39 @@ export function Quiz({ lessonId, stage, questions }: QuizProps) {
       </ol>
 
       {finished && (
-        <footer className="flex items-center justify-between border-t border-hairline px-6 py-4">
+        <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline px-6 py-4">
           <span className="text-[14px]">
             {t('score')}{' '}
             <span className="font-serif text-xl font-semibold">
               {score}/{questions.length}
             </span>
+            {(() => {
+              if (!hadRecordAtMount && !retried) return null;
+              const p = getProgress().lessons[lessonId];
+              const rec =
+                stage === 'pre'
+                  ? p?.preTotal != null
+                    ? { s: p.preScore ?? 0, t: p.preTotal }
+                    : null
+                  : p?.postTotal != null
+                    ? { s: p.postScore ?? 0, t: p.postTotal }
+                    : null;
+              if (!rec) return null;
+              return (
+                <span className="ml-3 rounded-full bg-pale-yellow px-2.5 py-0.5 text-[11.5px] text-ink-yellow">
+                  {lang === 'zh'
+                    ? `成绩以首次作答为准（${rec.s}/${rec.t}），重做不计入`
+                    : `First attempt counts (${rec.s}/${rec.t}); retakes are practice`}
+                </span>
+              );
+            })()}
           </span>
           <button
             type="button"
-            onClick={() => setPicked(questions.map(() => null))}
+            onClick={() => {
+              setRetried(true);
+              setPicked(questions.map(() => null));
+            }}
             className="rounded-md border border-hairline px-3 py-1.5 text-[13px] text-faint transition-colors hover:bg-bone hover:text-ink"
           >
             {t('retry')}
