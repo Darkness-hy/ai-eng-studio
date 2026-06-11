@@ -1,0 +1,64 @@
+{
+  "questions": [
+    {
+      "stage": "post",
+      "question": "为什么 LangGraph 的 State TypedDict 中的 `messages` 字段需要 `Annotated[list, add_messages]`？",
+      "options": [
+        "它能开启模型 token 增量的流式输出。",
+        "没有这个归约器，节点更新会覆盖整个列表而不是追加，导致每一轮都丢失之前的历史。",
+        "它会在检查点写入磁盘时压缩消息列表。",
+        "它会在运行时把普通字典转换成 LangChain 消息对象。"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "`interrupt_before=['tools']` 和 `interrupt_after=['tools']` 有什么区别？",
+      "options": [
+        "没有区别；它们是别名。",
+        "`interrupt_before` 在模型发出 tool_calls 之后、工具执行之前暂停；`interrupt_after` 则在工具已经运行完之后才暂停。",
+        "`interrupt_before` 先在沙箱中运行工具；`interrupt_after` 在生产环境中运行。",
+        "`interrupt_before` 用于单元测试；`interrupt_after` 用于生产环境。"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "给定一个线程的检查点历史，如何时间旅行回到先前的状态并探索另一条分支？",
+      "options": [
+        "先调用 `graph.reset(thread_id)`，再调用 `graph.invoke(new_input, config)`。",
+        "删除检查点目录，然后用同一个 thread_id 重新调用。",
+        "在 config 中带上想要的先前 `checkpoint_id` 来调用图；输入传 `None` 表示从该检查点重放，传新值则会先把它追加到该检查点的状态上再继续执行。",
+        "设置 `graph.rewind = True` 后重新调用。"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "在四节点 ReAct 图（agent、tools、一条条件边、一条回到 agent 的静态边）中，条件边位于哪里？",
+      "options": [
+        "从 `tools` 回到 `agent`，根据工具输出是否为空来路由。",
+        "从 `agent` 出发：如果最后一条消息含有 tool_calls 就路由到 `tools`，否则路由到 `END`。",
+        "从 `START` 出发，根据输入长度路由到 `agent` 或 `END`。",
+        "不存在条件边；两条边都是静态的。"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "什么时候应该用 `Send(node_name, state)` 而不是普通的边？",
+      "options": [
+        "在失败后重试某个节点时。",
+        "需要把某个节点推迟到定时器到期后再执行时。",
+        "需要派发目标节点的 N 次并行执行、其输出再通过状态归约器合并回来时。",
+        "需要在另一个进程中调用节点以实现隔离时。"
+      ],
+      "correct": 2,
+      "explanation": ""
+    }
+  ]
+}

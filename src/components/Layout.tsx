@@ -95,42 +95,46 @@ export function Layout() {
           </span>
         </div>
         <div className="border-t border-hairline bg-bone/40">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-5 py-5">
-            <div className="flex items-center gap-3">
-              <img
-                src={`${import.meta.env.BASE_URL}brand/lavira-logo.png`}
-                alt="LaViRA logo"
-                className="h-6 w-6 rounded-md"
-              />
-              <span className="text-[12.5px] text-faint">
-                <span className="font-medium text-ink">
-                  {lang === 'zh' ? '独家冠名 · ' : 'Presented by '}LaViRA
-                </span>
-                {' — Language-Vision-Actions Translation · '}
-                <a
-                  href="https://arxiv.org/abs/2510.19655"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline decoration-hairline underline-offset-2 hover:text-ink"
-                >
-                  arXiv:2510.19655
-                </a>
-                {' · '}
-                <a
-                  href="https://arxiv.org/abs/2605.27582"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline decoration-hairline underline-offset-2 hover:text-ink"
-                >
-                  arXiv:2605.27582
-                </a>
-              </span>
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-8 gap-y-4 px-5 py-6">
+            <div className="flex items-center gap-4">
+              {/* LaViRA mark, redrawn flat for the light canvas (no dark plate) */}
+              <svg width="34" height="34" viewBox="0 0 512 512" aria-label="LaViRA logo" role="img">
+                <rect x="96" y="176" width="224" height="36" rx="18" fill="#2f3437" />
+                <rect x="96" y="240" width="156" height="36" rx="18" fill="#2f3437" />
+                <rect x="96" y="304" width="92" height="36" rx="18" fill="#2f3437" />
+                <circle cx="388" cy="322" r="26" fill="#f2335d" />
+              </svg>
+              <div>
+                <div className="text-[15px] leading-snug">
+                  <span className="font-mono text-[10.5px] tracking-[0.16em] text-faint">
+                    {lang === 'zh' ? '独家冠名' : 'PRESENTED BY'}
+                  </span>{' '}
+                  <span className="ml-1 font-semibold text-ink">LaViRA</span>
+                  <span className="text-faint">: Language-Vision-Robot Actions Translation</span>
+                </div>
+                <div className="mt-0.5 font-serif text-[13.5px] italic text-faint">
+                  Like A Very Intelligent Real Assistant
+                </div>
+              </div>
             </div>
-            <img
-              src={`${import.meta.env.BASE_URL}brand/lavira-tag.png`}
-              alt="LaViRA — Like A Very Intelligent Real Assistant"
-              className="h-7 rounded-md"
-            />
+            <div className="flex items-center gap-4 text-[13px]">
+              <a
+                href="https://robo-lavira.github.io/lavira-zs-vln/"
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-md border border-hairline bg-paper px-3 py-1.5 text-faint transition-colors hover:bg-bone hover:text-ink"
+              >
+                LaViRA ZS-VLN ↗
+              </a>
+              <a
+                href="https://xetroubadour.github.io/Uni-LaViRA/"
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-md border border-hairline bg-paper px-3 py-1.5 text-faint transition-colors hover:bg-bone hover:text-ink"
+              >
+                Uni-LaViRA ↗
+              </a>
+            </div>
           </div>
         </div>
       </footer>

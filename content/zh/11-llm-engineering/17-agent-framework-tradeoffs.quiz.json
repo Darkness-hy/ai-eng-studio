@@ -1,0 +1,65 @@
+{
+  "lesson": "phase-11/17-agent-framework-tradeoffs",
+  "questions": [
+    {
+      "stage": "post",
+      "question": "一个工作流必须在崩溃后恢复、运行中途接受人工审批，还要并行扇出到三个检索器，首选哪个框架？",
+      "options": [
+        "CrewAI",
+        "AutoGen",
+        "LangGraph",
+        "Agno"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "为什么 LLM 选择路由比显式路由每轮花费更多 token？",
+      "options": [
+        "它会并行预取下一个节点来对冲延迟。",
+        "每轮都由一次规划 LLM 调用来挑选下一步，每次决策都增加提示和补全 token。",
+        "它为 crew 里的每个 Agent 复制一份工具列表。",
+        "它把整个对话历史发给一个验证模型。"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "代码审查中的提议者-批评者对话天然映射到哪个框架的核心抽象？",
+      "options": [
+        "CrewAI 的顺序 Crew",
+        "LangGraph 的 StateGraph",
+        "AutoGen 的 GroupChat / ConversableAgent 对",
+        "Agno 的带工具单 Agent"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "哪个框架自带存储驱动（SQLite、Postgres、Redis、Mongo、DynamoDB），可直接挂到 Agent 类上做会话与记忆持久化？",
+      "options": [
+        "LangGraph",
+        "CrewAI",
+        "AutoGen",
+        "Agno"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "你有一个只需两次调用的摘要器：抓取文本，然后总结。哪个选项是正确的框架选择？",
+      "options": [
+        "LangGraph StateGraph —— 为了可靠性永远都该用框架。",
+        "CrewAI 配 researcher + summarizer 角色 —— 角色让逻辑更清晰。",
+        "纯 Python 加厂商 SDK —— 对微型流水线来说，不用框架就是最快的框架。",
+        "AutoGen GroupChat —— 两个 Agent 可以争论出最好的摘要。"
+      ],
+      "correct": 2,
+      "explanation": ""
+    }
+  ]
+}
