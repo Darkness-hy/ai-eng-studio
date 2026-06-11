@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "为什么高效的自注意力模块用单个输出 3*D 个特征的线性层？",
+      "options": [
+        "它强制 Q、K、V 之间共享权重",
+        "它在数学上等价于三个 Linear(D, D) 层，且只需一次矩阵乘法",
+        "它免去了因果掩码的需要",
+        "它减少了模型的参数量"
+      ],
+      "correct": 1,
+      "explanation": "把三个 (D, D) 投影矩阵堆叠成一个 (3D, D) 矩阵会产生相同的输出，但前向传播只需一次对加速器友好的矩阵乘法。"
+    },
+    {
+      "stage": "check",
+      "question": "d_model、n_heads 和 d_head 之间是什么关系？",
+      "options": [
+        "d_head = d_model * n_heads",
+        "d_head = d_model + n_heads",
+        "d_head = d_model // n_heads，且 d_model 必须能被 n_heads 整除",
+        "d_head 与 d_model 无关"
+      ],
+      "correct": 2,
+      "explanation": "模块把 d_model 平均切分给各个头。约束 d_model % n_heads == 0 在构造时强制检查。"
+    },
+    {
+      "stage": "check",
+      "question": "缩放点积注意力的缩放因子取什么值？",
+      "options": [
+        "sqrt(d_model)",
+        "sqrt(d_head)",
+        "sqrt(n_heads)",
+        "sqrt(seq_len)"
+      ],
+      "correct": 1,
+      "explanation": "分数除以 sqrt(d_head)，即矩阵乘法收缩的头维度。这能在 d_head 增大时让分数的方差保持有界。"
+    },
+    {
+      "stage": "check",
+      "question": "因果掩码如何强制位置 t 不能关注位置 t+1？",
+      "options": [
+        "把未来位置的键乘以零",
+        "在 softmax 之前把分数矩阵对角线以上的元素设为负无穷",
+        "从输入中移除未来的 token",
+        "用一个单独的注意力头处理未来"
+      ],
+      "correct": 1,
+      "explanation": "把未来位置的元素设为 -inf 会迫使 softmax 给它们零权重。过去和当前位置仍保有一个有效的权重分布。"
+    },
+    {
+      "stage": "post",
+      "question": "为什么模块在合并各头之后还要接一个 Linear(D, D) 输出投影？",
+      "options": [
+        "让模型能跨头混合信息",
+        "为了匹配模型的词表大小",
+        "把激活值归一化到零均值",
+        "这是 autograd 跟踪梯度所必需的"
+      ],
+      "correct": 0,
+      "explanation": "没有输出投影，各头的输出只能在后续层中才得以组合。这个投影让模块在同一步内就有一个混合各头的位置。"
+    },
+    {
+      "stage": "post",
+      "question": "形状为 (B, H, T, T) 的注意力权重矩阵能告诉你什么？",
+      "options": [
+        "每个头有多少参数",
+        "每个批次元素中，每个头里每个查询位置关注哪些键位置",
+        "查询向量与值向量之间的余弦相似度",
+        "下一个 token 的输出 logits"
+      ],
+      "correct": 1,
+      "explanation": "每头矩阵的第 t 行是查询位置 t 所使用的、覆盖各键位置的分布。查看它可以知道每个头在看哪里。"
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "lesson": "02-rag-over-codebase",
+  "title": "Capstone 02 — RAG over Codebase (Cross-Repo Semantic Search)",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "为什么在原始代码块上做朴素的余弦搜索，不足以支撑跨仓库代码检索？",
+      "options": [
+        "它会在生成代码、monorepo 重复代码和很少被导入的符号上污染结果",
+        "余弦相似度在代码嵌入上没有定义",
+        "向量索引无法存储大于 1KB 的 payload",
+        "嵌入模型不会把代码视为 token"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "pre",
+      "question": "在摄取流水线中，AST 感知分块是什么意思？",
+      "options": [
+        "存储前用 gzip 压缩代码块",
+        "嵌入前删除注释和空白字符",
+        "在 tree-sitter 节点边界（如函数和类的范围）处切分",
+        "把代码切成固定的 256-token 窗口"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "在这条流水线中，每个代码块会获得哪三种可检索模态？",
+      "options": [
+        "Token ID、语法树和调用图",
+        "AST、IR 和字节码",
+        "原始文本、gzip 和哈希",
+        "稠密嵌入、BM25 词项和自然语言摘要"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "混合检索之后，交叉编码器重排序器的作用是什么？",
+      "options": [
+        "它重写代码块以移除生成代码",
+        "它用另一个模型重新嵌入查询",
+        "它在送入合成器之前压缩代码块",
+        "它把每个查询-候选对放在一起打分，比单独使用余弦相似度更准确"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "为什么合成器会拒绝没有 (repo/path:start-end) 锚点的答案？",
+      "options": [
+        "引用忠实度为答案设置门槛，让用户可以逐条验证论断",
+        "锚点能降低合成调用的 token 成本",
+        "锚点是下游 BM25 重排序所必需的",
+        "锚点是向量数据库 schema 的强制要求"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "要让一次 50 文件的 push 的增量重建索引保持在 60 秒以内，需要做什么？",
+      "options": [
+        "只重新嵌入文本发生变化的代码块，并重新计算受影响的符号边",
+        "每次提交都对整个 200 万行代码语料重新嵌入",
+        "彻底丢弃符号图",
+        "丢掉 BM25 索引并从头重建"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "哪个指标衡量检索得到的论断是否可在源码中验证？",
+      "options": [
+        "MRR@10",
+        "引用忠实度",
+        "nDCG@10",
+        "p95 查询延迟"
+      ],
+      "correct": 1,
+      "explanation": ""
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "lesson": "29-moderation-systems-openai-perspective-llamaguard",
+  "title": "Moderation Systems - OpenAI, Perspective, Llama Guard",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "OpenAI 的 omni-moderation-latest（2024）是什么？",
+      "options": [
+        "一个 RLHF 奖励模型",
+        "一个专注推理的前沿模型",
+        "一个 C2PA 水印端点",
+        "一个基于 GPT-4o 的审核分类器，一次调用即可处理文本和图像，返回 13 个类别的响应 schema（harassment、hate、self-harm、sexual、violence、illicit 及其子类别），对大多数开发者免费"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "以下哪一项不是 OpenAI Moderation 的主要顶级类别？",
+      "options": [
+        "violence",
+        "election-interference",
+        "self-harm",
+        "harassment"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "2026 年标准审核模式的三层分别是什么？",
+      "options": [
+        "探针 / 检测器 / 测试框架",
+        "分词器 / 模型 / 反分词器",
+        "望远式 / 潜望式 / 显微式",
+        "输入审核（生成前）、输出审核（生成后）、自定义审核（领域规则）"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "Perspective API（Google Jigsaw）主要用于评估什么？",
+      "options": [
+        "水印强度",
+        "毒性（附带 severe-toxicity、insult、profanity、threat、identity-attack 子维度），是前 LLM 时代的内容审核基线",
+        "推理质量",
+        "相对用户满意度的奖励"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "仅做输入审核的一种失效模式是什么？",
+      "options": [
+        "它无法在 GPU 上运行",
+        "它无法捕获模型输出端的失败或幻觉；编码攻击（第 12-14 课）可以完全绕过输入分类器",
+        "它总是拦截合法内容",
+        "它使输出分类器变得不再必要"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "Azure Content Moderator 的弃用情况和迁移目标是什么？",
+      "options": [
+        "2024 年 2 月弃用，2027 年 3 月 15 日退役；迁移目标是 Azure AI Content Safety（基于 LLM，与 Azure OpenAI 集成）",
+        "由 Perspective API 取代",
+        "并入 Llama Guard 4",
+        "立即弃用且没有替代品"
+      ],
+      "correct": 0,
+      "explanation": ""
+    }
+  ]
+}

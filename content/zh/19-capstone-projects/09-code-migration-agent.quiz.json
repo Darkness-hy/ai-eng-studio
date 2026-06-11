@@ -1,0 +1,90 @@
+{
+  "lesson": "09-code-migration-agent",
+  "title": "Capstone 09 — Code Migration Agent (Repo-Level Language / Runtime Upgrade)",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "为什么流水线要把确定性基座和智能体层结合起来，而不是只用其中一种？",
+      "options": [
+        "OpenRewrite 或 libcst 能安全、低成本地处理 70-80% 的机械性重写，把含糊的长尾留给智能体",
+        "单独使用智能体比 recipe 更快",
+        "确定性 recipe 比 LLM 慢",
+        "只有构建系统才需要确定性"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "pre",
+      "question": "流水线把什么信号当作迁移成功的判定标准？",
+      "options": [
+        "智能体按评分细则给自己打分",
+        "审阅者在 PR 上的批准",
+        "diff 体积低于某个硬性上限",
+        "沙箱中 CI 全绿，且覆盖率回退不超过一个小阈值"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "智能体循环对每个仓库强制执行哪些预算上限？",
+      "options": [
+        "时间和成本不限，只在出错时中止",
+        "回合数不限，成本上限 100 美元",
+        "1 小时墙钟时间和 100 个回合",
+        "30 分钟墙钟时间、8 美元成本和 20 个智能体回合"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "迁移后覆盖率下降超过约 2% 时，哪个门控会触发？",
+      "options": [
+        "绕过审阅者",
+        "该仓库被归入 coverage_regression 失败类别，而不是打开一个干净的 PR",
+        "确定性基座重放它的 recipe",
+        "智能体自动 force-push 一个修复"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "为什么把失败分类当作交付物，而不是顺手产出的副产品？",
+      "options": [
+        "它可以替代测试套件",
+        "它按类别归组失败的仓库，让未来的 recipe 作者可以针对最主要的失败模式下手",
+        "GitHub 分支保护要求这样做",
+        "它满足某项合规清单"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "这个毕业项目针对 Java 8 到 17 迁移使用哪个公开基准？",
+      "options": [
+        "Amazon 的 MigrationBench",
+        "SWE-bench Pro",
+        "MMLU-Pro",
+        "ViDoRe v3"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "「智能体集成度」这一评分项衡量修复分布的什么方面？",
+      "options": [
+        "源文件的分词速度",
+        "每个仓库的 force-push 次数",
+        "被固定版本的依赖数量",
+        "OpenRewrite 处理的修复与智能体层编写的修复各占的比例"
+      ],
+      "correct": 3,
+      "explanation": ""
+    }
+  ]
+}

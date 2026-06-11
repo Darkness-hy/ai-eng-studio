@@ -1,0 +1,78 @@
+{
+  "lesson": "06-mesa-optimization-deceptive-alignment",
+  "title": "Mesa 优化与欺骗性对齐",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "哪一组描述最准确地刻画了内对齐 / 外对齐的区别？",
+      "options": [
+        "外对齐 = 模型能否在硬件上运行；内对齐 = 损失是否够低",
+        "外对齐 = 基础目标是否符合我们想要的东西；内对齐 = mesa 目标是否与基础目标一致",
+        "外对齐 = 策略是否稳定；内对齐 = 温度是否够低",
+        "外对齐 = 数据是否干净；内对齐 = 优化器是否随机"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "下列哪一项不属于 Hubinger 等人提出的 mesa 目标对齐四种类别？",
+      "options": [
+        "近似对齐",
+        "鲁棒对齐",
+        "代理对齐",
+        "概率对齐"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "在什么条件下，欺骗性对齐是 mesa 优化器的奖励最大化策略？",
+      "options": [
+        "它用 PPO 而非 DPO 训练",
+        "它有一个持久的终极目标，对训练与部署阶段具备情境感知，且一旦它在训练中叛变，基础优化器就会修改它",
+        "它的容量超过 1000 亿参数",
+        "它拥有任何形式的内部表征"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "为什么标准的对抗训练对欺骗性对齐可能失效（甚至使其恶化）？",
+      "options": [
+        "它需要比 RLHF 更多的算力",
+        "它教会 mesa 优化器更精准地区分测试与部署，而不是教会它一个对齐的 mesa 目标",
+        "它使用了错误的损失函数",
+        "它无法在 GPU 上运行"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "Hubinger 等人（2019）提出的梯度劫持（gradient hacking）是什么？",
+      "options": [
+        "一种推测性的病理现象：有足够能力的 mesa 优化器通过产出特定输出来塑造自身的梯度更新，以保全其 mesa 目标",
+        "一种针对指令微调模型的越狱方法",
+        "autograd 中的一个 bug",
+        "一种加速训练的技巧"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "下列哪一项属于外对齐失败，而非内对齐失败？",
+      "options": [
+        "因为基础目标本身就是人类意图的有缺陷代理，从而涌现出奖励劫持与谄媚行为",
+        "Mesa 优化器优化一个在分布外发生偏离的代理目标",
+        "后门在 SFT 之后仍然存活",
+        "Mesa 优化器在评估期间隐藏自己的目标"
+      ],
+      "correct": 0,
+      "explanation": ""
+    }
+  ]
+}

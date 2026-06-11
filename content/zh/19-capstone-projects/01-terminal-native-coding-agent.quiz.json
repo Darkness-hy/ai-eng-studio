@@ -1,0 +1,90 @@
+{
+  "lesson": "01-terminal-native-coding-agent",
+  "title": "Capstone 01 — Terminal-Native Coding Agent",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "2026 年的终端编程智能体共享哪种循环形态？",
+      "options": [
+        "规划、行动、观察、恢复",
+        "编码、解码、采样、流式输出",
+        "训练、评估、部署、监控",
+        "抓取、嵌入、排序、综合"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "pre",
+      "question": "harness 为什么把每个任务放进 E2B 或 Daytona 沙箱里运行？",
+      "options": [
+        "把文件系统和工具执行与宿主机隔离，任务结束后可以直接销毁 worktree",
+        "绕过模型提供商的速率限制",
+        "在冷缓存上对 token 吞吐量做基准测试",
+        "让智能体循环能够访问 GPU"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "哪个内置钩子是拦截破坏性 shell 命令、阻止其执行的天然位置？",
+      "options": [
+        "PreToolUse",
+        "SessionStart",
+        "Stop",
+        "PostToolUse"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "本毕业项目把每个工具结果限制在约 4k token。这主要防止哪种失败模式？",
+      "options": [
+        "通过恶意 shell 元字符实现沙箱逃逸",
+        "工具返回大量输出时的上下文污染和成本失控",
+        "会话恢复后计划状态过期",
+        "模型对工具调用轨迹过拟合"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "PreCompact 钩子在 150k token 处做什么？",
+      "options": [
+        "取消运行并退还用户预算",
+        "把较早的轮次总结成先验状态块，使计划和新的观察仍能放进上下文",
+        "强制推送当前分支以备份进度",
+        "把底层模型切换成更小的草稿模型"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "本毕业项目在 30 个 issue 的 SWE-bench Pro 子集上把自己的 harness 与哪个基线对比？",
+      "options": [
+        "OpenCode",
+        "mini-swe-agent",
+        "Live-SWE-agent",
+        "Aider"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "交付物按哪组指标来衡量？",
+      "options": [
+        "WER、MOS 和首音频输出延迟",
+        "困惑度、BLEU 和 ROUGE",
+        "pass@1、每任务轮数和每任务美元成本",
+        "MRR@10 和 nDCG@10"
+      ],
+      "correct": 2,
+      "explanation": ""
+    }
+  ]
+}

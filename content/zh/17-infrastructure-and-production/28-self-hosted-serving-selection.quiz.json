@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "本课把哪个引擎选为开发笔记本上一条命令即装的默认方案？",
+      "options": [
+        "TGI",
+        "Ollama",
+        "vLLM",
+        "llama.cpp"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "2025 年的哪个事件让新项目的默认选择不再是 TGI？",
+      "options": [
+        "TGI 被 Anthropic 收购",
+        "TGI 涨价了",
+        "TGI 停止支持 CUDA",
+        "TGI 于 2025 年 12 月 11 日进入维护模式——此后只修 bug"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "哪种硬件约束意味着必须用 llama.cpp，同时排除了 vLLM / TRT-LLM？",
+      "options": [
+        "Apple M4",
+        "AMD MI300X",
+        "NVIDIA Hopper",
+        "纯 CPU（没有加速器）"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "本课认为哪个引擎凭借 RadixAttention 最适合智能体多轮对话和前缀密集型工作负载？",
+      "options": [
+        "Ollama",
+        "llama.cpp",
+        "SGLang",
+        "TGI"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "本课推荐在同一份 GGUF 或 HF 权重上采用什么样的开发到生产流水线？",
+      "options": [
+        "从头到尾只用 TRT-LLM",
+        "开发用 Ollama，生产也用 Ollama",
+        "开发用 Ollama，预发用 llama.cpp，生产用 vLLM（前缀密集场景用 SGLang）",
+        "全程都用 TGI"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "为什么不建议在共享的生产环境中使用 Ollama？",
+      "options": [
+        "它是闭源的",
+        "它只能在 Windows 上运行",
+        "Go 的 HTTP 序列化带来额外开销，并发管理比 vLLM 简陋，OpenTelemetry 支持滞后",
+        "它无法加载 GGUF"
+      ],
+      "correct": 2,
+      "explanation": ""
+    }
+  ]
+}

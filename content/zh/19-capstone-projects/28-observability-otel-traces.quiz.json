@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "读课前思考：按 OTel GenAI 属性规范来写执行框架的 span，实际好处是什么？",
+      "options": [
+        "OTel span 在磁盘上的压缩率更高。",
+        "任何兼容 OTel 的后端都能直接读取，无需自定义解析器。",
+        "OTel 是 Python 专属标准，执行框架因此获得类型提示。",
+        "这是 HIPAA 的强制要求。"
+      ],
+      "correct": 1,
+      "explanation": "这套约定是与整个生态系统的契约。Honeycomb、Grafana Tempo、Jaeger 和 Datadog 都能开箱即用地解析 gen_ai.* 属性。"
+    },
+    {
+      "stage": "check",
+      "question": "SpanBuilder.span() 上下文内部抛出了异常，本课的构建器会记录什么？",
+      "options": [
+        "丢弃该 span，避免污染链路。",
+        "status=ERROR，status_message 包含异常类型和消息，并追加一个 'exception' 事件。",
+        "status 保持 UNSET，异常被静默吞掉。",
+        "把 span 重命名为 'error'。"
+      ],
+      "correct": 1,
+      "explanation": "ERROR 状态加 exception 事件符合 OTel 规范。异常会被重新抛出，调用方代码可以据此做出响应。"
+    },
+    {
+      "stage": "check",
+      "question": "直方图的 Prometheus 暴露文本包含 _bucket、_sum 和 _count 行。为什么桶计数是累积式的（每个 le 桶包含所有更小的桶）？",
+      "options": [
+        "累积计数让抓取端通过相减得到各桶计数，而无需存储全部观测值。",
+        "累积计数是 Grafana 唯一支持的格式。",
+        "它们并非累积式；本课的暴露格式不符合标准。",
+        "累积计数能减少浮点误差。"
+      ],
+      "correct": 0,
+      "explanation": "这是 Prometheus 的设计取舍：后端读取累积计数后通过差值算出各桶的计数。这样每个桶的时间序列就是一个简单的单调递增计数器。"
+    },
+    {
+      "stage": "check",
+      "question": "执行框架把一次工具执行包进了 span。按 GenAI 约定，哪些属性键标识它是一次工具调用？",
+      "options": [
+        "gen_ai.system + gen_ai.request.model。",
+        "gen_ai.tool.name + gen_ai.tool.call.id。",
+        "agent.harness.tool + agent.harness.call。",
+        "operation + tool.name。"
+      ],
+      "correct": 1,
+      "explanation": "gen_ai.tool.name 和 gen_ai.tool.call.id 是 GenAI 约定中标识工具执行的规范键。"
+    },
+    {
+      "stage": "post",
+      "question": "你想查询「read_file 调用的 p95 延迟是多少」，应该查询哪个产物？",
+      "options": [
+        "traces.jsonl 中每个 span 的 duration_ms，用脚本解析。",
+        "在一个时间窗口内抓取的 Prometheus 直方图 tool_latency_ms{tool=\"read_file\"}。",
+        "计数器 tools_called_total 除以时间窗口长度。",
+        "span 的 status_message 字段。"
+      ],
+      "correct": 1,
+      "explanation": "直方图才是计算百分位数的正确工具。计数器只能计数；链路虽然包含原始 span，但没有预先聚合。"
+    },
+    {
+      "stage": "post",
+      "question": "有评审问本课为什么手写实现而不是直接导入 opentelemetry-sdk。哪个回答是正确的？",
+      "options": [
+        "SDK 不支持 GenAI 约定。",
+        "手写实现教的是底层数据格式；之后可以用相同的属性键直接换成 SDK。",
+        "手写实现的运行时性能更高。",
+        "SDK 在导入时需要联网。"
+      ],
+      "correct": 1,
+      "explanation": "这套约定在各实现之间是稳定的。手写版本是为了讲清原理；生产环境接入 SDK 并复用同一套 gen_ai.* 键。"
+    }
+  ]
+}

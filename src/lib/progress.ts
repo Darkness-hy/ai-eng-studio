@@ -7,6 +7,7 @@ export interface LessonProgress {
   postScore?: number;
   postTotal?: number;
   completedAt?: string;
+  updatedAt?: string;
 }
 
 export interface ProgressState {
@@ -16,8 +17,15 @@ export interface ProgressState {
   lastLesson?: string; // "phaseSlug/lessonSlug"
 }
 
+export interface ProgressChange {
+  source: 'local' | 'remote';
+  lessonIds: string[];
+  visitDay?: string;
+}
+
 const KEY = 'aes:progress:v1';
-const listeners = new Set<() => void>();
+const renderListeners = new Set<() => void>();
+const changeListeners = new Set<(change: ProgressChange) => void>();
 
 let state: ProgressState = load();
 
@@ -34,10 +42,11 @@ function load(): ProgressState {
   return { v: 1, lessons: {}, visits: [] };
 }
 
-function commit(next: ProgressState) {
+function commit(next: ProgressState, change?: ProgressChange) {
   state = next;
   localStorage.setItem(KEY, JSON.stringify(state));
-  listeners.forEach((fn) => fn());
+  renderListeners.forEach((fn) => fn());
+  if (change) changeListeners.forEach((fn) => fn(change));
 }
 
 function today(): string {
@@ -49,28 +58,72 @@ export function getProgress(): ProgressState {
   return state;
 }
 
+/** Subscribe to data mutations (used by the cloud sync layer). */
+export function subscribeChanges(fn: (change: ProgressChange) => void): () => void {
+  changeListeners.add(fn);
+  return () => changeListeners.delete(fn);
+}
+
 export function setLessonDone(id: string, done: boolean) {
   const prev = state.lessons[id] ?? {};
-  commit({
-    ...state,
-    lessons: {
-      ...state.lessons,
-      [id]: { ...prev, done, completedAt: done ? new Date().toISOString() : undefined },
+  commit(
+    {
+      ...state,
+      lessons: {
+        ...state.lessons,
+        [id]: {
+          ...prev,
+          done,
+          completedAt: done ? new Date().toISOString() : undefined,
+          updatedAt: new Date().toISOString(),
+        },
+      },
     },
-  });
+    { source: 'local', lessonIds: [id] },
+  );
 }
 
 export function saveQuizScore(id: string, stage: 'pre' | 'post', score: number, total: number) {
   const prev = state.lessons[id] ?? {};
   const patch =
     stage === 'pre' ? { preScore: score, preTotal: total } : { postScore: score, postTotal: total };
-  commit({ ...state, lessons: { ...state.lessons, [id]: { ...prev, ...patch } } });
+  commit(
+    {
+      ...state,
+      lessons: {
+        ...state.lessons,
+        [id]: { ...prev, ...patch, updatedAt: new Date().toISOString() },
+      },
+    },
+    { source: 'local', lessonIds: [id] },
+  );
 }
 
 export function recordVisit(lessonId: string) {
   const day = today();
-  const visits = state.visits.includes(day) ? state.visits : [...state.visits, day];
-  commit({ ...state, visits, lastLesson: lessonId });
+  const isNewDay = !state.visits.includes(day);
+  const visits = isNewDay ? [...state.visits, day] : state.visits;
+  commit(
+    { ...state, visits, lastLesson: lessonId },
+    isNewDay ? { source: 'local', lessonIds: [], visitDay: day } : undefined,
+  );
+}
+
+/**
+ * Apply cloud rows into the local store. Newest updatedAt wins per lesson;
+ * visits are unioned. Emits a 'remote' change so the sync layer does not
+ * push these rows back.
+ */
+export function mergeRemote(remote: Record<string, LessonProgress>, remoteVisits: string[]) {
+  const lessons = { ...state.lessons };
+  for (const [id, theirs] of Object.entries(remote)) {
+    const ours = lessons[id];
+    if (!ours || (theirs.updatedAt ?? '') > (ours.updatedAt ?? '')) {
+      lessons[id] = theirs;
+    }
+  }
+  const visits = [...new Set([...state.visits, ...remoteVisits])].sort();
+  commit({ ...state, lessons, visits }, { source: 'remote', lessonIds: Object.keys(remote) });
 }
 
 export function exportProgress(): string {
@@ -81,7 +134,10 @@ export function importProgress(json: string): boolean {
   try {
     const parsed = JSON.parse(json) as ProgressState;
     if (parsed?.v !== 1 || typeof parsed.lessons !== 'object') return false;
-    commit({ v: 1, lessons: parsed.lessons, visits: parsed.visits ?? [], lastLesson: parsed.lastLesson });
+    commit(
+      { v: 1, lessons: parsed.lessons, visits: parsed.visits ?? [], lastLesson: parsed.lastLesson },
+      { source: 'local', lessonIds: Object.keys(parsed.lessons) },
+    );
     return true;
   } catch {
     return false;
@@ -106,8 +162,8 @@ export function streakDays(): number {
 export function useProgress(): ProgressState {
   return useSyncExternalStore(
     (cb) => {
-      listeners.add(cb);
-      return () => listeners.delete(cb);
+      renderListeners.add(cb);
+      return () => renderListeners.delete(cb);
     },
     () => state,
   );

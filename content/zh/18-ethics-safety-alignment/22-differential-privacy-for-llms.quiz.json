@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "(epsilon, delta)-差分隐私对随机化算法 M 保证了什么？",
+      "options": [
+        "M 永远不会记忆任何训练数据",
+        "M 在噪声范围内是确定性的",
+        "对任意两个仅相差一个样本的数据集和任意事件 S，P(M(D) in S) <= e^epsilon * P(M(D') in S) + delta，因此任何单个个体的贡献都无法被可靠推断",
+        "M 可证明等价于一个非隐私算法"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "以下哪一项不是 Abadi et al. 2016 所描述的 DP-SGD 步骤？",
+      "options": [
+        "采样一个 mini-batch 并计算逐样本梯度",
+        "将每个逐样本梯度裁剪到阈值 C",
+        "在每步之间重新随机化模型的分词器",
+        "对裁剪后的梯度求和并加入按 sigma * C 缩放的高斯噪声"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "为什么 LoRA + DP-SGD 是 2025 年的常见配置？",
+      "options": [
+        "对前沿模型做完整 DP-SGD 成本高得难以承受；LoRA 将梯度更新限制在一个小的适配器上，减少逐样本梯度存储，同时仍能为适配器提供 DP 保证",
+        "它把 LoRA 用作分词器",
+        "LoRA 的设计目的就是增大 epsilon",
+        "LoRA 免除了对会计机制的需要"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "2025 年 3 月的审计工作（arXiv:2503.06808）如何化解了金丝雀 MIA 与训练数据提取之间的张力？",
+      "options": [
+        "它彻底消除了对金丝雀的需要",
+        "它证明了 DP-SGD 是不必要的",
+        "它表明两者测量的是同一性质",
+        "它表明两者测量的是不同的东西：在插入金丝雀上做 MIA 会低估记忆程度，因为金丝雀没有被优化成真正对隐私重要的「最易被提取」样本"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "作为 DP 训练的替代方案，PMixED（arXiv:2403.15638）提供了什么？",
+      "options": [
+        "一个更快的 DP-SGD 变体",
+        "一个新的 Renyi DP 会计机制",
+        "通过对下一个 token 分布做专家混合并在聚合时加噪，实现推理时差分隐私；完全避开 DP 训练",
+        "一种仅凭 epsilon-delta 会计就能计算 epsilon 的方法"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "什么是基于 LLM 反馈的差分隐私逆转攻击？",
+      "options": [
+        "利用 DP 训练模型的置信度分数作为预言机来重识别个体，即使输出本身不直接泄漏",
+        "一种针对分词器熵的攻击",
+        "一种把 epsilon 重置为零的方法",
+        "一种针对金丝雀插入的对策"
+      ],
+      "correct": 0,
+      "explanation": ""
+    }
+  ]
+}

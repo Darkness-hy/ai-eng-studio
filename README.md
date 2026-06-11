@@ -44,6 +44,17 @@ content/zh/glossary.json    # 术语表中文译文
 
 翻译完一批后重新执行 `npm run build:content` 即可生效；未翻译的课程自动回退英文原文并显示「翻译制作中」标记。
 
+## 账户与多设备同步（可选，Supabase）
+
+不配置时站点纯本地运行；配置后获得：邮箱注册/登录、多设备进度同步、管理员后台（`/admin`，学生进度与答题图表）。
+
+1. 在 [supabase.com](https://supabase.com) 建免费项目，SQL Editor 里执行 `supabase/schema.sql`
+2. Authentication → Sign In / Providers → Email：关闭 "Confirm email"
+3. 把 Settings → API 中的 Project URL 与 anon key 写入 `.env.local`（见 `.env.example`）
+4. 重新构建部署。管理员：`admin@example.com` 注册即自动获得 admin 角色；其他管理员用 schema.sql 末尾的 SQL 添加
+
+同步策略 local-first：界面始终即时读写本地，云端后台合并（同一课程冲突时较新的修改胜出），离线照常使用。
+
 ## 技术栈
 
 Vite + React 19 + TypeScript + Tailwind CSS 4，纯静态 SPA、无后端。markdown 渲染 react-markdown + remark-gfm，代码高亮 shiki（fine-grained core），图表 mermaid，Python 运行时 Pyodide（CDN）。

@@ -1,0 +1,88 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "本 Capstone 中的分层安全（layered safety）指的是什么？",
+      "options": [
+        "人工审核每一条响应",
+        "只在输入侧运行一个强分类器",
+        "仅对输出做一条基于规则的正则匹配",
+        "横跨输入净化、策略护栏、分类器闸门、模型、输出过滤和 HITL 层的纵深防御"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "pre",
+      "question": "哪个分类器负责覆盖约 132 种语言的多语言场景？",
+      "options": [
+        "Nemotron 3 Content Safety",
+        "ShieldGemma-2",
+        "X-Guard",
+        "Llama Guard 4"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "为什么要在 XSTest 这样的良性套件上测量过度拒答？",
+      "options": [
+        "用来取代红队评分",
+        "用来基准测试 token 吞吐量",
+        "用来认证护栏框架",
+        "跟踪误报拦截，确保模型在提升无害性的同时仍保持有用性"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "本 Capstone 中的宪法式自我批判循环是什么？",
+      "options": [
+        "对候选越狱提示做重排序的模型",
+        "从零训练的 RLHF 奖励模型",
+        "对 Llama Guard 4 的一次前向计算",
+        "批判者 LLM 对照成文宪法给草稿打分，模型重写被质疑的输出，再在改进后的样本对上做 SFT"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "发现报告中如何对成功的越狱进行严重性评分？",
+      "options": [
+        "由生成该响应的模型来评分",
+        "使用 CVSS 4.0（攻击向量、复杂度、影响）评分，并附披露时间线",
+        "按提示的原始 token 数量评分",
+        "由操作者手动选定的 1-10 分量表"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "红队靶场运行的是哪六大攻击家族？",
+      "options": [
+        "BLEU、ROUGE、METEOR、BERTScore、CometKiwi 和 chrF",
+        "PAIR、TAP、GCG、编码攻击（ASCII/base64/rot13）、多轮人格扮演和多语言语码转换",
+        "暴力破解、字典攻击、重放、中间人、钓鱼和 CSRF",
+        "PSI、KL、MMD、KS、JS 和 Wasserstein"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "为什么靶场自动化（cron + 告警）是评分标准的一部分？",
+      "options": [
+        "cron 是调用 OPA 的唯一方式",
+        "持续的定时探测能及时捕捉攻击成功率的漂移和过度拒答的回归",
+        "明确要求必须手动运行",
+        "禁用 Llama Guard 4 需要自动化"
+      ],
+      "correct": 1,
+      "explanation": ""
+    }
+  ]
+}

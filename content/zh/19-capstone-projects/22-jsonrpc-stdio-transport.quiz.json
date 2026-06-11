@@ -1,0 +1,90 @@
+{
+  "lesson": "22-jsonrpc-stdio-transport",
+  "title": "JSON-RPC 2.0 over Newline-Delimited Stdio",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "在线缆格式上，JSON-RPC 的通知（notification）与请求（request）的区别是什么？",
+      "options": [
+        "jsonrpc 版本字段不同",
+        "通知省略了 id 字段；服务器绝不能对其响应",
+        "通知使用不同的方法命名空间",
+        "通知被包裹在一个数组中"
+      ],
+      "correct": 1,
+      "explanation": "缺少 id 是唯一的标志。服务器不做响应，因为没有 id 可供关联。"
+    },
+    {
+      "stage": "pre",
+      "question": "为什么换行分隔的 JSON 足以胜任 stdio 的帧格式？",
+      "options": [
+        "因为 JSON 不允许字符串中出现未转义的字面换行符，所以每个对象可以占一行",
+        "因为管道保证换行的原子性",
+        "因为 UTF-8 没有换行字节",
+        "因为规范强制要求"
+      ],
+      "correct": 0,
+      "explanation": "json.dumps 为每个对象输出单独一行；字符串内的字面换行符会被转义。这使得 \\n 成为安全的记录分隔符。"
+    },
+    {
+      "stage": "check",
+      "question": "当 JSON 解析失败时，传输层返回哪个错误码？",
+      "options": [
+        "-32600",
+        "-32700",
+        "-32603",
+        "-32601"
+      ],
+      "correct": 1,
+      "explanation": "-32700 是 Parse error（解析错误）。响应中的 id 为 null，因为无法提取出 id。"
+    },
+    {
+      "stage": "check",
+      "question": "如果处理函数抛出一个普通的 ValueError，传输层会返回什么？",
+      "options": [
+        "Method not found（-32601）",
+        "Invalid params（-32602）",
+        "Internal error（-32603），并在 data 中携带异常类名",
+        "不返回任何内容；连接断开"
+      ],
+      "correct": 2,
+      "explanation": "未映射的异常以 -32603 的形式暴露。data.exception 为客户端保留了异常类名。"
+    },
+    {
+      "stage": "check",
+      "question": "当一个批量调用只包含通知时，服务器会返回什么？",
+      "options": [
+        "一个空数组",
+        "什么也不返回——不写出任何字节",
+        "每个通知对应一个 null",
+        "单个 null 响应"
+      ],
+      "correct": 1,
+      "explanation": "规范规定：如果所有条目都是通知，服务器保持沉默。"
+    },
+    {
+      "stage": "post",
+      "question": "会话进行中收到一行损坏的 JSON。后续的行会发生什么？",
+      "options": [
+        "传输层关闭流",
+        "它们被缓冲，直到损坏的那一行重试成功",
+        "传输层写出一个 -32700 响应，然后继续把下一行当作全新内容读取",
+        "它们全部被以 -32600 拒绝"
+      ],
+      "correct": 2,
+      "explanation": "帧层绝不能污染流。一个解析错误意味着一个错误响应，循环继续。"
+    },
+    {
+      "stage": "post",
+      "question": "为什么传输层不直接查询工具注册表？",
+      "options": [
+        "因为注册表是异步的",
+        "为了让传输层只保持 JSON-RPC 的形态；由处理函数把传输层和注册表缝合起来",
+        "因为注册表持有机密信息",
+        "因为传输层运行在不同的进程中"
+      ],
+      "correct": 1,
+      "explanation": "传输层只负责线缆通信。调度器（下一课）才是传输层、注册表和超时机制交汇的地方。"
+    }
+  ]
+}

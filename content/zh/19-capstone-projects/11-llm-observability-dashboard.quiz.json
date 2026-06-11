@@ -1,0 +1,90 @@
+{
+  "lesson": "11-llm-observability-dashboard",
+  "title": "Capstone 11 — LLM Observability & Eval Dashboard",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "Langfuse、Phoenix 和 OpenLLMetry 共同收敛到哪种摄取 schema？",
+      "options": [
+        "每家厂商各自的私有 JSON",
+        "Prometheus 暴露格式",
+        "基于 OTLP HTTP 的 OpenTelemetry GenAI 语义约定",
+        "纯 CSV 日志文件"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "pre",
+      "question": "存储层为什么要把 ClickHouse 和 Postgres 分开？",
+      "options": [
+        "两者可以互换，随便选一个就行",
+        "Postgres 摄取 span 更快",
+        "ClickHouse 不能存储字符串",
+        "ClickHouse 负责对 span 做列式分析，而 Postgres 保存用户、会话和应用元数据"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "OpenTelemetry Collector 中的尾部采样处理器做什么？",
+      "options": [
+        "在追踪完成后决定是否保留它，规则例如保留所有错误外加按比例采样成功追踪",
+        "把旧追踪重放进 Postgres",
+        "无条件流式传输每一个字节",
+        "截断 100ms 以下的 span"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "看板如何跨周检测漂移？",
+      "options": [
+        "对汇集的提示词嵌入计算 PSI 或 KL 散度，并关注评估分数的趋势",
+        "人工肉眼盯着看板",
+        "读取最新的部署时间戳",
+        "统计唯一的 trace ID 数量"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "对于注入的 PII 泄漏回归，交付物的 MTTR 目标是多少？",
+      "options": [
+        "1 小时以内",
+        "24 小时以内",
+        "下一个值班班次之内",
+        "从 bug 部署到 Slack 告警不超过 5 分钟"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "要满足追踪覆盖度的评分标准，哪些 SDK 家族必须产出规范的 GenAI span？",
+      "options": [
+        "只需要 vLLM",
+        "至少六个：OpenAI、Anthropic、Google GenAI、LangChain、LlamaIndex 和 vLLM",
+        "任意一个 SDK 就够了",
+        "仅 OpenAI 和 Anthropic"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "评估结果如何链接回原始的 LLM 调用？",
+      "options": [
+        "每晚通过邮件发送 CSV",
+        "只通过 Slack 消息",
+        "存为一张不带 trace ID 的独立 Postgres 表",
+        "作为父追踪的子评估 span 写入 ClickHouse"
+      ],
+      "correct": 3,
+      "explanation": ""
+    }
+  ]
+}

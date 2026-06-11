@@ -1,0 +1,90 @@
+{
+  "lesson": "06-devops-troubleshooting-agent",
+  "title": "Capstone 06 — DevOps Troubleshooting Agent for Kubernetes",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "故障排查智能体的 RBAC 面默认采用什么权限姿态？",
+      "options": [
+        "默认只读，破坏性动词放在独立服务器上并由人工审批门控",
+        "仅在受影响命名空间内拥有 namespace-admin 权限",
+        "与值班工程师等同的权限",
+        "cluster-admin，以便它能自我修复"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "pre",
+      "question": "智能体在根因分析时遍历的知识图谱是什么？",
+      "options": [
+        "节点是 K8s 对象加遥测源；边编码归属、调度和观测关系",
+        "最近重启过的 Pod 的扁平列表",
+        "按团队组织的 Prometheus 指标名",
+        "由 GitHub 提交和 PR 评审构成的图"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "发往 Slack 简报的根因假设是如何排序的？",
+      "options": [
+        "按综合了新近度、具体度、图路径长度和引用数量的证据分排序",
+        "仅按模型的对数概率排序",
+        "按告警名称的字母顺序排序",
+        "按生成顺序排序"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "为什么审计日志既要记录智能体考虑过的命令，也要记录已执行的命令？",
+      "options": [
+        "复盘人员能借此抓住智能体差点执行破坏性命令的险情",
+        "ArgoCD 只接受被考虑过的命令",
+        "Slack API 投递消息时两者都需要",
+        "防御重放攻击需要这两份列表"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "哪种机制阻止智能体在错误发布时单方面执行回滚？",
+      "options": [
+        "破坏性工具放在独立的 MCP 服务器上，由来自 Slack 卡片的审批 token 守护",
+        "由第二个 LLM 评审对回滚投票",
+        "GitOps 仓库上的分支保护",
+        "PagerDuty 自动暂停该部署"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "评分标准衡量的 p50 出假设耗时目标是多少？",
+      "options": [
+        "在下一个值班班次之前",
+        "1 小时以内",
+        "从告警到 Slack 简报 5 分钟以内",
+        "30 秒以内"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "用于评估 RCA 准确率的合成事故套件规模有多大？",
+      "options": [
+        "1 个写好脚本的演示事故",
+        "5 个场景",
+        "100 条随机抽样的生产告警",
+        "20 个场景，覆盖 OOMKill、DNS 抖动、HPA 震荡、PVC 写满等"
+      ],
+      "correct": 3,
+      "explanation": ""
+    }
+  ]
+}

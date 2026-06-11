@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "在阅读本课之前：以下哪一项是框架需要确定性门链、而不是用模型当裁判（model-as-judge）的最强理由？",
+      "options": [
+        "模型太慢，无法在生产环境中充当裁判。",
+        "确定性让拒绝理由可审计，门链可重放。",
+        "模型裁判总是产出幻觉的放行决定。",
+        "门链能让模型自己编写策略。"
+      ],
+      "correct": 1,
+      "explanation": "审计轨迹和可复现性才是实际收益。裁判模型也可以接入，但结构性的门必须是确定性的，这样决策才能被复现和审查。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么本课在门链中把 WhitelistGate 排在 BudgetGate 之前？",
+      "options": [
+        "白名单的拒绝更便宜，在那里短路可以避免昂贵的台账求和。",
+        "BudgetGate 必须等至少一次工具调用之后才能运行。",
+        "按照惯例，白名单必须永远是最后一个门。",
+        "顺序无关紧要，因为 GateChain 会随机化求值顺序。"
+      ],
+      "correct": 0,
+      "explanation": "廉价的拒绝先运行。WhitelistGate 是 O(1) 哈希查找，BudgetGate 则要对台账求和。当调用在结构上就不合法时，在白名单处短路可以省掉那部分工作。"
+    },
+    {
+      "stage": "check",
+      "question": "ObservationLedger 已记录一条来自 read_file 的 60 token 观察。随后框架拒绝了一次调用。台账会为这次拒绝记录什么？",
+      "options": [
+        "一条标记为 refused 的零 token Observation 行。",
+        "什么都不记。台账只记录成功的观察。",
+        "一条代表拒绝成本的负 token Observation 行。",
+        "拒绝会以合成 Observation 的形式追加，带上拒绝者的名字。"
+      ],
+      "correct": 1,
+      "explanation": "台账记录的是模型实际看到的观察。一次拒绝产生的是 GateDecision，而不是 Observation。拒绝计数存放在台账之外，而不是台账之内。"
+    },
+    {
+      "stage": "check",
+      "question": "RecencyGate.window 设为 3，台账的 latest_turn 是 5。第 10 轮到来一个新的 ToolCall。会发生什么？",
+      "options": [
+        "门放行：该调用处于最新一轮。",
+        "门拒绝：间隔 5 超过了窗口 3。",
+        "门放行：窗口作用于台账大小，而不是轮次间隔。",
+        "门抛出异常，因为台账已经过期。"
+      ],
+      "correct": 1,
+      "explanation": "RecencyGate 把 (call.turn - ledger.latest_turn) 与窗口比较。10 - 5 = 5，大于 3，所以门拒绝。"
+    },
+    {
+      "stage": "post",
+      "question": "你想增加一个单次调用输出上限（任何单条观察不得超过 8000 token）。这个门在逻辑上应放在链的哪个位置？",
+      "options": [
+        "放在 WhitelistGate 之前，因为大小是最廉价的检查项。",
+        "放在 BudgetGate 之后，因为累计预算总是占主导。",
+        "它不能成为一个门，因为输出大小只有在工具运行之后才知道。",
+        "放进 BudgetGate 内部，让两个限制组合在一起。"
+      ],
+      "correct": 2,
+      "explanation": "门求值时还不知道输出大小。框架要在工具运行之后施加上限：在模型看到之前截断观察。门评估的是输入，不是输出。"
+    },
+    {
+      "stage": "post",
+      "question": "评审人要求你证明智能体在一次会话中从未执行过任何被拒绝的工具调用。你应该指给他看哪个产物？",
+      "options": [
+        "ObservationLedger 快照，它只包含成功的观察。",
+        "ChainOutcome 记录列表，它包含每次调用的决策及拒绝理由。",
+        "pytest 输出，它记录测试的通过与失败。",
+        "模型的聊天记录，它包含模型的自我汇报。"
+      ],
+      "correct": 1,
+      "explanation": "ChainOutcome 记录携带每次调用的决策和拒绝理由。台账和聊天记录可以辅助佐证，但可审计的产物是门链的决策记录。"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "lesson": "17-wmdp-dual-use-evaluation",
+  "title": "WMDP and Dual-Use Capability Evaluation",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "WMDP 用于筛选题目的「黄区」标准是什么？",
+      "options": [
+        "未经专家评审的公开互联网内容",
+        "危险化合物的合成配方",
+        "某个有害流程的近邻、赋能性知识，但又不构成直接的合成配方",
+        "多语种数学推理"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "WMDP 覆盖哪三个领域？",
+      "options": [
+        "隐私、偏见、水印",
+        "视觉、音频、文本",
+        "数学、代码、语言",
+        "生物安全、网络安全、化学"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "RMU（WMDP 的配套方法）做了什么？",
+      "options": [
+        "在对齐过程中用 DPO 取代 PPO",
+        "生成有害图像",
+        "为两用内容训练一个新的分词器",
+        "表示误导式去学习（Representation Misdirection for Unlearning）：把 WMDP 分数降到接近随机水平，同时把通用能力（例如 MMLU）的损失控制在几个百分点以内"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "Anthropic 2025 年的生物武器获取试验把多少作为「提升」数字报告出来，又对 ASL-3 意味着什么？",
+      "options": [
+        "100 倍；已达到 ASL-5",
+        "2.53 倍；不足以排除 ASL-3",
+        "10 倍；低于 ASL-2",
+        "0.5 倍；已排除 ASL-3"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "新手相对提升与专家绝对能力之间的区别是什么？",
+      "options": [
+        "新手相对提升是对非专家而言、相对于现状（例如互联网搜索）的乘性帮助；专家绝对能力是一个有动机的专家能从模型中榨取的最大信息量",
+        "新手相对提升是一个基准；专家绝对能力是一份许可证",
+        "它们是同义词",
+        "两者都只能通过多项选择题来测量"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "在把 WMDP 分数解读为部署风险时，以下哪一项不是测量陷阱？",
+      "options": [
+        "采购与设备壁垒",
+        "诱发抵抗力（安全过滤是否会阻断榨取）",
+        "执行所需、且多项选择题无法捕捉的默会知识",
+        "模型的开源许可证"
+      ],
+      "correct": 3,
+      "explanation": ""
+    }
+  ]
+}

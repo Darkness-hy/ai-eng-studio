@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '../lib/auth';
 import { useLang } from '../lib/i18n';
 import { CommandPalette } from './CommandPalette';
 
@@ -13,6 +14,7 @@ function ScrollToTop() {
 
 export function Layout() {
   const { lang, setLang, t } = useLang();
+  const { enabled: authEnabled, profile, signOut } = useAuth();
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
@@ -52,6 +54,33 @@ export function Layout() {
             <NavLink to="/progress" className={navCls}>
               {t('nav_progress')}
             </NavLink>
+            {authEnabled && profile?.role === 'admin' && (
+              <NavLink to="/admin" className={navCls}>
+                {lang === 'zh' ? '管理后台' : 'Admin'}
+              </NavLink>
+            )}
+            {authEnabled &&
+              (profile ? (
+                <span className="flex items-center gap-2">
+                  <span
+                    className="hidden max-w-[120px] truncate rounded-full bg-pale-green px-2.5 py-0.5 text-[11.5px] text-ink-green sm:inline"
+                    title={profile.email}
+                  >
+                    {profile.display_name ?? profile.email}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void signOut()}
+                    className="whitespace-nowrap text-[12.5px] text-faint transition-colors hover:text-ink"
+                  >
+                    {lang === 'zh' ? '退出' : 'Sign out'}
+                  </button>
+                </span>
+              ) : (
+                <NavLink to="/login" className={navCls}>
+                  {lang === 'zh' ? '登录' : 'Sign in'}
+                </NavLink>
+              ))}
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}

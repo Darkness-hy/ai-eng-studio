@@ -1,0 +1,78 @@
+{
+  "lesson": "22-load-testing-llm-apis",
+  "title": "LLM API 负载测试——为什么 k6 和 Locust 会\"撒谎\"",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "基于 Locust 的 LLM 负载测试中，GIL 陷阱指的是什么？",
+      "options": [
+        "Locust 只能在 Windows 上运行",
+        "Locust 不支持 HTTP",
+        "客户端分词在 Python GIL 下执行，排在请求生成后面排队，抬高了报告出来的 token 间延迟",
+        "Locust 需要 CUDA"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "提示词单一化陷阱是什么？",
+      "options": [
+        "单一提示词总会拖慢服务器",
+        "从真实分布采样会低估长提示词的占比",
+        "单一提示词必须使用流式传输",
+        "循环发送同一条提示词时，前缀缓存让测试看起来像完整的并发解码，从而虚高报告出来的吞吐量"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "本课推荐哪四种负载模式？",
+      "options": [
+        "恒定 1 RPS 持续 10 天",
+        "手动点击测试",
+        "稳态、爬坡、突发、浸泡",
+        "只做突发测试"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "本课推荐如何构建真实的提示词分布？",
+      "options": [
+        "用均值和标准差从真实分布中采样（例如 LLMPerf 的 --mean-input-tokens / --stddev-input-tokens），或回放真实流量",
+        "每个请求生成随机字符",
+        "手写 5 条提示词然后打乱顺序",
+        "始终用同一条提示词以最大化缓存命中"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "哪种 2026 年的工具组合被定位为最适合 CI/CD SLA 门禁和 Kubernetes 原生分布式运行？",
+      "options": [
+        "k6 v2026.1.0 搭配 k6 Operator 1.0 GA（TestRun / PrivateLoadZone CRD）",
+        "只用 guidellm",
+        "只用 Vegeta",
+        "Locust 2.43.3 原版"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "浸泡（soak）负载模式能捕获哪种故障类型？",
+      "options": [
+        "数小时内的内存泄漏、连接池漂移和可观测性数据溢出",
+        "冷启动长尾",
+        "分词器的 GIL 争抢",
+        "缓存淘汰风暴"
+      ],
+      "correct": 0,
+      "explanation": ""
+    }
+  ]
+}

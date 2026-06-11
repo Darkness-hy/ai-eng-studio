@@ -1,0 +1,90 @@
+{
+  "lesson": "12-video-understanding-pipeline",
+  "title": "Capstone 12 — Video Understanding Pipeline (Scene, QA, Search)",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "即使长上下文 VLM 已经可以原生读取 2 小时的视频，为什么仍然需要场景级索引？",
+      "options": [
+        "长上下文 VLM 无法流式输出",
+        "向量索引不支持视频文件",
+        "把 100 小时视频摄取成可查询语料库需要场景级检索，即便单个视频可以被整段读取",
+        "场景切分是 VLM 唯一能理解的东西"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "pre",
+      "question": "在多向量索引中，每个场景会获得哪三种向量类型？",
+      "options": [
+        "字幕嵌入、关键帧嵌入和转录文本嵌入",
+        "音频波形、梅尔频谱图和 MFCC",
+        "哈希、gzip 和 CRC",
+        "姿态、深度和光流"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "查询时，三路检索流的结果是如何合并的？",
+      "options": [
+        "只取字幕检索的命中结果",
+        "对余弦相似度取平均",
+        "通过倒数排名融合（RRF）合并三个排序列表",
+        "直接取并集，不做打分"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "时序定位步骤在排名最高的场景内部细化的是什么？",
+      "options": [
+        "Whisper 输出的词级时间戳",
+        "Qdrant 中存储的向量数量",
+        "包含答案的 (start, end) 时间戳窗口",
+        "关键帧嵌入的维度"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "哪一类问题因为是已知的幻觉高发区而被单独报告？",
+      "options": [
+        "关于景物的描述类问题",
+        "说话人识别类问题",
+        "翻译类问题",
+        "计数类和动作类问题——VLM 会在这些问题上数错数量或弄错事件顺序"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "评分标准在留出集上测量哪项定位指标？",
+      "options": [
+        "时序定位交并比（IoU）",
+        "接受率",
+        "困惑度",
+        "MRR@10"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "为什么流水线要求答案中带有引用的时间戳？",
+      "options": [
+        "它们能降低嵌入维度",
+        "Whisper 的输出要求带时间戳",
+        "Qdrant 的 payload 要求带时间戳",
+        "它们让观看者可以跳转到精确的 (video_id, start, end)，从而验证答案的真实性"
+      ],
+      "correct": 3,
+      "explanation": ""
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "为什么要把工具的 schema 和处理函数分开注册？",
+      "options": [
+        "因为 schema 必须存放在 YAML 里",
+        "这样校验器面对的始终是纯数据，处理函数则保持为不透明的代码",
+        "因为处理函数无法返回 JSON",
+        "因为 schema 必须经过编译"
+      ],
+      "correct": 1,
+      "explanation": "让 schema 保持为数据、处理函数保持为代码，校验器就可以是一个作用于 schema 树的纯函数。"
+    },
+    {
+      "stage": "check",
+      "question": "哪些关键字被有意排除在本课实现的子集之外？",
+      "options": [
+        "type、properties、required",
+        "minLength、maxLength、pattern",
+        "oneOf、anyOf、$ref、allOf",
+        "items、enum"
+      ],
+      "correct": 2,
+      "explanation": "被省略的关键字会引入环路和引用解析。我们保持子集是线性的，让校验器始终是一次简单的递归遍历。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么 register() 默认拒绝重复注册？",
+      "options": [
+        "因为注册表每个名字只能存一条记录",
+        "静默覆盖是生产环境工具目录逐渐失控的根源",
+        "因为 schema 无法被重新校验",
+        "因为处理函数无法被替换"
+      ],
+      "correct": 1,
+      "explanation": "强制要求 override=True，能把代码中两个部分都想占用同一个工具名的情况暴露出来。"
+    },
+    {
+      "stage": "check",
+      "question": "当 schema 指定类型为 integer 却收到值 True 时，校验器会怎么做？",
+      "options": [
+        "把它当作 1 并通过校验",
+        "返回类型错误，因为在这个校验器里 bool 不是 integer",
+        "抛出未处理的异常",
+        "静默强转为整数"
+      ],
+      "correct": 1,
+      "explanation": "Python 的 bool 是 int 的子类，但校验器在 integer 检查中会把 bool 过滤掉。JSON 中的布尔值和整数是两种不同的类型。"
+    },
+    {
+      "stage": "post",
+      "question": "当输入对象是 {'user': {'email': 0}}，而 schema 要求 user.email 必须是字符串时，错误路径是什么？",
+      "options": [
+        "/",
+        "/user",
+        "/user/email",
+        "user.email"
+      ],
+      "correct": 2,
+      "explanation": "JSON Pointer 把先进入 user 再进入 email 的下降过程编码为 /user/email。"
+    },
+    {
+      "stage": "post",
+      "question": "为什么注册表不是安全边界？",
+      "options": [
+        "因为校验通过之后处理函数仍然可能为非作歹",
+        "因为处理函数是异步的",
+        "因为 schema 是 JSON",
+        "因为注册表运行在进程内"
+      ],
+      "correct": 0,
+      "explanation": "注册表只检查形状。行为、超时和隔离属于调度器和沙箱的职责。"
+    }
+  ]
+}

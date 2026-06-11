@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "哪一项最准确地描述了 Mitchell et al.（2019）提出的原始模型卡（Model Card）？",
+      "options": [
+        "一份 OpenAPI 规范",
+        "ML 模型的\"营养标签\"：训练数据、预期用途、影响因素、指标、评估数据、量化的分组分析、伦理考量、注意事项",
+        "仅是一份模型检查点清单",
+        "一份具有法律效力的监管合同"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "Oreamuno et al.（2023）关于 Hugging Face 模型卡中伦理考量章节的采用情况发现了什么？",
+      "options": [
+        "大约只有 0.3% 记录了伦理考量",
+        "大约 80% 记录了伦理考量",
+        "所有模型卡都没有任何文字内容",
+        "所有模型卡都记录了伦理考量"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "Pushkarna et al.（Google 2022）数据卡的望远镜式 / 潜望镜式 / 显微镜式分层提供了什么？",
+      "options": [
+        "一种边界对象（boundary object）的定位：同一份文档通过三个细节缩放层级服务不同读者（非专业人士、ML 从业者、审计人员）",
+        "一份 RLHF 前的审计清单",
+        "一个望远镜主题的可视化库",
+        "一个隐私保护的查询接口"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "系统卡（System Card）覆盖了哪些模型卡没有覆盖的范围？",
+      "options": [
+        "端到端 AI 系统：模型 + 安全防护栈 + 部署上下文，包括安全能力、提示注入防护、数据外泄检测、对齐以及事件响应",
+        "仅覆盖数据集",
+        "仅覆盖提示词模板",
+        "仅覆盖分词器"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "Liang et al.（2024）关于模型卡详尽程度与 Hugging Face 下载量的关系报告了什么？",
+      "options": [
+        "详尽的模型卡使处理组相对对照组在 HF 上的周下载量提升 +29.0%（双重差分法）；采用压力如今已由市场驱动，而不仅是合规驱动",
+        "只有伦理考量章节影响下载量",
+        "详尽程度对下载量没有影响",
+        "详尽程度反而降低了下载量"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "Laminator（Duddu et al. 2024）为文档工作贡献了什么？",
+      "options": [
+        "一个自动化基准测试框架",
+        "通过硬件 TEE / 密码学签名实现可验证证明，让卡片能携带\"声明的证明\"，而不只是一句声明",
+        "对 Datasheets 标准的替代方案",
+        "一个基于 LLM 的摘要生成器"
+      ],
+      "correct": 1,
+      "explanation": ""
+    }
+  ]
+}

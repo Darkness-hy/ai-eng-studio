@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "为什么 DPO 可以跳过训练显式奖励模型？",
+      "options": [
+        "DPO 在第二个优化循环中隐式地训练了自己的奖励模型",
+        "RLHF 的闭式最优解让你能把奖励表示为策略的对数比值，代入 Bradley-Terry 损失即可",
+        "偏好数据本来就不需要标量奖励",
+        "Bradley-Terry 偏好恰好对奖励函数不变"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "IPO（Azar 等人，2024）主要解决 DPO 的哪种失效模式？",
+      "options": [
+        "需要成对数据",
+        "依赖参考策略",
+        "被选中回复的长度偏置",
+        "微小的偏好概率导致无界的隐式奖励差距"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "什么情况下你会选择 KTO 而不是 DPO？",
+      "options": [
+        "当你必须保证隐式奖励零漂移时",
+        "当你只有非成对的单条标签（可取 / 不可取），并希望使用带损失厌恶的效用函数时",
+        "当你只有间隔很大的成对数据时",
+        "当你想完全去掉 KL 惩罚时"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "与 DPO 相比，哪个特性是 SimPO 独有的？",
+      "options": [
+        "它去掉了参考策略，并按序列长度归一化对数似然",
+        "它把 Bradley-Terry 的 log-sigmoid 换成恒等映射",
+        "它使用赔率比损失加 NLL",
+        "它保留参考策略并加上一个间隔"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "BPO 针对的 DPO「被选中回复退化」问题是什么？",
+      "options": [
+        "被选中回复不在参考策略的支撑集中",
+        "被选中回复在推理时被采样到的概率很低",
+        "只要被拒绝回复的对数概率下降得更快，DPO 就可能把被选中回复的绝对对数概率往下压",
+        "被选中回复变得比被拒绝回复更长"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "Rafailov 等人（NeurIPS 2024）关于直接对齐算法 scaling laws 的研究表明：",
+      "options": [
+        "DAA 在黄金奖励上表现出与 Gao 等人相同的「先升后崩」过度优化形状",
+        "DAA 从设计上消除了 Goodhart 定律",
+        "成对数据超过 10 万条后过度优化就会消失",
+        "DPO 会过度优化，但 IPO 和 SimPO 不会"
+      ],
+      "correct": 0,
+      "explanation": ""
+    }
+  ]
+}

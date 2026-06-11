@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "阅读本课之前：为什么端到端演示用确定性策略替换 LLM？",
+      "options": [
+        "LLM 太慢，无法在测试中运行。",
+        "本课要测试的是 harness；策略是可替换的接缝。",
+        "在编码任务上确定性策略总是优于 LLM。",
+        "本课负担不起推理成本。"
+      ],
+      "correct": 1,
+      "explanation": "harness 契约并不关心策略是 LLM 还是状态机。去掉 LLM 就去掉了网络依赖和不确定性，让本课变成一个可复现的集成测试。"
+    },
+    {
+      "stage": "check",
+      "question": "智能体的状态机有五个状态。在正常通过的流程中，它们的执行顺序是什么？",
+      "options": [
+        "SURVEY -> FIX -> VERIFY -> RUN_TESTS -> INSPECT。",
+        "SURVEY -> RUN_TESTS -> INSPECT -> FIX -> VERIFY。",
+        "RUN_TESTS -> SURVEY -> INSPECT -> FIX -> VERIFY。",
+        "SURVEY -> INSPECT -> FIX -> RUN_TESTS -> VERIFY。"
+      ],
+      "correct": 1,
+      "explanation": "智能体先勘察项目，再运行测试，然后检查失败的测试，修复 bug，最后验证。RUN_TESTS 在 INSPECT 之前，因为测试失败正是策略读取的信号。"
+    },
+    {
+      "stage": "check",
+      "question": "内置 fixture 的 bug 是 src/fizz.py 中的差一错误：range(1, n) 而不是 range(1, n + 1)。策略在哪里决定如何修复？",
+      "options": [
+        "在 SURVEY 状态中，通过读取文件头。",
+        "在 INSPECT 状态中，在测试失败信息给出预期输出之后。",
+        "在 VERIFY 状态中，在重新运行测试之后。",
+        "在状态机之外，由门控链决定。"
+      ],
+      "correct": 1,
+      "explanation": "INSPECT 是策略读取失败测试、了解预期形态的地方。修复方案在这里被识别出来，并在下一个 FIX 状态中写入。"
+    },
+    {
+      "stage": "check",
+      "question": "每次工具调用按顺序经过哪条组件链？",
+      "options": [
+        "Sandbox -> GateChain -> SpanBuilder -> ObservationLedger。",
+        "GateChain -> SpanBuilder -> Sandbox -> ObservationLedger。",
+        "SpanBuilder -> GateChain -> Sandbox -> ObservationLedger。",
+        "ObservationLedger -> GateChain -> Sandbox -> SpanBuilder。"
+      ],
+      "correct": 1,
+      "explanation": "门控最先（允许 / 拒绝），span 其次（这样拒绝也会被记录），沙箱第三（仅在允许时执行），账本最后（仅在成功时写入）。本课代码就是这样接线的。"
+    },
+    {
+      "stage": "post",
+      "question": "你把确定性策略换成真实的 LLM。harness 中哪个组件需要改变？",
+      "options": [
+        "门控链必须重写以处理 LLM 的随机性。",
+        "沙箱必须用 seccomp 加固。",
+        "harness 中什么都不用变；策略是唯一需要替换的部分。",
+        "Prometheus 输出格式会变得不兼容。"
+      ],
+      "correct": 2,
+      "explanation": "这正是本课的要点：harness 与策略无关。接缝就是 next_action / observe 接口。LLM 从那里接入，不需要碰门控、沙箱、账本或 span。"
+    },
+    {
+      "stage": "post",
+      "question": "演示程序断言智能体在 12 步以内解决 fixture 问题。确定性策略用了 5 步。真实的 LLM 智能体可能会怎样，harness 又如何处理？",
+      "options": [
+        "LLM 也用 5 步；harness 不变。",
+        "LLM 可能用更多步；step_budget 限制循环上限，未解决的运行会作为失败上报并附带 halted_reason。",
+        "LLM 无法在这个 harness 中运行。",
+        "harness 会悄悄扩大预算。"
+      ],
+      "correct": 1,
+      "explanation": "步数预算是显式、确定性的停止条件。一个游荡的 LLM 会被封顶，报告会准确告诉你原因。"
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "lesson": "10-multi-agent-software-team",
+  "title": "Capstone 10 — Multi-Agent Software Engineering Team",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "为什么即使有 200k token 的上下文，单智能体框架在大型任务上仍会遇到天花板？",
+      "options": [
+        "单智能体无法进行工具调用",
+        "沙箱拒绝承载多于一个进程",
+        "上下文无法同时装下架构方案、四个并行的代码库切片、审查者评论和测试输出",
+        "模型不支持 git"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "pre",
+      "question": "在这种工厂形态中，架构师角色负责什么？",
+      "options": [
+        "审查合并后的 diff，检查其中的幻觉",
+        "阅读 issue 并产出一份方案，其中的子任务带有显式接口定义",
+        "在干净沙箱中运行测试套件",
+        "在编码者意见不一时强制合并分支"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "为什么每个编码者要在自己的 git worktree 加 Daytona 沙箱中工作？",
+      "options": [
+        "worktree 比分支克隆得更快",
+        "Daytona 是唯一支持 SSH 的沙箱",
+        "隔离的工作树让 N 个编码者可以并行实现子任务，而不会互相干扰共享文件",
+        "架构师需要 worktree ID"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "为了让审查者保持公正，对它施加了什么约束？",
+      "options": [
+        "它只能在测试者签字通过后运行",
+        "它不能批准自己撰写或自己提出的 diff",
+        "它必须批准读到的每一个 diff",
+        "它必须和架构师使用同一个模型"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "为什么评分细则要把 token 效率与单智能体基线做对比？",
+      "options": [
+        "多智能体总是更便宜",
+        "角色边界会增加摘要和交接上下文，所以真正的问题是这套工厂按每美元算赢不赢",
+        "单智能体没有可观测性方案",
+        "token 成本与性能无关"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "事后复盘中，每个失败的 issue 会产出什么产物？",
+      "options": [
+        "一份新的架构师方案模板",
+        "一份更新后的 A2A 协议规范",
+        "一份强制推送日志",
+        "一份交接失败直方图，标明是哪条角色边界出了问题（规划、合并、审查、测试）"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "这个毕业项目使用哪个评测集来跨角色评分 pass@1？",
+      "options": [
+        "SWE-bench Pro 的 50 个 issue 子集",
+        "HumanEval-Java",
+        "MT-Bench-v2",
+        "MigrationBench"
+      ],
+      "correct": 0,
+      "explanation": ""
+    }
+  ]
+}

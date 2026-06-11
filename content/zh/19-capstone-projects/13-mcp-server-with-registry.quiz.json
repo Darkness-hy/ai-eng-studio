@@ -1,0 +1,90 @@
+{
+  "lesson": "13-mcp-server-with-registry",
+  "title": "Capstone 13 — MCP Server with Registry and Governance",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "为什么 2026 年的 MCP 修订版在生产服务器上首选 StreamableHTTP？",
+      "options": [
+        "它免除了认证的需要",
+        "它是唯一支持工具调用的传输方式",
+        "它会自动加密载荷",
+        "它默认无状态，因此单个端点放在负载均衡器后面即可水平扩展"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "pre",
+      "question": "本毕业项目中用哪种授权模型来管控工具调用？",
+      "options": [
+        "携带按工具作用域的 OAuth 2.1 令牌，并在每次工具调用时检查",
+        "一个共享的管理员密码",
+        "按 IP 地址分配的 API key",
+        "不带作用域的双向 TLS"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": ".well-known/mcp-capabilities 文档的作用是什么？",
+      "options": [
+        "存储服务器的审计日志",
+        "列出出站 IP 段",
+        "存放 OPA 策略包",
+        "暴露工具清单、传输 URL 和认证要求，使注册中心能够校验并索引该服务器"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "在这个设计中，为什么破坏性工具要放在独立的 MCP 服务器上？",
+      "options": [
+        "它们无法通过 StreamableHTTP 暴露",
+        "它们运行在更慢的硬件上",
+        "它们被审批令牌管控，该令牌须在短时间窗口内通过 Slack 卡片完成作用域提升",
+        "它们需要使用另一种编程语言"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "OPA / Rego 在每次工具调用时决定什么？",
+      "options": [
+        "调用哪个模型",
+        "审计日志写到哪里",
+        "服务器应如何对响应重新排序",
+        "调用方的作用域是否允许本次调用，以及适用的 PII 脱敏和载荷上限"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "负载测试中，哪项证据能证明 StreamableHTTP 的水平扩展能力？",
+      "options": [
+        "把并发降到只有一个客户端",
+        "切换到 stdio 传输",
+        "把所有东西跑在单个进程里",
+        "增加第二个副本，并展示负载均衡器在无会话粘性的情况下重新分配流量"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "为什么审计日志在按租户持久化之前要先用 Presidio 清洗 PII？",
+      "options": [
+        "为了让日志更短",
+        "为了满足企业安全要求，同时保持每次调用的链路可查询",
+        "Presidio 能降低 ClickHouse 的写放大",
+        "PII 能提升搜索性能"
+      ],
+      "correct": 1,
+      "explanation": ""
+    }
+  ]
+}

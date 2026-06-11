@@ -1,0 +1,88 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "为什么要把 harness 循环建模为显式状态机，而不是带标志位的 while 循环？",
+      "options": [
+        "它让 harness 能在一处统一拒绝非法转移，并能基于事件日志回放会话",
+        "它在 CPython 上运行更快",
+        "它可以免去写测试",
+        "它是模型唯一能调用的形态"
+      ],
+      "correct": 0,
+      "explanation": "状态机把合法性规则集中在一个转移函数里。相同的输入序列会复现相同的状态，这正是会话回放得以实现的基础。"
+    },
+    {
+      "stage": "pre",
+      "question": "循环中的拉取点（pull point）代表什么？",
+      "options": [
+        "循环让出控制权、等待调用方提供输入的时点",
+        "一次返回工具名称的模型调用",
+        "一个每 N 秒触发一次的定时器",
+        "一个会修改载荷的钩子订阅者"
+      ],
+      "correct": 0,
+      "explanation": "拉取点是返回（return），不是异常。调用方取来 harness 索要的东西，然后调用 resume()。"
+    },
+    {
+      "stage": "check",
+      "question": "哪个状态是工具调用唯一合法的拉取点？",
+      "options": [
+        "EXECUTING",
+        "AWAITING_TOOL",
+        "REFLECTING",
+        "PLANNING"
+      ],
+      "correct": 1,
+      "explanation": "只有 AWAITING_TOOL 会产生工具拉取点。当某个步骤需要工具时，EXECUTING 会转移到该状态。"
+    },
+    {
+      "stage": "check",
+      "question": "当某个钩子在 before_tool_call 中抛出 HookAbort 时会发生什么？",
+      "options": [
+        "会话立即转移到 DONE",
+        "跳过该工具调用，触发 on_error，循环转入 REFLECTING",
+        "该钩子被注销",
+        "预算被重置"
+      ],
+      "correct": 1,
+      "explanation": "HookAbort 会取消正在进行的工具分发，携带中止原因触发 on_error，然后继续执行。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么钩子和事件要作为两个独立的关注点分开？",
+      "options": [
+        "因为事件类型是字节而钩子是字符串",
+        "钩子是命令式的，可以修改或中止；事件是观测式的，只追加不修改。",
+        "因为审计脚本禁止订阅者",
+        "因为事件日志无法存储字典"
+      ],
+      "correct": 1,
+      "explanation": "钩子改变行为，事件描述行为。把两者混在一起会让策略和遥测耦合，而这正是我们要避免的 bug。"
+    },
+    {
+      "stage": "post",
+      "question": "墙钟预算超限后，下一个状态是什么？",
+      "options": [
+        "DONE — 会话被终止",
+        "EXECUTING — 循环重试",
+        "IDLE — 返回一个携带 budget_exceeded 原因的拉取点",
+        "PLANNING — 起草一份新计划"
+      ],
+      "correct": 2,
+      "explanation": "预算耗尽是一次让出。Harness 转移到 IDLE，触发 on_budget_exceeded，并返回一个 PullRequest，由调用方决定是延长预算还是关闭会话。"
+    },
+    {
+      "stage": "post",
+      "question": "为什么本课用桩（stub）替代规划器而不直接调用模型？",
+      "options": [
+        "因为在本地调用模型很慢",
+        "为了在绑定任何模型之前，让循环契约保持可测试且确定",
+        "因为模型无法返回工具调用",
+        "为了节省 token"
+      ],
+      "correct": 1,
+      "explanation": "先钉死循环契约，后续课程才能换上真实的规划器、注册表和调度器，而无需重新协商状态机。"
+    }
+  ]
+}
