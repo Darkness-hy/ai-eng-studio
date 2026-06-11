@@ -1,0 +1,102 @@
+{
+  "lesson": "26-relation-extraction-kg",
+  "title": "Relation Extraction & Knowledge Graph Construction",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "知识图谱的原子单元是什么？",
+      "options": [
+        "一个词性标签",
+        "一个 (subject, relation, object) 三元组",
+        "一个 token",
+        "一个句子"
+      ],
+      "correct": 1,
+      "explanation": "知识图谱以 (s, r, o) 三元组的形式存储信息；三元组聚合起来就构成了图谱。"
+    },
+    {
+      "stage": "pre",
+      "question": "在 2026 年的关系抽取中，AEVS 代表什么？",
+      "options": [
+        "Anchor-Extraction-Verification-Supplement（锚定-抽取-验证-补充）：锚定片段、抽取三元组、对照来源验证、补充覆盖",
+        "自编码器向量搜索（Auto-Encoder Vector Search）",
+        "异步实体验证服务（Async Entity Validation Service）",
+        "聚合实体-值模式（Aggregated Entity-Value Schema）"
+      ],
+      "correct": 0,
+      "explanation": "AEVS 是 2026 年用于有据可依的关系抽取的幻觉缓解框架。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么每个三元组都必须携带来源溯源信息（文档 id + 字符位置）？",
+      "options": [
+        "溯源让你能够审计三元组，并拒绝那些位置与源文本不匹配的幻觉内容",
+        "它能加快抽取速度",
+        "溯源会改变本体",
+        "SPARQL 强制要求溯源"
+      ],
+      "correct": 0,
+      "explanation": "溯源使审计成为可能，是 AEVS 式幻觉检测的核心。"
+    },
+    {
+      "stage": "check",
+      "question": "关系规范化的作用是什么？",
+      "options": [
+        "把表面动词短语（如 'was born in'、'is a native of'）映射到固定的属性 id，使图谱可查询",
+        "删除三元组",
+        "添加嵌入",
+        "翻译文档"
+      ],
+      "correct": 0,
+      "explanation": "规范化把同义改述折叠成规范的知识图谱属性 id。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么关系抽取通常需要先做指代消解？",
+      "options": [
+        "像 'he founded Apple' 中的代词必须先解析为命名实体，才能进行三元组抽取",
+        "指代消解会添加嵌入",
+        "指代消解提供位置信息",
+        "指代消解会归一化大小写"
+      ],
+      "correct": 0,
+      "explanation": "没有指代消解，关系抽取会把关系挂在代词上，而不是其背后的命名实体。"
+    },
+    {
+      "stage": "post",
+      "question": "哪种选择以牺牲开放信息抽取的召回率换取图谱的可查询性？",
+      "options": [
+        "跳过 NER",
+        "对三元组随机采样",
+        "纯嵌入式图谱",
+        "在合并进知识图谱之前，把开放信息抽取的关系映射到封闭本体（如 Wikidata 属性）上"
+      ],
+      "correct": 3,
+      "explanation": "封闭本体使图谱可查询；规范化这一步的成本会在下游收回。"
+    },
+    {
+      "stage": "post",
+      "question": "为什么许多生产级知识图谱使用时间限定符（开始/结束时间）？",
+      "options": [
+        "让 SPARQL 更快",
+        "RDF 强制要求",
+        "许多关系有时间边界（雇主、配偶、职位）；限定符防止出现会随时间失效的'永久为真'断言",
+        "用于移除 NIL 实体"
+      ],
+      "correct": 2,
+      "explanation": "有时间边界的关系需要限定符（如 Wikidata 的 P580/P582），否则事实会悄悄过期。"
+    },
+    {
+      "stage": "post",
+      "question": "REBEL 是什么？",
+      "options": [
+        "一个向量数据库",
+        "一个 seq2seq 关系抽取器，输出的三元组直接使用 Wikidata 属性 id",
+        "一个分词器",
+        "一个指代消解模型"
+      ],
+      "correct": 1,
+      "explanation": "REBEL（Babelscape）是一个在远程监督的 Wikidata 三元组上训练的 seq2seq 关系抽取模型。"
+    }
+  ]
+}

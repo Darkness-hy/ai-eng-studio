@@ -58,16 +58,17 @@ export function LessonPage() {
   const toc = useMemo(() => extractToc(body), [body]);
   const activeId = useScrollSpy(toc.map((item) => item.id), body);
 
+  // Hooks must run unconditionally — compute quiz arrays before any early return.
+  // Upstream uses three stages: pre (warm-up), post and check (both verify
+  // after reading) — render post+check together so no questions are dropped.
+  const quiz = lesson ? ((lang === 'zh' && lesson.quizZh) || lesson.quizEn) : null;
+  const preQuiz = useMemo(() => quiz?.filter((q) => q.stage === 'pre') ?? [], [quiz]);
+  const postQuiz = useMemo(() => quiz?.filter((q) => q.stage !== 'pre') ?? [], [quiz]);
+
   if (failed) return <div className="py-32 text-center text-faint">{t('load_failed')}</div>;
   if (!lesson || !index || !phase) {
     return <div className="py-32 text-center text-faint">{t('loading')}</div>;
   }
-
-  const quiz = lang === 'zh' && lesson.quizZh ? lesson.quizZh : lesson.quizEn;
-  // Upstream uses three stages: pre (warm-up), post and check (both verify
-  // after reading) — render post+check together so no questions are dropped.
-  const preQuiz = quiz?.filter((q) => q.stage === 'pre') ?? [];
-  const postQuiz = quiz?.filter((q) => q.stage !== 'pre') ?? [];
   const isDone = Boolean(progress.lessons[lesson.id]?.done);
   const title = lessonTitle(lesson, lang);
 
@@ -145,7 +146,9 @@ export function LessonPage() {
           </p>
         )}
 
-        {preQuiz.length > 0 && <Quiz lessonId={lesson.id} stage="pre" questions={preQuiz} />}
+        {preQuiz.length > 0 && (
+          <Quiz key={`${lesson.id}:pre`} lessonId={lesson.id} stage="pre" questions={preQuiz} />
+        )}
 
         {INTERACTIVE[lesson.id] && (
           <Suspense
@@ -162,7 +165,9 @@ export function LessonPage() {
 
         {lesson.code.length > 0 && <CodeTabs files={lesson.code} />}
 
-        {postQuiz.length > 0 && <Quiz lessonId={lesson.id} stage="post" questions={postQuiz} />}
+        {postQuiz.length > 0 && (
+          <Quiz key={`${lesson.id}:post`} lessonId={lesson.id} stage="post" questions={postQuiz} />
+        )}
 
         {/* prev / next */}
         <nav className="mt-14 grid grid-cols-2 gap-3 border-t border-hairline pt-6">

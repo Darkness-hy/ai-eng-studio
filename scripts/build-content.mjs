@@ -25,6 +25,19 @@ const OUT_DIR = path.join(APP_ROOT, 'public', 'data');
 const CODE_EXTS = new Set(['.py', '.ts', '.tsx', '.js', '.rs', '.jl', '.json', '.sh', '.yml', '.yaml', '.md', '.toml']);
 const MAX_CODE_BYTES = 60_000;
 
+// Capstones excluded because they may not run on the target machine —
+// NVIDIA DGX Spark (aarch64 Linux, single Blackwell GB10 GPU). Audited
+// 2026-06-12 against each lesson's Stack/code (see plan/task_plan.md):
+// faster-whisper/CTranslate2 has no aarch64 CUDA wheels, Flash-Attention 3
+// is Hopper-only, TensorFlow GPU on ARM is container-only, and FP8/Marlin
+// kernels for sm_121 are not reliably packaged yet.
+const EXCLUDED_LESSONS = new Set([
+  '19-capstone-projects/03-realtime-voice-assistant',
+  '19-capstone-projects/07-end-to-end-fine-tuning-pipeline',
+  '19-capstone-projects/12-video-understanding-pipeline',
+  '19-capstone-projects/14-speculative-decoding-server',
+]);
+
 // Phase metadata: zh titles/descriptions plus the dependency DAG from README.md.
 const PHASE_META = {
   '00-setup-and-tooling':        { num: 0,  zh: '环境与工具链',        en: 'Setup & Tooling',              zhDesc: '开发环境、Python 生态、Docker 与实验工具链', deps: [] },
@@ -178,6 +191,7 @@ function build() {
       .sort((a, b) => a.localeCompare(b, 'en', { numeric: true }));
 
     for (const lessonSlug of lessonSlugs) {
+      if (EXCLUDED_LESSONS.has(`${phaseSlug}/${lessonSlug}`)) continue;
       const lessonDir = path.join(phaseDir, lessonSlug);
       const enMd = readIfExists(path.join(lessonDir, 'docs', 'en.md'));
       if (enMd == null) continue;

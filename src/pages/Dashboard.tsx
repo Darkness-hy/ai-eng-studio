@@ -27,7 +27,13 @@ export function Dashboard() {
     return phase && lesson ? { phase, lesson } : null;
   })();
 
-  const doneTotal = Object.values(progress.lessons).filter((l) => l.done).length;
+  // Count only lessons that still exist in the catalog — stale ids in
+  // localStorage (e.g. removed capstones) must not inflate the total.
+  const doneTotal = index.phases.reduce(
+    (acc, p) => acc + p.lessons.filter((l) => progress.lessons[`${p.slug}/${l.slug}`]?.done).length,
+    0,
+  );
+  const donePct = index.stats.lessons ? (doneTotal / index.stats.lessons) * 100 : 0;
 
   return (
     <div className="mx-auto max-w-6xl px-5">
@@ -102,14 +108,21 @@ export function Dashboard() {
             </div>
           </Link>
           <div
-            className="rise flex items-baseline justify-between rounded-lg border border-hairline bg-bone/60 px-5 py-4"
+            className="rise rounded-lg border border-hairline bg-bone/60 px-5 py-4"
             style={{ ['--stagger' as string]: 5 }}
           >
-            <span className="text-[13px] text-faint">{t('progress_overall')}</span>
-            <span className="font-serif text-[26px] font-semibold">
-              {doneTotal}
-              <span className="ml-1 text-[14px] font-normal text-faint">/ {index.stats.lessons}</span>
-            </span>
+            <div className="flex items-baseline justify-between">
+              <span className="text-[13px] text-faint">{t('progress_overall')}</span>
+              <span className="font-mono text-[12px] text-faint">
+                {doneTotal} / {index.stats.lessons} · {donePct < 1 && doneTotal > 0 ? '<1' : Math.round(donePct)}%
+              </span>
+            </div>
+            <div className="mt-3 h-[6px] overflow-hidden rounded-full bg-hairline/60">
+              <div
+                className="h-full rounded-full bg-ink-green transition-[width] duration-500"
+                style={{ width: `${Math.max(donePct, doneTotal > 0 ? 1 : 0)}%` }}
+              />
+            </div>
           </div>
         </div>
       </section>

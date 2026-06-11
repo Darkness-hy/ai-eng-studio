@@ -17,7 +17,11 @@ export function ProgressPage() {
 
   if (!index) return <div className="py-32 text-center text-faint">{t('loading')}</div>;
 
-  const doneTotal = Object.values(progress.lessons).filter((l) => l.done).length;
+  // Index-based count: ignore stale lesson ids left in localStorage.
+  const doneTotal = index.phases.reduce(
+    (acc, p) => acc + p.lessons.filter((l) => progress.lessons[`${p.slug}/${l.slug}`]?.done).length,
+    0,
+  );
   const pct = Math.round((doneTotal / index.stats.lessons) * 100);
 
   const quizEntries = Object.values(progress.lessons).filter((l) => l.postTotal);

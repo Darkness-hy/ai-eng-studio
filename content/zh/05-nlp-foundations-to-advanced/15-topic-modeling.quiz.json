@@ -1,0 +1,102 @@
+{
+  "lesson": "15-topic-modeling",
+  "title": "主题建模 —— LDA 与 BERTopic",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "LDA 对每篇文档作了什么假设？",
+      "options": [
+        "每篇文档恰好属于一个主题",
+        "文档就是句子",
+        "每篇文档是主题的混合；每个主题是词上的分布",
+        "文档与主题相互独立"
+      ],
+      "correct": 2,
+      "explanation": "LDA 的生成式故事是混合隶属的：每篇文档有一个主题分布，每个主题有一个词分布。"
+    },
+    {
+      "stage": "pre",
+      "question": "BERTopic 用什么方式形成主题簇？",
+      "options": [
+        "直接在词表上做 softmax",
+        "用句子级 Transformer 编码文档，用 UMAP 降维，再用 HDBSCAN 聚类",
+        "先跑 BM25 再做 k-means",
+        "端到端训练一个 LSTM"
+      ],
+      "correct": 1,
+      "explanation": "BERTopic = 嵌入 + UMAP + HDBSCAN，再用基于类别的 TF-IDF 提取主题词。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么 scikit-learn 的 LDA 需要原始计数（CountVectorizer）而不是 TF-IDF？",
+      "options": [
+        "TF-IDF 太慢",
+        "LDA 的概率模型是建立在整数词频计数之上的；TF-IDF 会扭曲底层分布",
+        "LDA 无法处理浮点数",
+        "内存限制"
+      ],
+      "correct": 1,
+      "explanation": "LDA 的似然函数假设输入是计数；喂入 TF-IDF 值违反了模型假设。"
+    },
+    {
+      "stage": "check",
+      "question": "在 BERTopic 的输出中，HDBSCAN 的 -1 标签是什么含义？",
+      "options": [
+        "一个保留类别",
+        "一个离群点簇，包含基于密度的算法无法可靠分配的文档",
+        "停用词簇",
+        "排名最高的主题"
+      ],
+      "correct": 1,
+      "explanation": "HDBSCAN 用 -1 标记未被聚类的点；在 BERTopic 中，这些是没有归入任何主题的文档。"
+    },
+    {
+      "stage": "check",
+      "question": "哪种连贯性指标是主题模型评估中常用的默认选择？",
+      "options": [
+        "BLEU",
+        "准确率",
+        "只用困惑度",
+        "基于滑动窗口内高频主题词 NPMI 的 c_v 连贯性"
+      ],
+      "correct": 3,
+      "explanation": "c_v 连贯性（Roder 等人，2015）是公认的自动化主题连贯性指标。"
+    },
+    {
+      "stage": "post",
+      "question": "什么情况下 LDA 通常比 BERTopic 更合适？",
+      "options": [
+        "处理短推文时",
+        "处理长文档时——此时混合隶属的主题分布很有用，而嵌入模型会截断输入",
+        "嵌入有噪声时",
+        "需要每篇文档只有一个主题时"
+      ],
+      "correct": 1,
+      "explanation": "长文档受益于 LDA 的混合隶属模型；而 BERT 编码器会截断输入。"
+    },
+    {
+      "stage": "post",
+      "question": "为什么 BERTopic 在短文本（推文、标题）上通常表现更好？",
+      "options": [
+        "短文本的主题更少",
+        "它更快",
+        "嵌入空间中的语义相似度能在词袋计数过于稀疏时捕捉到语义",
+        "它支持更多语言"
+      ],
+      "correct": 2,
+      "explanation": "在词面重叠统计失效的短文本上，BERT 嵌入提供了语义相似度。"
+    },
+    {
+      "stage": "post",
+      "question": "LDA 有哪种常见失败模式，需要在主题中重点监控？",
+      "options": [
+        "文档的主题混合求和为 1",
+        "主题与标注类别完美对应",
+        "吸收停用词或超高频词的垃圾主题",
+        "包含文档过少的主题"
+      ],
+      "correct": 2,
+      "explanation": "LDA 可能产生吸收停用词的垃圾主题；更严格的 min_df/max_df 过滤和停用词处理可以缓解。"
+    }
+  ]
+}

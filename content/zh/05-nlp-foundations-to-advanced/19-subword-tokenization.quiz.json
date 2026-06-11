@@ -1,0 +1,100 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "相比词级词表，子词分词带来了什么好处？",
+      "options": [
+        "罕见词可以分解为已知的子词片段，在词表大小有界的前提下消除 OOV 问题",
+        "模型更小",
+        "训练更快",
+        "嵌入效果更好"
+      ],
+      "correct": 0,
+      "explanation": "子词 token 通过分解覆盖任意输入，消除了词级词表的 OOV 问题。"
+    },
+    {
+      "stage": "pre",
+      "question": "GPT-2 为什么使用字节级 BPE 而不是字符级 BPE？",
+      "options": [
+        "Transformer 架构的硬性要求",
+        "字节级 BPE 可以跳过合并步骤",
+        "256 个字节的基础词表能覆盖任何 UTF-8 输入，保证不出现 [UNK] token",
+        "字节占用空间更小"
+      ],
+      "correct": 2,
+      "explanation": "字节级 BPE 从 256 个字节出发，因此任何输入都能编码，不存在 OOV。"
+    },
+    {
+      "stage": "check",
+      "question": "Unigram 分词器是如何构建词表的？",
+      "options": [
+        "贪心的 IDF 加权",
+        "从一个大候选集出发，迭代剪掉删除后对语料对数似然损害最小的 token",
+        "贪心合并高频字符对",
+        "随机采样"
+      ],
+      "correct": 1,
+      "explanation": "Unigram 拟合一个一元语言模型，并迭代删除最不重要的 token，直到达到目标词表大小。"
+    },
+    {
+      "stage": "check",
+      "question": "WordPiece 的合并准则与 BPE 有什么区别？",
+      "options": [
+        "WordPiece 使用字节",
+        "WordPiece 是无监督的",
+        "WordPiece 合并能最大化训练语料似然的字符对，而 BPE 合并出现频率最高的字符对",
+        "WordPiece 跳过合并步骤"
+      ],
+      "correct": 2,
+      "explanation": "WordPiece 按似然选择合并；BPE 按原始频率选择。"
+    },
+    {
+      "stage": "check",
+      "question": "哪个工具可以直接在原始的多语言 Unicode 文本上训练分词器？",
+      "options": [
+        "spaCy",
+        "tiktoken",
+        "tokenizers-lite",
+        "SentencePiece（将空白字符编码为特殊标记，可训练 BPE 或 Unigram）"
+      ],
+      "correct": 3,
+      "explanation": "SentencePiece 无需预分词即可在原始文本上训练 BPE/Unigram；tiktoken 只做编码。"
+    },
+    {
+      "stage": "post",
+      "question": "生产环境的 CI 为什么必须对部署的 tokenizer.json 做哈希校验？",
+      "options": [
+        "分词器漂移会产生与模型训练时不同的 token ID，悄无声息地破坏模型输出",
+        "Hugging Face 的硬性要求",
+        "为了压缩存储",
+        "可以减小词表大小"
+      ],
+      "correct": 0,
+      "explanation": "分词器哪怕只有微小改动也会让 ID 偏移；哈希校验能在漂移影响用户之前发现它。"
+    },
+    {
+      "stage": "post",
+      "question": "单个 emoji 占用多个 token 的常见原因是什么？",
+      "options": [
+        "emoji 是保留字符",
+        "多码点 emoji 会编码成多个 UTF-8 字节；没有专属 token 时，每个字节都是一个独立的子词",
+        "emoji 以浮点数存储",
+        "emoji 是停止字符"
+      ],
+      "correct": 1,
+      "explanation": "组合型 emoji 会编码为多个字节；字节级分词器可能为一个字形用掉多个 token。"
+    },
+    {
+      "stage": "post",
+      "question": "为新的单语言 Transformer 选择词表大小时，可以参考什么经验法则？",
+      "options": [
+        "固定用 8000",
+        "固定用 100 万",
+        "参数量小于 1B 的模型大约用 32k；1-10B 用 50-100k；多语言或前沿模型用 200k 以上",
+        "与训练语料大小保持一致"
+      ],
+      "correct": 2,
+      "explanation": "词表大小随模型规模和语言覆盖范围变化；这些是社区的粗略默认值。"
+    }
+  ]
+}

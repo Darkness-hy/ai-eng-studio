@@ -1,0 +1,39 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "为什么到 2026 年，3D Gaussian Splatting 在很大程度上取代了 NeRF，成为照片级真实感场景重建的生产默认方案？",
+      "options": ["Gaussian Splatting 在所有情况下的图像质量都高于 NeRF", "3DGS 是显式表示（不需要逐像素的 MLP）：渲染是 100+ fps 的 GPU 光栅化，训练从数小时缩短到几分钟，场景可编辑，并且 Khronos 和 OpenUSD 在 2026 年都将其标准化", "NeRF 已被从研究记录中撤稿", "PyTorch 停止支持 NeRF 算子"],
+      "correct": 1,
+      "explanation": "3DGS 用数百万个显式的 3D 高斯取代了隐式 MLP。渲染变成排序后的 alpha 合成，消费级 GPU 就能跑到 100+ fps。训练只需几分钟。每个高斯都可以编辑。到 2026 年，Khronos 批准了 3DGS 的 glTF 扩展，OpenUSD 26.03 内置了原生 schema，使 3DGS 成为可移植的生产格式。"
+    },
+    {
+      "stage": "pre",
+      "question": "场景中的一个 3D 高斯携带位置、旋转、缩放和不透明度，还用什么额外的表示来处理视角相关的颜色（如镜面高光）？",
+      "options": ["第二张 RGB 纹理", "每个高斯一个小 MLP", "球谐系数：阶数最高为 3 时每个颜色通道有 16 个系数，渲染时针对观察方向求值", "一个光照探针立方体贴图"],
+      "correct": 2,
+      "explanation": "球谐函数是球面上的 Fourier 基。每个高斯存储学到的球谐系数，编码其颜色如何随观察方向变化。渲染时，针对从像素指向高斯中心的单位向量对系数求值，从而得到镜面高光、轻微反射和视角相关的着色，无需纹理或 MLP。"
+    },
+    {
+      "stage": "post",
+      "question": "3DGS 训练期间，致密化包含“克隆”和“分裂”两种操作。它们各自由什么触发？",
+      "options": ["不会触发——高斯在初始化后是固定的", "梯度幅值高且缩放小时触发克隆（局部需要更多细节）；梯度高且缩放大时触发分裂（一个高斯太平滑，拟合不了该区域）。不透明度低于阈值时触发剪枝", "距离上次 checkpoint 的时间", "每个 epoch 中的随机采样"],
+      "correct": 1,
+      "explanation": "自适应致密化让 3DGS 从约 10 万个由 SfM 初始化的高斯增长到收敛时的 100 万到 500 万个。克隆复制分辨率不足的小高斯；分裂把过大的高斯拆成两个更小的；剪枝删掉 sigmoid 不透明度衰减到阈值以下的高斯。这三种操作加上对参数的梯度下降，就是全部的训练动态。"
+    },
+    {
+      "stage": "post",
+      "question": "NeRF 和 3DGS 中单个像素的颜色方程都是 `C = sum_i alpha_i * T_i * c_i`，其中 `T_i = prod_{j<i}(1 - alpha_j)`。这个共享方程说明了两种方法的什么关系？",
+      "options": ["它们在所有方面都数学等价", "两者积分的是同一个体渲染方程；区别只在表示（隐式 MLP 采样 vs 显式稀疏高斯）和渲染过程（光线步进 vs 光栅化）——这正是它们图像质量相当的原因", "NeRF 严格更好", "3DGS 严格更好"],
+      "correct": 1,
+      "explanation": "这个共享方程就是经典的体渲染方程。NeRF 通过沿光线采样并查询 MLP 来求值；3DGS 通过把高斯投影到 2D 并对每个像素的排序图元做 alpha 合成来求值。物理相同，损失相同，不同的只是数据结构和渲染算法。这种一致性使它们最终收敛到相近的 PSNR / LPIPS；实际差距在于速度和可编辑性。"
+    },
+    {
+      "stage": "post",
+      "question": "2026 年，你想把一个 3DGS 场景同时交付到 Unreal Engine、Vision Pro、Blender 和一个 Three.js 网页查看器。哪种导出格式最稳妥？",
+      "options": ["只用原始 `.ply`", "带 `KHR_gaussian_splatting` 扩展的 glTF（Khronos 2026 年 2 月 RC），以及/或者带 `UsdVolParticleField3DGaussianSplat` 的 OpenUSD 26.03；这是 2026 年仅有的两种已批准/标准化的格式", "为每个查看器写一个自定义二进制 blob", "把 3D 高斯存成 PNG 条带"],
+      "correct": 1,
+      "explanation": "2024 年之前，每个查看器都有自己的格式。Khronos 在 2026 年 2 月批准了 glTF 的 KHR_gaussian_splatting 扩展，OpenUSD 26.03 在 2026 年 4 月加入了原生 3DGS schema。导出为其中任意一种都能在各种引擎、查看器和流水线之间移植。`.ply` 仍是科研界事实上的交换格式，但结构化程度较低。对于跨工具的生产交付，glTF + USD 是 2026 年的答案。"
+    }
+  ]
+}

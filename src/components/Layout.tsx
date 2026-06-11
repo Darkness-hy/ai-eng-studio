@@ -91,8 +91,47 @@ export function Layout() {
             {' · MIT License'}
           </span>
           <span className="font-mono text-[11px] tracking-[0.12em]">
-            503 LESSONS · 20 PHASES · BUILT BY HAND
+            FROM SCRATCH · 20 PHASES · BUILT BY HAND
           </span>
+        </div>
+        <div className="border-t border-hairline bg-bone/40">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-5 py-5">
+            <div className="flex items-center gap-3">
+              <img
+                src={`${import.meta.env.BASE_URL}brand/lavira-logo.png`}
+                alt="LaViRA logo"
+                className="h-6 w-6 rounded-md"
+              />
+              <span className="text-[12.5px] text-faint">
+                <span className="font-medium text-ink">
+                  {lang === 'zh' ? '独家冠名 · ' : 'Presented by '}LaViRA
+                </span>
+                {' — Language-Vision-Actions Translation · '}
+                <a
+                  href="https://arxiv.org/abs/2510.19655"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline decoration-hairline underline-offset-2 hover:text-ink"
+                >
+                  arXiv:2510.19655
+                </a>
+                {' · '}
+                <a
+                  href="https://arxiv.org/abs/2605.27582"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline decoration-hairline underline-offset-2 hover:text-ink"
+                >
+                  arXiv:2605.27582
+                </a>
+              </span>
+            </div>
+            <img
+              src={`${import.meta.env.BASE_URL}brand/lavira-tag.png`}
+              alt="LaViRA — Like A Very Intelligent Real Assistant"
+              className="h-7 rounded-md"
+            />
+          </div>
         </div>
       </footer>
 

@@ -14,11 +14,12 @@ interface QuizProps {
 export function Quiz({ lessonId, stage, questions }: QuizProps) {
   const { t } = useLang();
   const [picked, setPicked] = useState<(number | null)[]>(() => questions.map(() => null));
-  const [prevQuestions, setPrevQuestions] = useState(questions);
 
-  // Adjust state during render when the question set changes (lang switch / navigation).
-  if (prevQuestions !== questions) {
-    setPrevQuestions(questions);
+  // Reset only when the question COUNT changes (e.g. zh/en fallback differs).
+  // Same-length swaps (re-renders, language toggle) keep the user's answers —
+  // an identity check here wiped all answers whenever the parent re-rendered.
+  // Navigation between lessons remounts via the parent's `key` prop.
+  if (picked.length !== questions.length) {
     setPicked(questions.map(() => null));
   }
 

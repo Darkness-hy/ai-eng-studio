@@ -1,0 +1,102 @@
+{
+  "lesson": "01-text-processing",
+  "title": "文本处理 —— 分词、词干提取与词形还原",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "为什么语言模型在训练前需要预处理？",
+      "options": [
+        "预处理能提高 GPU 利用率",
+        "模型消费的是离散的整数 token，而不是原始文本",
+        "模型可以直接读取字符串",
+        "只有没有空格分隔的语言才需要预处理"
+      ],
+      "correct": 1,
+      "explanation": "模型在整数 token ID 上运算；预处理是连续语言与离散输入之间的桥梁。"
+    },
+    {
+      "stage": "pre",
+      "question": "哪个预处理操作是基于规则的后缀剥离？",
+      "options": [
+        "词干提取",
+        "词性标注",
+        "词形还原",
+        "分词"
+      ],
+      "correct": 0,
+      "explanation": "词干提取用规则砍掉后缀；它速度快，但可能出错。"
+    },
+    {
+      "stage": "check",
+      "question": "Porter 词干提取器的 step 1a 对单词 'ponies' 返回什么？",
+      "options": [
+        "ponies",
+        "ponie",
+        "pony",
+        "poni"
+      ],
+      "correct": 3,
+      "explanation": "'ies' 规则把后缀替换为 'i'，得到 'poni'；完整 Porter 算法的 step 1b 会修正它。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么词形还原通常需要词性标签？",
+      "options": [
+        "处理 Unicode",
+        "提高速度",
+        "语法上下文可以消除歧义，比如 'better'（形容词）和 'better'（动词）",
+        "降低内存占用"
+      ],
+      "correct": 2,
+      "explanation": "词元取决于语法角色；没有词性标签，查找就存在歧义。"
+    },
+    {
+      "stage": "check",
+      "question": "把 NLTK 的 Penn Treebank 词性标签转换为 WordNet 标签时，以 'V' 开头的标签映射到什么？",
+      "options": [
+        "'n'（名词）",
+        "'v'（动词）",
+        "'r'（副词）",
+        "'a'（形容词）"
+      ],
+      "correct": 1,
+      "explanation": "以动词前缀开头的 Penn Treebank 标签映射到 WordNet 的 'v'。"
+    },
+    {
+      "stage": "post",
+      "question": "NLP 预处理中的「训练/推理不一致」指的是什么？",
+      "options": [
+        "训练和测试使用不同的 batch size",
+        "训练和上线服务应用了不同的预处理，导致模型在推理时面对陌生的数据分布",
+        "一种 GPU 显存问题",
+        "在一个 notebook 中混用多个分词器库"
+      ],
+      "correct": 1,
+      "explanation": "训练与推理使用不同的预处理，是生产环境 NLP 最常见的故障。"
+    },
+    {
+      "stage": "post",
+      "question": "在 Transformer 流水线中，你会用什么工具取代经典预处理？",
+      "options": [
+        "NLTK 的 word_tokenize",
+        "模型自带的分词器（例如通过 tokenizers / transformers）",
+        "正则表达式分词器",
+        "spaCy 的 en_core_web_sm"
+      ],
+      "correct": 1,
+      "explanation": "Transformer 模型自带配套的分词器；经典预处理会被绕过。"
+    },
+    {
+      "stage": "post",
+      "question": "为什么要在依赖文件中锁定 NLTK 和 spaCy 的版本？",
+      "options": [
+        "为了许可证兼容性",
+        "分词器和词形还原器的行为会在小版本之间变化，悄悄改变训练分布",
+        "旧版本支持更多语言",
+        "新版本更慢"
+      ],
+      "correct": 1,
+      "explanation": "库升级可能改变分词输出，使其偏离训练时的分布。"
+    }
+  ]
+}

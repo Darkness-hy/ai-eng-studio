@@ -1,0 +1,102 @@
+{
+  "lesson": "27-llm-evaluation-frameworks",
+  "title": "LLM 评估 — RAGAS、DeepEval、G-Eval",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "为什么精确匹配（Exact Match）和 token 级 F1 不足以评估现代 LLM 的输出？",
+      "options": [
+        "它们太慢",
+        "它们不可微",
+        "它们需要 GPU",
+        "它们无法识别语义等价：'June 29th, 2007' 和 'June 29, 2007' 明明都正确，EM 却得 0 分"
+      ],
+      "correct": 3,
+      "explanation": "精确匹配/F1 无法识别人类会判为正确的同义改写或格式差异。"
+    },
+    {
+      "stage": "pre",
+      "question": "RAGAS 的忠实度（faithfulness）指标衡量的是什么？",
+      "options": [
+        "检索召回率",
+        "通过 NLI 判断答案中的每条声明是否被检索到的上下文所蕴含",
+        "延迟",
+        "每秒 token 数"
+      ],
+      "correct": 1,
+      "explanation": "忠实度使用 NLI 蕴含判断，将答案中的每条声明逐一对照检索上下文进行校验。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么在信任评审分数之前，必须先用人工标注对评审模型做校准？",
+      "options": [
+        "GDPR 的要求",
+        "如果评审分与人工标注的 Spearman 相关性过低（例如低于 0.7），分数就是噪声而非信号",
+        "校准能让评审跑得更快",
+        "校准是一个分词问题"
+      ],
+      "correct": 1,
+      "explanation": "不做校准，你无法判断评审分数反映的是质量还是模型偏见。"
+    },
+    {
+      "stage": "check",
+      "question": "LLM-as-judge 场景中的自我评估偏见（self-evaluation bias）指什么？",
+      "options": [
+        "用同一模型家族既生成又评审，分数会比独立评审虚高 10-20%",
+        "延迟更低",
+        "评审模型在缓存输出上跑得更快",
+        "评审模型忽略系统提示词"
+      ],
+      "correct": 0,
+      "explanation": "同一家族的生成器+评审会让分数偏高；评审应使用不同的模型家族。"
+    },
+    {
+      "stage": "check",
+      "question": "相比简单的'打 0-1 分'提示，G-Eval 具体增加了什么？",
+      "options": [
+        "更大的上下文",
+        "更低的成本",
+        "多语言打分",
+        "一份带具名评估步骤的显式思维链评分标准，使分数更稳定"
+      ],
+      "correct": 3,
+      "explanation": "G-Eval 的结构化评估步骤比随意的'给个分'提示产出更可靠的分数。"
+    },
+    {
+      "stage": "post",
+      "question": "为什么只报告聚合平均分是危险的？",
+      "options": [
+        "聚合值太大",
+        "聚合值忽略了评审模型",
+        "聚合需要 GPU",
+        "0.85 的均值可能掩盖 5% 的灾难性失败；务必检查最低分位段"
+      ],
+      "correct": 3,
+      "explanation": "均值会掩盖尾部失败；要展示最低 10% 的样本以捕获高严重度问题。"
+    },
+    {
+      "stage": "post",
+      "question": "为什么要在 CI 中固定评审模型及其版本？",
+      "options": [
+        "Anthropic 的要求",
+        "成本更低",
+        "分词器漂移",
+        "升级评审模型会改变所有指标；不冻结评审就无法做纵向比较"
+      ],
+      "correct": 3,
+      "explanation": "评审升级会悄悄改变指标基线；固定版本才能保证跨轮次的可比性。"
+    },
+    {
+      "stage": "post",
+      "question": "DeepEval 相对于 RAGAS 的定位是什么？",
+      "options": [
+        "DeepEval 是 LLM 界的 pytest（CI 门禁、G-Eval、幻觉指标）；RAGAS 专注于无参考的 RAG 监控",
+        "DeepEval 只有托管版",
+        "DeepEval 是一个分词器",
+        "完全取代 RAGAS"
+      ],
+      "correct": 0,
+      "explanation": "DeepEval 主打 CI/CD 回归测试；RAGAS 负责无参考的 RAG 监控。"
+    }
+  ]
+}

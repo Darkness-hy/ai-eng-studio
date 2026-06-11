@@ -1,0 +1,102 @@
+{
+  "lesson": "20-structured-outputs-constrained-decoding",
+  "title": "Structured Outputs & Constrained Decoding",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "为什么仅靠提示词要求「返回 JSON」在生产环境中不够用？",
+      "options": [
+        "JSON 太冗长",
+        "提示词太长",
+        "前沿模型大多数时候会遵从，但并非总是如此；少量格式错误的输出就会让下游解析器崩溃",
+        "提示词无法描述 schema"
+      ],
+      "correct": 2,
+      "explanation": "仅靠提示词约束结构在前沿模型上约 80% 有效；生产环境需要更硬的保证。"
+    },
+    {
+      "stage": "pre",
+      "question": "约束解码在每个生成步骤修改的是什么？",
+      "options": [
+        "KV 缓存",
+        "分词器",
+        "训练损失",
+        "logit 向量——屏蔽会破坏目标语法的 token，使得只有有效的续写可以被采样"
+      ],
+      "correct": 3,
+      "explanation": "logit 处理器把无效 token 设为 -inf，softmax 因此无法采样到它们。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么约束解码可能比自由生成更快？",
+      "options": [
+        "模型更小",
+        "强制的脚手架 token（如 '{\"name\": \"'）可以不经采样直接输出，且有效 token 的搜索空间被缩小",
+        "它完全避开了 softmax",
+        "它跳过了反向传播"
+      ],
+      "correct": 1,
+      "explanation": "已确定的 token 可跳过采样，缩小的有效 token 集合降低了解码开销。"
+    },
+    {
+      "stage": "check",
+      "question": "哪种 schema 设计选择能防止模型过早锁定结论？",
+      "options": [
+        "把 'answer' 放在最前面",
+        "使用更短的键名",
+        "把 reasoning 字段放在 answer/decision 字段之前，让模型先思考再下结论",
+        "使用 snake_case 命名"
+      ],
+      "correct": 2,
+      "explanation": "字段顺序就是逻辑：把 reasoning 放在前面，模型才能先思考再锁定答案。"
+    },
+    {
+      "stage": "check",
+      "question": "Outlines 这类基于 FSM 的约束解码工具有什么局限？",
+      "options": [
+        "它们不是确定性的",
+        "它们把你锁定在 OpenAI 上",
+        "递归 schema 必须被展平；真正递归的结构需要 XGrammar 这类基于 CFG 的引擎",
+        "它们只支持枚举"
+      ],
+      "correct": 2,
+      "explanation": "FSM 无法表示无界递归；CFG 引擎可以处理。"
+    },
+    {
+      "stage": "post",
+      "question": "为什么说 Instructor 不修改 logits？",
+      "options": [
+        "Instructor 把 schema 格式化进提示词，然后解析输出并在失败时重试；logit 屏蔽要么在服务端发生，要么根本不发生",
+        "它使用梯度更新",
+        "这是 Anthropic 的要求",
+        "它会编辑提示词"
+      ],
+      "correct": 0,
+      "explanation": "Instructor 依靠供应商侧的结构化输出加客户端校验和重试，而不是 logit 屏蔽。"
+    },
+    {
+      "stage": "post",
+      "question": "像 date='YYYY-MM-DD' 这样过严的正则可能引入什么问题？",
+      "options": [
+        "它需要 CFG 支持",
+        "它去掉了未知值的逃生通道，模型只能编造一个日期，而无法返回 null 或哨兵值",
+        "它会破坏 JSON 解析",
+        "正则太慢"
+      ],
+      "correct": 1,
+      "explanation": "过严的语法会迫使模型编造值；务必为未知情况允许 null 或哨兵值。"
+    },
+    {
+      "stage": "post",
+      "question": "什么时候应该选择 vLLM guided decoding 而不是供应商的结构化输出 API？",
+      "options": [
+        "永远选供应商",
+        "只用于很小的 schema",
+        "只在使用字节级 BPE 时",
+        "自托管推理场景：你掌控模型，并希望获得 logit 级保证且无需重试"
+      ],
+      "correct": 3,
+      "explanation": "vLLM guided decoding 适合带 logit 级约束的自托管服务；供应商 API 会把你锁定在其技术栈上。"
+    }
+  ]
+}
