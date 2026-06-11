@@ -17,6 +17,7 @@ export interface PhaseIdx {
   titleZh: string;
   descZh: string;
   deps: number[];
+  hours: number | null;
   lessons: LessonMetaIdx[];
 }
 

@@ -18,6 +18,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = path.resolve(__dirname, '..');
 const UPSTREAM = path.resolve(APP_ROOT, '..', 'ai-engineering-from-scratch');
 const PHASES_DIR = path.join(UPSTREAM, 'phases');
+const ROADMAP_PATH = path.join(UPSTREAM, 'ROADMAP.md');
 const GLOSSARY_PATH = path.join(UPSTREAM, 'glossary', 'terms.md');
 const ZH_DIR = path.join(APP_ROOT, 'content', 'zh');
 const OUT_DIR = path.join(APP_ROOT, 'public', 'data');
@@ -168,8 +169,21 @@ function parseGlossary(md) {
   return terms;
 }
 
+// ─── ROADMAP hour estimates ──────────────────────────────────────────
+// Headings look like: ## Phase 7: Transformers Deep Dive — ✅ (~14 hours)
+function parseRoadmapHours() {
+  const md = readIfExists(ROADMAP_PATH);
+  const hours = {};
+  if (!md) return hours;
+  for (const m of md.matchAll(/^##\s+Phase\s+(\d+):.*?\(~(\d+)\s*hours?\)/gm)) {
+    hours[Number(m[1])] = Number(m[2]);
+  }
+  return hours;
+}
+
 // ─── Main build ──────────────────────────────────────────────────────
 function build() {
+  const roadmapHours = parseRoadmapHours();
   fs.rmSync(OUT_DIR, { recursive: true, force: true });
   fs.mkdirSync(path.join(OUT_DIR, 'lessons'), { recursive: true });
 
@@ -249,6 +263,13 @@ function build() {
       titleZh: meta.zh,
       descZh: meta.zhDesc,
       deps: meta.deps,
+      // ROADMAP is canonical; if a phase is missing there (e.g. Phase 13),
+      // fall back to summing the per-lesson "~N minutes" estimates.
+      hours:
+        roadmapHours[meta.num] ??
+        Math.round(
+          lessons.reduce((acc, l) => acc + (Number(/(\d+)\s*min/.exec(l.time ?? '')?.[1]) || 60), 0) / 60,
+        ),
       lessons,
     });
   }

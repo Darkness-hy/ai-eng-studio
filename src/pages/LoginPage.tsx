@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { useLang } from '../lib/i18n';
 
@@ -7,7 +7,6 @@ export function LoginPage() {
   const { lang } = useLang();
   const zh = lang === 'zh';
   const { enabled, profile, signIn, signUp } = useAuth();
-  const navigate = useNavigate();
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,15 +22,8 @@ export function LoginPage() {
     );
   }
 
-  if (profile) {
-    return (
-      <div className="py-32 text-center text-[14px] text-faint">
-        {zh ? '已登录为 ' : 'Signed in as '}
-        <span className="text-ink">{profile.display_name ?? profile.email}</span>
-        {zh ? '，学习进度会自动同步。' : '. Progress syncs automatically.'}
-      </div>
-    );
-  }
+  // Once the profile lands (after sign-in/up), enter the site.
+  if (profile) return <Navigate to="/" replace />;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -42,11 +34,8 @@ export function LoginPage() {
         ? await signIn(email.trim(), password)
         : await signUp(email.trim(), password, nickname.trim() || email.split('@')[0]);
     setBusy(false);
-    if (err) {
-      setError(translateAuthError(err, zh));
-    } else {
-      navigate('/');
-    }
+    if (err) setError(translateAuthError(err, zh));
+    // on success the auth listener sets profile and <Navigate> takes over
   };
 
   const field =

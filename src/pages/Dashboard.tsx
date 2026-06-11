@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { RoadmapList, RoadmapSpine } from '../components/RoadmapSpine';
 import { fetchIndex } from '../lib/data';
 import { lessonTitle, phaseTitle, useLang } from '../lib/i18n';
+import { loadPlacement } from '../lib/placement';
 import { useProgress } from '../lib/progress';
 import type { CourseIndex } from '../lib/types';
 
@@ -107,6 +108,7 @@ export function Dashboard() {
               →
             </div>
           </Link>
+          <PlacementCard index={index} />
           <div
             className="rise rounded-lg border border-hairline bg-bone/60 px-5 py-4"
             style={{ ['--stagger' as string]: 5 }}
@@ -139,6 +141,43 @@ export function Dashboard() {
         <RoadmapList index={index} />
       </section>
     </div>
+  );
+}
+
+function PlacementCard({ index }: { index: CourseIndex }) {
+  const { lang } = useLang();
+  const zh = lang === 'zh';
+  const placement = loadPlacement();
+  const entry = placement ? index.phases.find((p) => p.num === placement.entry) : null;
+
+  if (placement && entry) {
+    return (
+      <Link
+        to="/find-your-level"
+        className="rise flex items-baseline justify-between rounded-lg border border-hairline bg-paper px-5 py-3.5 transition-all hover:-translate-y-0.5 hover:shadow-lift"
+        style={{ ['--stagger' as string]: 5 }}
+      >
+        <span className="text-[13px] text-faint">{zh ? '你的起点' : 'Your level'}</span>
+        <span className="text-[13.5px] font-medium">
+          {zh ? `阶段 ${entry.num} · ${entry.titleZh}` : `Phase ${entry.num} · ${entry.titleEn}`}
+          <span className="ml-2 font-mono text-[11px] text-faint">{placement.total}/10</span>
+        </span>
+      </Link>
+    );
+  }
+  return (
+    <Link
+      to="/find-your-level"
+      className="rise group flex items-center justify-between rounded-lg border border-ink-blue/25 bg-pale-blue px-5 py-3.5 transition-all hover:-translate-y-0.5 hover:shadow-lift"
+      style={{ ['--stagger' as string]: 5 }}
+    >
+      <span className="text-[13.5px] font-medium text-ink-blue">
+        {zh ? '不知道从哪开始？10 题找到你的起点' : 'Not sure where to start? Find your level'}
+      </span>
+      <span className="font-serif text-[16px] text-ink-blue transition-transform group-hover:translate-x-1">
+        →
+      </span>
+    </Link>
   );
 }
 
