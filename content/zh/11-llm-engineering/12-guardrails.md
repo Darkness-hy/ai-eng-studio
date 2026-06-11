@@ -275,8 +275,7 @@ def detect_injection(text):
         text_lower.count("base64") > 0,
         text_lower.count("rot13") > 0,
         text_lower.count("hex:") > 0,
-        bool(re.search(r"[​-‏
-- ]", text)),
+        bool(re.search(r"[\u200b-\u200f\u2028-\u202f]", text)),
     ]
     if any(encoding_tricks):
         detections.append({"pattern": "encoding_evasion", "confidence": 0.70, "match": "suspicious encoding"})

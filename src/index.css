@@ -26,6 +26,19 @@
   --ease-out-quiet: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Brand font for the LaViRA lockup — same face as the Uni-LaViRA homepage title. */
+@font-face {
+  font-family: 'DingTalk Sans';
+  src: url('./assets/DingTalkSans.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-brand {
+  font-family: 'DingTalk Sans', 'PingFang SC', -apple-system, sans-serif;
+}
+
 html {
   scroll-behavior: smooth;
 }
