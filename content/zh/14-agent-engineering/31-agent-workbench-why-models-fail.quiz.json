@@ -1,0 +1,90 @@
+{
+  "lesson": "31-agent-workbench-why-models-fail",
+  "title": "Agent Workbench Engineering: Why Capable Models Still Fail",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "本课把智能体在真实任务上失败的根本原因归结为什么？",
+      "options": [
+        "模型参数量不足",
+        "工作台失败：模型周围缺少界面，而不是 LLM 的局限",
+        "网络太慢",
+        "训练数据过时"
+      ],
+      "correct": 1,
+      "explanation": "模型对 Python 的理解没有错，错的是对这项工作的理解。缺失的是模型周围的界面。"
+    },
+    {
+      "stage": "pre",
+      "question": "本课命名的七个工作台界面是什么？",
+      "options": [
+        "指令、状态、范围、反馈、验证、评审、交接",
+        "训练、评估、部署、监控、再训练、扩缩、退役",
+        "计划、行动、反思、改进、辩论、投票、交付",
+        "读、写、执行、fork、退出、等待、kill"
+      ],
+      "correct": 0,
+      "explanation": "七个界面是指令、状态、范围、反馈、验证、评审、交接。"
+    },
+    {
+      "stage": "check",
+      "question": "下列哪一项不属于本课用来映射界面的八个分布式系统原语？",
+      "options": [
+        "函数",
+        "Worker",
+        "触发器",
+        "反向传播"
+      ],
+      "correct": 3,
+      "explanation": "八个原语是函数、worker、触发器、运行时、HTTP/RPC、队列、会话持久化、授权策略。"
+    },
+    {
+      "stage": "check",
+      "question": "据报道，Vercel 的 harness 改动把成功率从多少提升到多少？",
+      "options": [
+        "20% 到 60%",
+        "80% 到 100%，靠删掉智能体 80% 的工具",
+        "0% 到 100%，靠更换模型",
+        "50% 到 70%，靠加入 RAG"
+      ],
+      "correct": 1,
+      "explanation": "删掉 80% 的工具让 Vercel 的智能体成功率从 80% 升到 100%。"
+    },
+    {
+      "stage": "check",
+      "question": "关于模型与 harness 的关系，Terminal Bench 2.0 展示了什么？",
+      "options": [
+        "排名仅由模型决定",
+        "同一个模型仅靠改变 harness 就从 30 名开外升到第 5 名",
+        "harness 的改动无关紧要",
+        "只有 GPU 重要"
+      ],
+      "correct": 1,
+      "explanation": "LangChain 的 Anatomy of an Agent Harness：同一个模型，改变 harness，排名跃升 25 名以上。"
+    },
+    {
+      "stage": "post",
+      "question": "当你听到新的 harness 词汇时，本课建议怎么做？",
+      "options": [
+        "原样照搬这些词汇",
+        "先翻译回原语（函数、worker、触发器、运行时、HTTP/RPC、队列、持久化、策略）再决定是否采纳",
+        "直接拒绝",
+        "等 OpenAI 把它标准化"
+      ],
+      "correct": 1,
+      "explanation": "从基础原语推理，而不是从厂商分类法推理；词汇会变，工程不会。"
+    },
+    {
+      "stage": "post",
+      "question": "相对于工作台，聊天历史处于什么位置？",
+      "options": [
+        "聊天是权威记录",
+        "聊天是易失的；仓库才是权威记录",
+        "两者等价",
+        "都无关紧要"
+      ],
+      "correct": 1,
+      "explanation": "循环闭合在状态文件上，而不是聊天历史上。"
+    }
+  ]
+}

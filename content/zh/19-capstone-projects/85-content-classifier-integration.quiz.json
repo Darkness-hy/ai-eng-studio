@@ -1,0 +1,78 @@
+{
+  "lesson": "85-content-classifier-integration",
+  "title": "毕业项目 85 — 内容分类器集成",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "既然输入已经检查过了，为什么还要运行输出侧分类器？",
+      "options": [
+        "为了故意让系统变慢",
+        "因为任何输入侧的绕过都会产生用户将看到的输出，而输出是拦截它的最后一道关口",
+        "因为输入分类器已被弃用",
+        "因为标准库要求两者都要有"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "pre",
+      "question": "这节课接入了哪三个分类器？",
+      "options": [
+        "情感、语言、长度",
+        "毒性、PII、指令泄露",
+        "OCR、ASR、TTS",
+        "质量、事实性、引用"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "当一个裁决是 high、另一个是 medium 时，路由器会怎么做？",
+      "options": [
+        "只执行 medium 对应的动作",
+        "依次执行两个动作",
+        "取最高严重程度并应用对应动作；block 优先于 redact",
+        "丢弃两个裁决，交付原始输出"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "PII 分类器内部为什么要用 Luhn 校验？",
+      "options": [
+        "为了把数字翻译成字母",
+        "为了以较低的误报率区分信用卡形态的数字串和任意数字序列",
+        "为了计算 SSN",
+        "为了压缩正则表达式"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "指令泄露分类器是如何做判断的？",
+      "options": [
+        "通过检测输出中的花括号",
+        "通过计算输出与已知系统提示词之间的三元组余弦相似度，并设定阈值",
+        "通过调用另一个模型",
+        "通过统计 token 数量"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "毒性分类器为什么要在左侧小窗口内检查否定词？",
+      "options": [
+        "为了拖慢正则匹配速度",
+        "为了跳过类似 'you are not stupid' 的匹配，避免分类器对常见的安抚性表达过度脱敏",
+        "为了提高误报率",
+        "因为 Unicode 要求必须有否定"
+      ],
+      "correct": 1,
+      "explanation": ""
+    }
+  ]
+}

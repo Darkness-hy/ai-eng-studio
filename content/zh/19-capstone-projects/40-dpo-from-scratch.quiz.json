@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "阅读前思考：在 Bradley-Terry 偏好模型下，给定提示词 x，人类偏好补全 y_w 胜过 y_l 的概率是 sigmoid(r(x, y_w) - r(x, y_l))。这意味着什么？",
+      "options": [
+        "必须先拟合 r 才能训练策略。",
+        "只有奖励的差值才重要；任何同时加到 r(x, y_w) 和 r(x, y_l) 上的函数都会抵消。",
+        "Bradley-Terry 需要一个不会消失的归一化常数 Z(x)。",
+        "sigmoid 与最大似然不兼容。"
+      ],
+      "correct": 1,
+      "explanation": "Bradley-Terry 偏好只取决于奖励的差值。两个补全共有的部分会相互抵消。这正是 DPO 能够绕开显式奖励模型的结构性原因：最优策略公式中只依赖提示词的那一项会抵消。"
+    },
+    {
+      "stage": "check",
+      "question": "单条三元组的 DPO 损失是 -log sigmoid( beta * ( (logp_w_pol - logp_w_ref) - (logp_l_pol - logp_l_ref) ) )。如果 logp_w_pol = logp_w_ref 且 logp_l_pol = logp_l_ref，损失等于多少？",
+      "options": [
+        "0。",
+        "log(2)。",
+        "beta。",
+        "-1。"
+      ],
+      "correct": 1,
+      "explanation": "两个差值都为零，所以 sigmoid 的输入为零，sigmoid 的值是 0.5，而 -log(0.5) = log(2)。这就是策略完全没有偏离参考模型时的损失。"
+    },
+    {
+      "stage": "check",
+      "question": "在 DPO 训练过程中，由于策略逐渐偏离参考模型，参考模型给出的 chosen 对数概率会在各个 epoch 之间发生变化。对还是错？",
+      "options": [
+        "对：参考模型会随着策略更新而漂移。",
+        "错：参考模型是冻结的；参考对数概率计算一次后即可复用。",
+        "仅当 beta 非零时为对。",
+        "错，除非没有用 no_grad 显式禁用梯度。"
+      ],
+      "correct": 1,
+      "explanation": "在整个 DPO 训练期间参考模型都是冻结的，其参数从不更新。实现上要么一次性缓存参考对数概率，要么把参考模型的前向传播包在 no_grad 中并对其参数设置 requires_grad=False。"
+    },
+    {
+      "stage": "check",
+      "question": "对 logp_w_pol（策略对 chosen 补全的对数概率）求 L_DPO 的梯度，其符号是？",
+      "options": [
+        "正（chosen 对数概率增大时损失增大）。",
+        "负（chosen 对数概率增大时损失减小）。",
+        "零（损失与策略对数概率无关）。",
+        "不确定（取决于参考模型）。"
+      ],
+      "correct": 1,
+      "explanation": "梯度是 -beta * (1 - sigmoid(z))，恒为非正。提高 chosen 的对数概率会降低损失，这正是我们想要的训练信号。"
+    },
+    {
+      "stage": "post",
+      "question": "在你的数据集上 DPO 损失在下降，但策略开始一律偏好更短的补全，哪怕更短的反而更差。最可能的原因是？",
+      "options": [
+        "beta 太小。",
+        "长度偏置：更长的序列累加了更多的对数概率项（每项都是负的），所以对数概率求和在结构上就惩罚长度。",
+        "参考模型没有被正确冻结。",
+        "优化器用了错误的学习率。"
+      ],
+      "correct": 1,
+      "explanation": "对数概率求和天然偏向更短的序列，因为每多一个 token 就多加一个负的对数概率项。标准做法是在训练和评估时按补全长度对对数概率做归一化。"
+    },
+    {
+      "stage": "post",
+      "question": "你想用 IPO 变体 (z - 1)^2 替换 sigmoid + log 损失。这对训练动态的实际影响是什么？",
+      "options": [
+        "它不会像 sigmoid 损失那样饱和，在偏好标签有噪声时表现更稳。",
+        "它在所有点上都数学等价。",
+        "它完全免除了对参考模型的需要。",
+        "它不需要 beta 参数。"
+      ],
+      "correct": 0,
+      "explanation": "IPO 的平方损失不会像 sigmoid 那样饱和，这在偏好标签有噪声或部分三元组标注错误时更有帮助。经验上它能在小规模偏好数据集上减轻过度优化。"
+    }
+  ]
+}

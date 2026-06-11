@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "在评测框架的 JSONL 格式中，哪几个字段定义了一条任务样例？",
+      "options": [
+        "name、score、payload、vendor",
+        "id、prompt、targets、metric，外加一个可选的 extras 字典，用来携带指标所需的附加数据",
+        "input 和 output",
+        "weights 和 bias"
+      ],
+      "correct": 1,
+      "explanation": "JSONL 行就是契约。extras 字段让 code_exec 指标可以传入 io_pairs，而不污染 prompt。"
+    },
+    {
+      "stage": "pre",
+      "question": "为什么指标函数的签名是 (prediction, targets, extras) -> float？",
+      "options": [
+        "随便定的",
+        "这是能同时处理单目标字符串匹配、多参考 rouge-l 和带附加数据的 code_exec 的最小签名，并且把得分保持在可比较的 [0.0, 1.0] 区间内",
+        "它返回整数",
+        "它需要模型对象"
+      ],
+      "correct": 1,
+      "explanation": "[0,1] 区间的浮点数意味着各任务得分和总体得分都是可解释的平均值。extras 槽位就是 code_exec 拿到 io_pairs 的途径。"
+    },
+    {
+      "stage": "check",
+      "question": "code_exec 指标如何抵御恶意预测代码？",
+      "options": [
+        "它没有防御",
+        "它在剥离过的 __builtins__ 字典下运行预测代码，命名空间只暴露少数安全名称；import 语句会失败，因为导入器不在作用域内",
+        "它使用沙箱容器",
+        "它拒绝任何包含 def 的内容"
+      ],
+      "correct": 1,
+      "explanation": "本课的安全命名空间把内建函数削减到寥寥几个名称。测试断言 import os 会返回 0.0 分而不是被执行。"
+    },
+    {
+      "stage": "check",
+      "question": "模型适配器这层抽象带来了什么好处？",
+      "options": [
+        "什么都没有",
+        "它是评测框架中唯一与具体模型相关的代码；换掉适配器指向新厂商后，任务、指标、运行器和排行榜格式都保持不变",
+        "它让模型更快",
+        "它是 torch 要求的"
+      ],
+      "correct": 1,
+      "explanation": "本课中的 ToyAdapter 是一个确定性的模式匹配器。面向真实厂商的 HttpAdapter 拥有相同的 generate(prompts) -> list[str] 接口。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么排行榜 JSON 要携带类似 leaderboard.v1 的 schema 字符串？",
+      "options": [
+        "为了 SEO",
+        "这样未来的格式变更会提升版本号，下游仪表盘可以据此分发处理，而不是悄无声息地崩坏",
+        "随机加的",
+        "它能压缩文件"
+      ],
+      "correct": 1,
+      "explanation": "和第 47 课 checkpoint 载荷用的是同一个技巧。schema 字段就是迁移钩子。"
+    },
+    {
+      "stage": "post",
+      "question": "阅读排行榜时，overall_score 是如何计算的？比较两次运行时应该注意什么？",
+      "options": [
+        "正确数之和",
+        "各任务得分（每个都在 [0,1] 内）的平均值；比较时，对得分变动的任务还要 diff 每条样例的预测，因为光看得分会掩盖到底是哪些样例出现了回归",
+        "最高任务得分",
+        "随机抽样"
+      ],
+      "correct": 1,
+      "explanation": "对各任务均值再取均值意味着每个任务权重相等。使用 --include-per-example 把预测级证据保存在得分旁边，让回归可见。"
+    }
+  ]
+}

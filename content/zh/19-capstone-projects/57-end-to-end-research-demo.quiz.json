@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "这节课中演示（demo）的职责是什么？",
+      "options": [
+        "用一个全新的框架取代前面的课程",
+        "通过普通的 Python import 组合前面课程的基础组件",
+        "把调度器与基线做基准对比",
+        "在每个分支上调用真实的语言模型"
+      ],
+      "correct": 1,
+      "explanation": "演示是一场组合测试。每个阶段都存在于自己的课程中。演示导入它们并接出报告。没有新框架，也没有新抽象。"
+    },
+    {
+      "stage": "pre",
+      "question": "为什么这节课通过 importlib 加载前面的课程，而不是用普通的包导入？",
+      "options": [
+        "因为 importlib 更快",
+        "因为前面每节课都是独立的 code/ 目录，不是已安装的包；importlib 按文件路径加载它们",
+        "因为 asyncio 需要 importlib",
+        "因为这些课程共享同一个模块名，会发生冲突"
+      ],
+      "correct": 1,
+      "explanation": "这些课程不是已安装的包。每节课都在自己的 code/ 目录里附带一个 main.py。importlib.util.spec_from_file_location 按路径加载它们，不会污染全局模块命名空间。"
+    },
+    {
+      "stage": "check",
+      "question": "当多个分支都触发了论文事件时，最佳结果挑选器如何在分支之间做出选择？",
+      "options": [
+        "选择运行实验次数最多的分支",
+        "选择平均奖励最高的分支，平局按分支 id 的字母顺序打破",
+        "为了公平随机选择",
+        "选择第一个触发的分支"
+      ],
+      "correct": 1,
+      "explanation": "平均奖励最高者胜出。平局按分支 id 打破，以保证演示的确定性。随机选择会让确定性测试失效。"
+    },
+    {
+      "stage": "check",
+      "question": "当调度器报告零个论文触发事件时，挑选器会抛出什么错误？",
+      "options": [
+        "ValueError",
+        "NoTriggerError，它会在写作器运行之前短路整个演示",
+        "PaperValidationError",
+        "它返回 None"
+      ],
+      "correct": 1,
+      "explanation": "NoTriggerError 是带类型的失败模式。返回 None 会让写作器在畸形输入上继续运行，并在更晚的环节以一个更难定位的错误崩溃。"
+    },
+    {
+      "stage": "post",
+      "question": "在确定性测试中，为什么演示要用相同的种子运行两次？",
+      "options": [
+        "为了把 asyncio 跑两遍",
+        "为了断言两次运行中选出的分支、奖励和论文章节 id 完全一致",
+        "为了捕捉内存泄漏",
+        "为了证明调度器是公平的"
+      ],
+      "correct": 1,
+      "explanation": "确定性是契约的一部分。用相同种子的两次运行必须产出相同的产物。测试钉死了这一点。"
+    },
+    {
+      "stage": "post",
+      "question": "成功运行之后，演示报告包含什么？",
+      "options": [
+        "只有最终的 LaTeX 文件",
+        "scheduler_report、best_branch、best_reward、critic_result、paper_manifest 和 stop_reason",
+        "仅有实验计数和一个状态字符串",
+        "一份模型提示词和补全日志"
+      ],
+      "correct": 1,
+      "explanation": "每个阶段的输出都被完整保留。报告是上游输出的组合，而不是经过转换的摘要。下游工具读取清单；调试者读取 scheduler_report 内部的追踪记录。"
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "标准 ViT 块为什么采用 pre-LayerNorm 放置而不是 post-LayerNorm？",
+      "options": [
+        "Post-LN 被专利保护",
+        "Pre-LN 在深层网络中无需学习率预热即可稳定训练，而 post-LN 在超过约 6 层后会发散",
+        "Pre-LN 运行更快",
+        "Post-LN 占用更多内存"
+      ],
+      "correct": 1,
+      "explanation": "Pre-LN 对每个子层的输入做归一化，使梯度范数随深度增加仍保持有界。"
+    },
+    {
+      "stage": "pre",
+      "question": "在 hidden=768、heads=12 的设置下，每个注意力头的维度是多少？它为什么重要？",
+      "options": [
+        "12，这样每个头都能在小 GPU 上运行",
+        "64，它决定了每张注意力图的分辨率，并让 12 个头并行地独立计算注意力",
+        "768，因为所有头共享同一个投影",
+        "96，由 ResNet-50 决定"
+      ],
+      "correct": 1,
+      "explanation": "head_dim = hidden / heads = 64。每个头把 token 投影到自己的 64 维 q/k/v，并计算自己的注意力图。"
+    },
+    {
+      "stage": "check",
+      "question": "ViT 编码器需要因果注意力掩码吗？",
+      "options": [
+        "需要，和 GPT 解码器一样",
+        "不需要：编码器是双向的，同一序列中每个 token 都可以关注所有其他 token",
+        "只有 CLS 那一行需要",
+        "只在训练时需要"
+      ],
+      "correct": 1,
+      "explanation": "视觉编码器是双向的。因果掩码出现在后面，当文本解码器消费交叉注意力输出时才会用到。"
+    },
+    {
+      "stage": "check",
+      "question": "经过全部 12 个块之后，CLS token 的最终隐藏状态代表什么？",
+      "options": [
+        "输入嵌入的一份拷贝",
+        "整张图像的可学习向量摘要，下游头部把它投影成类别 logits 或对比嵌入",
+        "随机噪声",
+        "仅最后一个图像块"
+      ],
+      "correct": 1,
+      "explanation": "CLS token 一开始是空的，靠全部 12 个块中的自注意力逐层累积来自每个图像块的信息。"
+    },
+    {
+      "stage": "check",
+      "question": "前馈层为什么要扩展到隐藏维度的 4 倍？",
+      "options": [
+        "PyTorch 强制要求 4 倍",
+        "这是自最初的 Transformer 以来的经验最优点；更小会欠拟合，更大在固定数据预算下会过拟合",
+        "它能把 FLOPs 减半",
+        "它能省去注意力机制"
+      ],
+      "correct": 1,
+      "explanation": "系数 4 自 2017 年以来在语言和视觉 Transformer 中一直成立。单位参数的容量在这里达到峰值。"
+    },
+    {
+      "stage": "post",
+      "question": "哪种家族扩展在不改变块内数学的前提下，额外前置了可学习 token？",
+      "options": [
+        "因果掩码",
+        "寄存器 token（DINOv2）：在 CLS 之后前置几个可学习向量，用于捕获全局统计量并平滑注意力图",
+        "混合专家（Mixture-of-experts）",
+        "RoPE 旋转"
+      ],
+      "correct": 1,
+      "explanation": "寄存器 token 在不改变块内数学的情况下稳定注意力；它们只是序列中多出的几个槽位。"
+    }
+  ]
+}

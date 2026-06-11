@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "单个解码器 transformer block 内部包含哪两个子层？",
+      "options": [
+        "卷积和循环门控",
+        "多头因果注意力和逐位置 MLP，各自包裹在一个残差连接中",
+        "嵌入查表和 softmax",
+        "RNN 编码器和解码器"
+      ],
+      "correct": 1,
+      "explanation": "所有现代解码器 LLM 的 block 都是注意力加 MLP，各自拥有自己的残差路径和自己的 LayerNorm。"
+    },
+    {
+      "stage": "check",
+      "question": "在深层堆叠时，pre-LN 与 post-LN 的关键区别是什么？",
+      "options": [
+        "pre-LN 使用不同的注意力数学",
+        "pre-LN 让残差信号保持未归一化，梯度能干净地传播到嵌入层；post-LN 把归一化放在残差相加之后，在深层会使梯度衰减，因而需要 warmup",
+        "post-LN 在 GPU 上更快",
+        "pre-LN 只适用于编码器"
+      ],
+      "correct": 1,
+      "explanation": "pre-LN 在常见学习率下无需 warmup 即可稳定训练；post-LN 是 2017 年论文采用的方案，需要 warmup。"
+    },
+    {
+      "stage": "check",
+      "question": "多头注意力中的因果掩码起什么作用？",
+      "options": [
+        "随机丢弃 token",
+        "将注意力 logits 的上三角设为负无穷，使 token i 无法关注位置大于 i 的 token",
+        "对注意力分数做归一化",
+        "选出批次中最长的序列"
+      ],
+      "correct": 1,
+      "explanation": "忘记因果掩码会训练出一个能读取未来 token 的模型；掩码是强制因果性的唯一部件。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么用融合 QKV 投影代替三个独立的线性层？",
+      "options": [
+        "它会改变模型的表达能力",
+        "一个宽度为 3 倍 d_model 的线性层把三次 kernel 启动和三次矩阵乘法压缩为一次，在所有加速器上都更快，并且与 GPT-2 参考实现一致",
+        "它能省去一次 softmax",
+        "它移除了残差"
+      ],
+      "correct": 1,
+      "explanation": "数学完全相同，kernel 更少；GPT-2、LLaMA、Mistral 的参考实现都采用融合投影。"
+    },
+    {
+      "stage": "post",
+      "question": "transformer block 中的哪个位置不应该放 dropout？",
+      "options": [
+        "注意力 softmax 的输出上",
+        "残差恒等路径本身上，因为这会破坏让梯度在深层流动的加法恒等结构",
+        "MLP 第二个线性层之后",
+        "前馈扩展层内部"
+      ],
+      "correct": 1,
+      "explanation": "dropout 应放在注意力输出和 MLP 残差更新上，绝不能放在残差的恒等分支上。"
+    },
+    {
+      "stage": "post",
+      "question": "为什么要把因果掩码注册为 buffer，而不是每次前向调用时重新分配？",
+      "options": [
+        "buffer 是加密的",
+        "掩码只依赖于最大上下文长度，在构造时一次性分配并在每次调用时切出当前窗口，可以避免长上下文下的内存分配热点",
+        "buffer 只能在 GPU 上运行",
+        "buffer 能提高数值精度"
+      ],
+      "correct": 1,
+      "explanation": "用 register_buffer 一次性分配，每次前向时切片；否则掩码就会变成每次调用都要付出的分配开销。"
+    }
+  ]
+}

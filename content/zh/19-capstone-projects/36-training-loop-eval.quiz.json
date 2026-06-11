@@ -1,0 +1,78 @@
+{
+  "lesson": "36-training-loop-eval",
+  "title": "Training Loop and Evaluation",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "为什么目标张量必须是输入张量移位一格的结果？",
+      "options": [
+        "交叉熵需要两个完全相同的张量",
+        "下一个词元预测是训练目标：模型在每个位置预测紧随其后的词元；忘记移位就等于训练模型预测它自己，什么有用的东西都学不到",
+        "这样能加速优化器",
+        "这是 AdamW 的要求"
+      ],
+      "correct": 1,
+      "explanation": "输入是词元 0..T-1，目标是词元 1..T；损失在展平后的 (batch*seq, vocab) 与 (batch*seq,) 形状上计算。"
+    },
+    {
+      "stage": "pre",
+      "question": "evaluate_model 做了哪些训练步骤不做的事？",
+      "options": [
+        "它会运行优化器",
+        "它在 no_grad 下、并禁用 dropout 地运行固定数量的验证批次，返回一个可复现的平均损失",
+        "它会修改模型权重",
+        "它会计算两次梯度"
+      ],
+      "correct": 1,
+      "explanation": "留出评估不需要梯度、不需要 dropout，并且要用固定的验证数据切片，才能在不同运行之间可复现。"
+    },
+    {
+      "stage": "check",
+      "question": "AdamW 中哪些参数会获得权重衰减？",
+      "options": [
+        "所有参数一视同仁",
+        "矩阵形状的张量（线性层权重、嵌入表）获得权重衰减；缩放、平移和偏置张量的衰减为零",
+        "只有 LM head",
+        "只有 LayerNorm 的缩放参数"
+      ],
+      "correct": 1,
+      "explanation": "给 LayerNorm 的缩放参数施加衰减会把缩放值压向零、破坏归一化；这种分组是标准的生产实践。"
+    },
+    {
+      "stage": "check",
+      "question": "预热加余弦的调度从第 0 步到最后一步描绘出什么形状？",
+      "options": [
+        "恒定不变",
+        "在 warmup_steps 内从零线性爬升到最大值，然后在剩余步数中从最大值余弦衰减到 min_lr",
+        "指数增长",
+        "阶跃函数"
+      ],
+      "correct": 1,
+      "explanation": "预热让优化器状态得以填充；余弦衰减逐渐收紧步长，让训练末段以小步长微调权重。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么要在 optimizer.step() 之前裁剪梯度范数？",
+      "options": [
+        "它能加速矩阵乘法",
+        "一个坏批次可能产生巨大的梯度，把几小时的训练成果一笔抹掉；裁剪到 max_norm=1.0 能把优化器保持在安全范围内，同时不扭曲正常的更新",
+        "它能降低内存占用",
+        "它能省掉预热环节"
+      ],
+      "correct": 1,
+      "explanation": "梯度裁剪是防止发散最便宜的保险；1.0 是在大多数配置下都能稳住的默认值。"
+    },
+    {
+      "stage": "post",
+      "question": "为什么用 JSONL 记录每步日志，而不是 pickle 序列化的状态？",
+      "options": [
+        "优化器要求使用 JSONL",
+        "JSONL 记录在重构后依然可用，能 grep、三十行代码就能绘图，崩溃后也能留存；而 pickle 状态把你绑死在生成它的那套模块布局上",
+        "JSONL 训练更快",
+        "JSONL 占用更少的 GPU 显存"
+      ],
+      "correct": 1,
+      "explanation": "任何崩溃都会留下可读的产物；恢复训练只需读取最后一步；在其上构建工具也很简单。"
+    }
+  ]
+}

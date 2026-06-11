@@ -1,0 +1,78 @@
+{
+  "lesson": "71-classical-metrics",
+  "title": "Classical Metrics",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "为什么分词器是在指标层而不是 runner 层选定的？",
+      "options": [
+        "无论选择哪种分词器，指标实现都是 O(n) 的",
+        "分词器定义了什么算作一次 token 匹配；换掉它就等于换了一个基准",
+        "numpy 在导入时就需要一个分词器",
+        "分词器与具体模型绑定，而 runner 看不到模型"
+      ],
+      "correct": 1,
+      "explanation": "BLEU 和 F1 对分词方式很敏感。把分词器绑定到指标上能让分数可复现，并且让你能直接指出规则所在。"
+    },
+    {
+      "stage": "pre",
+      "question": "修正 n-gram 精确率比普通 n-gram 精确率多做了什么？",
+      "options": [
+        "它使用不同的对数底",
+        "它用任一参考中该 n-gram 出现的最大次数来截断候选中每个 n-gram 的计数",
+        "它比普通精确率运行得更快",
+        "它返回 0 到 100 之间的值，而不是 0 到 1"
+      ],
+      "correct": 1,
+      "explanation": "用参考中的上限做截断，可以阻止候选靠一遍遍重复某个高精确率的词来刷高分数。"
+    },
+    {
+      "stage": "check",
+      "question": "BLEU 为什么要使用简短惩罚？",
+      "options": [
+        "没有它，一个只匹配少数几个词的极短候选会得到很高的精确率和虚高的 BLEU",
+        "长候选会让几何平均在数值上不稳定",
+        "简短惩罚取代了 n-gram 计数上限",
+        "它是用来补偿加一平滑的"
+      ],
+      "correct": 0,
+      "explanation": "只看精确率会奖励短输出。BP 通过 exp(1 - r/c) 对短于参考的候选进行降权。"
+    },
+    {
+      "stage": "check",
+      "question": "ROUGE-L 比较的是什么？",
+      "options": [
+        "候选 4-gram 对任一参考 4-gram 的精确率",
+        "候选与参考 token 序列的最长公共子序列",
+        "候选与参考字符串之间的 Levenshtein 距离",
+        "字符级的 Jaccard 系数"
+      ],
+      "correct": 1,
+      "explanation": "ROUGE-L 使用 LCS 长度，再计算精确率（LCS/候选长度）和召回率（LCS/参考长度），并用 F-beta 综合。"
+    },
+    {
+      "stage": "check",
+      "question": "token 级 F1 在哪种情况下返回 1.0？",
+      "options": [
+        "预测为空而目标非空时",
+        "预测和目标都为空时",
+        "预测是目标的超集并带有额外噪声时",
+        "预测和目标恰好共享一个 token 时"
+      ],
+      "correct": 1,
+      "explanation": "按照惯例，空对空算完全匹配。目标非空而预测为空时得 0.0。"
+    },
+    {
+      "stage": "post",
+      "question": "score 函数为什么按 metric_name 分发，而不是按 category？",
+      "options": [
+        "这样同一类别在不同任务上可以使用不同指标，分发器也保持与具体指标无关",
+        "category 比 metric_name 更难校验",
+        "metric_name 比 category 更短",
+        "runner 无法访问 category 字段"
+      ],
+      "correct": 0,
+      "explanation": "metric_name 才是契约。同为摘要任务，一条记录可以用 rouge_l，另一条可以用 bleu_4；分发器不需要关心这些。"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "这个毕业项目产出什么？",
+      "options": [
+        "一篇研究论文",
+        "一个有版本管理的即插即用目录（agent-workbench-pack/），包含七个工作面，外加一个以幂等方式铺设它们的 bin/install.sh",
+        "一个新的 LLM",
+        "一个监控仪表盘"
+      ],
+      "correct": 1,
+      "explanation": "套件是菜谱；每次安装是一份出餐。"
+    },
+    {
+      "stage": "pre",
+      "question": "以下哪一项不属于套件的目录结构？",
+      "options": [
+        "AGENTS.md + docs/",
+        "schemas/",
+        "scripts/",
+        "vendor_proprietary_weights/"
+      ],
+      "correct": 3,
+      "explanation": "套件结构是 AGENTS.md、docs/、schemas/、scripts/、bin/、README.md。套件与框架和厂商都无关。"
+    },
+    {
+      "stage": "check",
+      "question": "套件为什么要携带 VERSION 文件？",
+      "options": [
+        "为了 SEO",
+        "需要迁移的 schema/脚本变更提升主版本号；新增功能提升次版本号；仅改文档提升补丁版本号；目标仓库会记录它安装时所基于的版本",
+        "用来追踪智能体的智商",
+        "为了在 Hacker News 上打广告"
+      ],
+      "correct": 1,
+      "explanation": "与 npm、Cargo、pyproject.toml 的做法相同；VERSION 是契约，不是营销文案。"
+    },
+    {
+      "stage": "check",
+      "question": "在这个套件里，跨工具分发是什么样子？",
+      "options": [
+        "为每个工具硬编码路径",
+        "单一源文件加符号链接（ln -s AGENTS.md CLAUDE.md、.cursor/rules/、.github/copilot-instructions.md），让同一来源扇出到每一个编码智能体",
+        "为每个工具手动复制",
+        "为每个工具做一次厂商锁定"
+      ],
+      "correct": 1,
+      "explanation": "Nx 的 nx ai-setup 是参考范例；套件的安装器用符号链接做同样的事。"
+    },
+    {
+      "stage": "check",
+      "question": "课程建议卸载器如何行事？",
+      "options": [
+        "删除包括状态在内的一切",
+        "遇到非平凡状态就拒绝执行；绝不删除用户的 agent_state.json、task_board.json 或 outputs/；只移除 schema、脚本、文档和 AGENTS.md（可选择保留）",
+        "只删除文档",
+        "禁用 git"
+      ],
+      "correct": 1,
+      "explanation": "状态属于用户；套件不拥有它。"
+    },
+    {
+      "stage": "post",
+      "question": "哪些内容不进套件？",
+      "options": [
+        "schema",
+        "项目专属任务、厂商 SDK 调用、团队入职培训文案——套件与框架无关，放在入职材料旁边而不是里面",
+        "脚本",
+        "安装器"
+      ],
+      "correct": 1,
+      "explanation": "任务属于目标仓库的任务板，不属于套件；厂商 SDK 调用会把套件锁死在某一个框架上。"
+    },
+    {
+      "stage": "post",
+      "question": "套件通过什么渠道一次性交付给众多编码智能体？",
+      "options": [
+        "手动复制",
+        "SkillKit 式分发（skillkit install agent-workbench-pack），从单一来源把它铺设到 32 个 AI 智能体上",
+        "电子邮件附件",
+        "只靠 GitHub release notes"
+      ],
+      "correct": 1,
+      "explanation": "套件仓库是事实来源；SkillKit 是分发渠道；厂商锁定随之瓦解。"
+    }
+  ]
+}

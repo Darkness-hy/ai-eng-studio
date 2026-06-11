@@ -1,0 +1,78 @@
+{
+  "lesson": "81-end-to-end-distributed-train",
+  "title": "端到端分布式训练",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "既然每节课已经有自己的测试，为什么毕业项目仍然重要？",
+      "options": [
+        "装点门面",
+        "组合正确性是一条独立的性质：各组件可以分别通过单元测试，但放在一起运行时集成可能死锁、损失可能发散、内存可能反而增长",
+        "更慢",
+        "更容易评分"
+      ],
+      "correct": 1,
+      "explanation": "端到端测试能捕获任何单组件测试都无法在隔离环境下发现的接线 bug：会合（rendezvous）、barrier 顺序、gather 契约。"
+    },
+    {
+      "stage": "pre",
+      "question": "演示验证哪四条不变量？",
+      "options": [
+        "速度",
+        "(a) 损失跑满 20 步且无 NaN，(b) 所有 rank 的参数范数一致，(c) 每个 rank 的优化器内存等于 ZeRO-1 公式，(d) 第 10 步的检查点重新加载后字节级一致",
+        "每秒 token 数",
+        "硬件"
+      ],
+      "correct": 1,
+      "explanation": "每条不变量对应一类不同的组合 bug：NaN 捕获发散，范数一致捕获同步漂移，内存捕获分片 bug，检查点捕获写入原子性问题。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么模型用微型 GPT 而不是 MLP？",
+      "options": [
+        "看起来更炫",
+        "GPT 引入了 LayerNorm 的统计量、嵌入层梯度形状、softmax+交叉熵等边界情况，而 MLP 会把这些问题掩盖掉",
+        "更快",
+        "强制要求"
+      ],
+      "correct": 1,
+      "explanation": "MLP 的梯度同步在第 77 课已经验证过；毕业项目需要一个边界情况更多的模型，才能在贴近真实的算子下证明组合正确。"
+    },
+    {
+      "stage": "check",
+      "question": "在本课语境下，「自行终止」是什么意思？",
+      "options": [
+        "进程自杀",
+        "固定步数（20），完成后退出码 0，无需人工介入；如果任何组件死锁，演示永远不会返回，CI 就能捕获它",
+        "崩溃恢复",
+        "手动操作"
+      ],
+      "correct": 1,
+      "explanation": "有界运行加退出码 0 让测试装置可以断言程序终止；while-True 循环会掩盖死锁。"
+    },
+    {
+      "stage": "check",
+      "question": "演示是如何组合 DDP 和 ZeRO 的？",
+      "options": [
+        "两者同时全开",
+        "初始化时用 DDP 式 broadcast 做参数同步，ZeRO-1 的 reduce_scatter+allgather 替代 optimiser.step；DDP 的梯度 allreduce 被并入 ZeRO 的 reduce_scatter",
+        "只用 DDP",
+        "只用 ZeRO"
+      ],
+      "correct": 1,
+      "explanation": "ZeRO-1 通过 reduce_scatter 接管了梯度同步，所以 DDP 单独的 allreduce 不再需要；初始化时的 broadcast 是唯一保留下来的 DDP 专属调用。"
+    },
+    {
+      "stage": "post",
+      "question": "为什么生产中按墙钟时间而不是按步数保存检查点？",
+      "options": [
+        "看起来更整洁",
+        "单步耗时随序列长度和 microbatch 数量变化；每 10 分钟保存一次，无论模型多大覆盖的计算量都相同",
+        "更快",
+        "NCCL 的强制要求"
+      ],
+      "correct": 1,
+      "explanation": "本课为清晰起见用基于步数的方式；生产运行通常每 5-15 分钟墙钟时间保存一次。"
+    }
+  ]
+}

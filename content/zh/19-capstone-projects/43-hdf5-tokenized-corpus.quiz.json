@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "为什么把分词后的语料存进可扩容、分块的 HDF5 数据集，而不是 JSONL？",
+      "options": [
+        "HDF5 的 logo 更小",
+        "HDF5 提供分块、纯整数、内存映射的读取，并支持 O(1) 随机访问；JSONL 则把解析器压在每一次热路径读取上",
+        "JSONL 已被弃用",
+        "随便选的"
+      ],
+      "correct": 1,
+      "explanation": "dataloader 想要的是一个切片可寻址的扁平 token 流，HDF5 原生提供这一点。"
+    },
+    {
+      "stage": "check",
+      "question": "HDF5 分块大小相对训练器 window_size 的正确设置规则是什么？",
+      "options": [
+        "总是取 chunk=1",
+        "把分块设为 window_size 的整数倍，让每个样本落在一到两个分块内，读取与页缓存保持对齐",
+        "把分块设为文档长度",
+        "取能装进内存的最大分块"
+      ],
+      "correct": 1,
+      "explanation": "分块不匹配会让吞吐减半，因为每个样本都横跨两个分块而不是一个。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么 token_count 要存为 HDF5 属性，而不是从数据集形状推断？",
+      "options": [
+        "属性更好看",
+        "末尾分块可能只填了一部分；没有这个显式属性，读取端会越过真实末尾、读到补零的 token，模型就学会了预测零",
+        "读取形状很慢",
+        "属性是强制要求的"
+      ],
+      "correct": 1,
+      "explanation": "分块布局有时会留下末尾空槽位；属性承载真实值。"
+    },
+    {
+      "stage": "check",
+      "question": "writer 在每次 resize 之前把 token 缓冲到 chunk_size，达到了什么效果？",
+      "options": [
+        "省几个 CPU 周期",
+        "写入连续且与分块对齐，避免逐 token resize 带来的碎片化",
+        "缩小词表",
+        "加速 sha256"
+      ],
+      "correct": 1,
+      "explanation": "按分块大小「先缓冲、再扩容」是让 HDF5 分块在磁盘上保持连续的唯一方法。"
+    },
+    {
+      "stage": "post",
+      "question": "为什么 swmr=True 是在读取端打开，而不是写入端？",
+      "options": [
+        "随机偏好",
+        "单写多读模式让 dataloader worker 安全地共享文件；写入端不需要特殊模式，因为每个进程只写一个分片",
+        "性能",
+        "安全"
+      ],
+      "correct": 1,
+      "explanation": "混用这两种模式是「file is locked」失败最常见的原因。"
+    },
+    {
+      "stage": "post",
+      "question": "边界 token id 的存在是为了把什么变得显式？",
+      "options": [
+        "词表大小限制",
+        "打包窗口内的文档边界，避免模型在不知情的情况下被跨文档拼接的数据训练",
+        "压缩",
+        "随机数据"
+      ],
+      "correct": 1,
+      "explanation": "没有显式边界，训练器只能把边界当噪声学；有了它，边界就成为可利用的分隔符。"
+    }
+  ]
+}

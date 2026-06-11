@@ -1,0 +1,78 @@
+{
+  "lesson": "75-end-to-end-eval-runner",
+  "title": "End-to-End Eval Runner",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "ModelAdapter 接口最小可行的方法集是什么？",
+      "options": [
+        "generate(prompt, task)，返回文本以及可选的置信度和逐 token 负对数似然",
+        "complete、embed、classify、summarise",
+        "init、login、generate、close",
+        "load_weights、generate、save_weights"
+      ],
+      "correct": 0,
+      "explanation": "一个方法就能覆盖任何适配器。其余都是可选的附加项。运行器不需要更复杂的接口。"
+    },
+    {
+      "stage": "pre",
+      "question": "运行器为什么接受一个 parallel 标志，而不是始终并行运行？",
+      "options": [
+        "在 CPython 中并行执行不安全",
+        "测试需要确定性的执行顺序；这个标志让测试可以切换为串行",
+        "并行执行需要 GPU",
+        "ThreadPoolExecutor 不在标准库中"
+      ],
+      "correct": 1,
+      "explanation": "测试要的是可复现，生产要的是吞吐量。这个标志把两个关注点分开，而无需维护两条代码路径。"
+    },
+    {
+      "stage": "check",
+      "question": "运行器如何为校准缓冲区判定 correct 标志？",
+      "options": [
+        "调用适配器两次并比较输出",
+        "默认对 exact_match 风格的指标用 1.0 阈值，对分级指标用 0.5 阈值",
+        "使用各分箱的平均置信度",
+        "使用 Brier 分解"
+      ],
+      "correct": 1,
+      "explanation": "阈值与指标相关：exact_match 风格的指标用接近 1.0 的截断值，分级指标默认用 0.5。"
+    },
+    {
+      "stage": "check",
+      "question": "运行器为什么构建 EvalRun 记录交给聚合器，而不是内联计算排行榜？",
+      "options": [
+        "EvalRun 更省内存",
+        "这让运行器对聚合器保持无感知，排行榜层可以独立演进而不必改动运行器",
+        "聚合器在 numpy 数组上比在 dataclass 上更快",
+        "JSON Schema 要求使用 EvalRun"
+      ],
+      "correct": 1,
+      "explanation": "组合优于内联。运行器产出记录，聚合器负责排行榜的计算逻辑。每节课只负责一个关注点。"
+    },
+    {
+      "stage": "check",
+      "question": "最终 JSON 信封中 perplexity 块的作用是什么？",
+      "options": [
+        "排行榜排名必须依赖它",
+        "它是校准报告的输入",
+        "它承载每个模型在留出集上的语言建模指标，独立于任务打分",
+        "它由 bootstrap 置信区间计算而来"
+      ],
+      "correct": 2,
+      "explanation": "困惑度（perplexity）放在排行榜旁边，而不是排行榜里面。它使用适配器每次调用返回的 token 负对数似然和 token 数量。"
+    },
+    {
+      "stage": "post",
+      "question": "自动终止演示的干净运行退出标准是什么？",
+      "options": [
+        "每个任务通过校验、每个任务完成打分、校准完成聚合，且基于规则的适配器在排行榜上严格排在随机适配器之上",
+        "每个任务的得分都超过 0.9",
+        "每个模型的 ECE 都低于 0.05",
+        "每一对模型的 bootstrap 置信区间都不包含零"
+      ],
+      "correct": 0,
+      "explanation": "演示程序端到端地强制执行契约：每一层都跑过了，并且最准确的适配器排名正确。"
+    }
+  ]
+}

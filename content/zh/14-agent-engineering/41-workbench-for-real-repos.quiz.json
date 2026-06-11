@@ -1,0 +1,88 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "把同一个任务分别用纯提示词和工作台引导两条流水线跑一遍，目的是什么？",
+      "options": [
+        "比较不同模型",
+        "产出一份可以递给质疑者的前后对比报告，用数字而非争论说话",
+        "挑选供应商",
+        "做 GPU 基准测试"
+      ],
+      "correct": 1,
+      "explanation": "让数字来说话；说服力来自一个足够真实的任务，而不是玩具任务。"
+    },
+    {
+      "stage": "pre",
+      "question": "下列哪一项不属于测量的五项结果指标？",
+      "options": [
+        "tests_actually_run",
+        "acceptance_met",
+        "files_outside_scope",
+        "model_perplexity"
+      ],
+      "correct": 3,
+      "explanation": "五项指标是 tests_actually_run、acceptance_met、files_outside_scope、handoff_quality、reviewer_total。"
+    },
+    {
+      "stage": "check",
+      "question": "LangChain 的 Anatomy of an Agent Harness 在 Terminal Bench 2.0 上测得了什么结果？",
+      "options": [
+        "所有模型都收敛到前 3 名",
+        "同一个模型仅靠更换 harness，就从 30 名开外升到第 5 名",
+        "最强模型掉了 25 个名次",
+        "更换 harness 没有改变排名"
+      ],
+      "correct": 1,
+      "explanation": "同一个模型 25 个名次的提升，是 harness 对比模型最有力的头号实证。"
+    },
+    {
+      "stage": "check",
+      "question": "preprints.org 的论文给出的企业智能体项目失败率是多少？",
+      "options": [
+        "8%",
+        "约 88% 无法落地生产，失败集中在运行时而非推理能力",
+        "约 50%",
+        "没有失败的"
+      ],
+      "correct": 1,
+      "explanation": "Harness Engineering for Language Agents 预印本把失败归因于运行时问题（过期状态、脆弱的重试、膨胀的上下文）。"
+    },
+    {
+      "stage": "check",
+      "question": "在长上下文条件下，WebAgent 的基线准确率会怎样变化？",
+      "options": [
+        "保持不变",
+        "从 40-50% 跌到 10% 以下，主要原因是无限循环和目标丢失",
+        "上升 30%",
+        "减半但仍高于 30%"
+      ],
+      "correct": 1,
+      "explanation": "Ralph Loop 和交接包的存在，就是为了消化这种长上下文崩溃。"
+    },
+    {
+      "stage": "post",
+      "question": "关于假阴性（纯提示词更快的情况），本节课怎么说？",
+      "options": [
+        "它们不存在",
+        "单步事实型任务、一行的 lint 修复、格式化工具运行用纯提示词更快；诚实地列举它们，工作台才不会被说成杀鸡用牛刀",
+        "它们证明工作台失败了",
+        "它们推翻了 harness 的论点"
+      ],
+      "correct": 1,
+      "explanation": "诚实列举纯提示词更快的场景，才能让 harness 的论证保持可信。"
+    },
+    {
+      "stage": "post",
+      "question": "本节课产出的报告应该在什么场合引用？",
+      "options": [
+        "内部 HR 评审",
+        "有人想'就这一个 sprint'撤掉验证门禁时，或新的智能体产品发布、需要可移植的省时基准时",
+        "只在营销演示稿里",
+        "只在黑客马拉松上"
+      ],
+      "correct": 1,
+      "explanation": "数字比解释传播得更远；当有压力试图绕过这些表面时，就引用这份报告。"
+    }
+  ]
+}

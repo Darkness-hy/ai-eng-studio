@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "为什么要在编写评分代码之前冻结任务记录的模式（schema）？",
+      "options": [
+        "这能让 JSON 解析器运行得更快",
+        "这锁定了契约，使指标、运行器和后处理器对字段名达成一致",
+        "这样就不再需要校验器",
+        "这允许随意新增指标名称而无需任何额外改动"
+      ],
+      "correct": 1,
+      "explanation": "模式是所有下游消费者共同读取的契约。锁定它之后，各组件可以独立修改而不会破坏其余部分。"
+    },
+    {
+      "stage": "pre",
+      "question": "metric_name 字段接受的封闭词表是什么？",
+      "options": [
+        "运行器配置中能识别的任何名称",
+        "exact_match、f1、bleu_4、rouge_l、accuracy、code_exec",
+        "任务作者任意选择的字符串",
+        "只有 exact_match 和 f1"
+      ],
+      "correct": 1,
+      "explanation": "本课把指标词表固定为六个名称。新增一个指标需要新开一课，并在校验器中新增一个条目。"
+    },
+    {
+      "stage": "check",
+      "question": "当校验器在记录中发现未知的顶层字段时会怎么做？",
+      "options": [
+        "删除该字段并继续处理",
+        "记录一条警告但仍接受该记录",
+        "返回校验错误并拒绝该记录",
+        "把它重命名为 metadata.unknown"
+      ],
+      "correct": 2,
+      "explanation": "未知字段是前向兼容性隐患。校验器会拒绝它们，以保证模式始终是唯一的事实来源。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么少样本示例附在任务记录上，而不是由运行器自行计算？",
+      "options": [
+        "运行器没有文件 I/O 能力",
+        "作者意图是评测的一部分；把示例绑定到任务上消除了提示词构造在不同模型间的差异",
+        "这样可以节省磁盘空间",
+        "少样本只在微调时使用"
+      ],
+      "correct": 1,
+      "explanation": "少样本的组织方式属于评测定义，而不是模型接口。把它放进任务里意味着每个模型看到的提示词完全相同。"
+    },
+    {
+      "stage": "check",
+      "question": "在校验器的规则下，哪个类别-指标组合是非法的？",
+      "options": [
+        "summary + rouge_l",
+        "arithmetic + exact_match",
+        "mcq + bleu_4",
+        "code_exec + code_exec"
+      ],
+      "correct": 2,
+      "explanation": "对单个字母计算 BLEU 没有意义。校验器强制 mcq 任务只能使用 exact_match 或 accuracy。"
+    },
+    {
+      "stage": "post",
+      "question": "当模型生成内容为 `Answer: C is correct` 时，后处理规则 extract_letter 会返回什么？",
+      "options": [
+        "原样返回整个字符串",
+        "C",
+        "Answer",
+        "空字符串"
+      ],
+      "correct": 1,
+      "explanation": "extract_letter 返回生成内容中第一个匹配 [A-E] 的字符。该字符串正文开头处的字符是 C。"
+    }
+  ]
+}

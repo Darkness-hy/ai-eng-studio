@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "为什么视觉编码器产出的 token 不能被文本解码器直接消费？",
+      "options": [
+        "它们的文件格式不同",
+        "图像 token 位于编码器在视觉预训练期间学到的基里，与解码器的词向量没有对应关系",
+        "图像 token 被加密了",
+        "图像 token 太短了"
+      ],
+      "correct": 1,
+      "explanation": "两个编码器学到的是相互独立的基；需要一个桥接模块才能把它们对齐到共享空间中。"
+    },
+    {
+      "stage": "pre",
+      "question": "为什么实践中两层 MLP 就足以完成模态对齐？",
+      "options": [
+        "PyTorch 要求必须用两层",
+        "在两个线性投影之间加一次非线性弯折（GELU），经验上已足以把 CLIP 风格的特征对齐到文本嵌入",
+        "单层投影是被禁止的",
+        "更深的投影是非法的"
+      ],
+      "correct": 1,
+      "explanation": "LLaVA 及其后续模型都采用这种两层 MLP，因为非线性能修正单个线性层无法处理的曲率不匹配。"
+    },
+    {
+      "stage": "check",
+      "question": "在这个对齐阶段，为什么要冻结视觉编码器？",
+      "options": [
+        "冻结意味着更短的运行时间",
+        "86M 参数的编码器无法在小型模拟语料上重新训练；只有 1.3M 参数的投影层足够轻量，几分钟内就能完成对齐",
+        "PyTorch 不支持训练编码器",
+        "编码器是空的"
+      ],
+      "correct": 1,
+      "explanation": "冻结编码器和文本嵌入表后，投影层成为唯一在学习的部分，这正是所有基于适配器的 VLM 的运行形态。"
+    },
+    {
+      "stage": "check",
+      "question": "当两个向量指向完全相反的方向时，cosine_alignment_loss(image_emb, text_emb) 返回多少？",
+      "options": [
+        "0.0",
+        "2.0",
+        "1.0",
+        "无穷大"
+      ],
+      "correct": 1,
+      "explanation": "损失为 1 - cos(夹角)。反向平行的向量 cos = -1，所以损失是 1 - (-1) = 2.0。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么要用 CLS 池化把 197 个 token 压成一个图像级别的向量？",
+      "options": [
+        "PyTorch 会自动对 token 求和",
+        "图注每个样本只有一个向量，图像侧也需要一个向量；CLS token 是编码器内置的图像摘要",
+        "这样能节省磁盘空间",
+        "patch token 没有被使用"
+      ],
+      "correct": 1,
+      "explanation": "对齐是一个图像向量对一个图注向量；CLS 池化在不引入额外参数的情况下产出这个图像向量。"
+    },
+    {
+      "stage": "post",
+      "question": "哪个生产系统与第 60 课的模式对应得最直接？",
+      "options": [
+        "PaLM",
+        "LLaVA 1.5：冻结视觉编码器，冻结 LLM，只训练一个两层 MLP 投影",
+        "AlphaFold",
+        "Stable Diffusion"
+      ],
+      "correct": 1,
+      "explanation": "LLaVA 的第一阶段训练正是如此：冻结编码器和语言模型，唯一可训练的部分就是一个两层 MLP 桥接。"
+    }
+  ]
+}

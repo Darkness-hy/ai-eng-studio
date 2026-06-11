@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "为什么调度器使用 UCB 打分，而不是总选当前最优的分支？",
+      "options": [
+        "因为 UCB 计算更快",
+        "因为贪心选取从不探索；UCB 在利用与探索之间取得平衡",
+        "因为 asyncio 要求使用 UCB",
+        "因为否则队列无法排序"
+      ],
+      "correct": 1,
+      "explanation": "贪心策略会锁死在最先领先的分支上。均匀策略则从不利用已有优势。UCB 通过 sqrt(ln N / n) 项在选取领先者的同时，为探索较少的分支保留容量。"
+    },
+    {
+      "stage": "pre",
+      "question": "在 UCB1 下，一个完成运行次数为零的分支会得到什么分数？",
+      "options": [
+        "零",
+        "探索常数 c",
+        "正无穷，因此未尝试过的分支总是最先被选中",
+        "所有其他分支的平均奖励"
+      ],
+      "correct": 2,
+      "explanation": "本课对 runs=0 的分支赋值 +inf。这保证在任何分支被重复选取之前，每个分支都至少被尝试一次。"
+    },
+    {
+      "stage": "check",
+      "question": "调度器如何让多个槽位保持忙碌？",
+      "options": [
+        "在线程池中运行执行器",
+        "为每个派发的假设调用 asyncio.create_task，并对在途任务集合等待 FIRST_COMPLETED",
+        "使用 multiprocessing",
+        "用 sleep 阻塞事件循环"
+      ],
+      "correct": 1,
+      "explanation": "每个被派发的假设都变成一个任务。主循环以 FIRST_COMPLETED 等待，因此一旦有槽位完成就立即释放，并派发下一个假设。"
+    },
+    {
+      "stage": "check",
+      "question": "调度器何时为一个分支发出 paper.trigger？",
+      "options": [
+        "该分支每有一个结果落地时",
+        "在分支平均奖励首次达到或超过论文阈值的那个结果上，且每个分支只触发一次",
+        "仅在运行结束时",
+        "当触及剪枝下限时"
+      ],
+      "correct": 1,
+      "explanation": "触发每个分支只发生一次，即该分支的平均奖励首次越过阈值时。BranchStats 上的 paper_triggered 标志防止重复触发。"
+    },
+    {
+      "stage": "post",
+      "question": "当一个分支在达到最少运行次数阈值后，平均奖励仍低于剪枝下限，会发生什么？",
+      "options": [
+        "什么都不发生；UCB 最终会选择其他分支",
+        "该分支被标记为已剪枝，队列中属于该分支的剩余假设被移除",
+        "调度器抛出异常",
+        "奖励下限被自动调低"
+      ],
+      "correct": 1,
+      "explanation": "剪枝将该分支从后续调度中移除。剪枝与选取器是分开的：UCB 负责排序，剪枝负责淘汰。"
+    },
+    {
+      "stage": "post",
+      "question": "调度器强制执行哪两个硬性预算？",
+      "options": [
+        "内存和 CPU",
+        "max_experiments（总运行次数）和 max_seconds（墙钟时间）",
+        "槽位数和队列深度",
+        "论文触发次数和剪枝次数"
+      ],
+      "correct": 1,
+      "explanation": "两者都会作为停止原因触发。max_experiments 限制总工作量，max_seconds 限制墙钟时间。追踪记录会记下是哪一个终止了本次运行。"
+    }
+  ]
+}

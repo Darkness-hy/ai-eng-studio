@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "梯度累积所表达的有效批次恒等式是什么？",
+      "options": [
+        "effective_batch = micro_batch / accum_steps",
+        "effective_batch = micro_batch * accum_steps",
+        "effective_batch = micro_batch + accum_steps",
+        "effective_batch = 仅由 world_size 决定"
+      ],
+      "correct": 1,
+      "explanation": "微批次是内存能装下的大小；累积步数是在一次优化器步进之前，把梯度堆进同一个缓冲区的前向加反向次数。"
+    },
+    {
+      "stage": "pre",
+      "question": "为什么每个微批次的损失必须在 backward 之前除以 accum_steps？",
+      "options": [
+        "这样损失曲线更好看",
+        "PyTorch 默认把梯度累加进 param.grad，不做这次除法的话累积梯度会大 N 倍，优化器步长也会激进 N 倍",
+        "为了避免 NaN",
+        "只有混合精度才需要"
+      ],
+      "correct": 1,
+      "explanation": "累积缓冲区里存的是求和。按微批次乘以 1/N 的缩放，把这个和拉回到单次完整批次反向传播会产生的同一尺度。"
+    },
+    {
+      "stage": "check",
+      "question": "在累积循环内部，优化器步进什么时候执行？",
+      "options": [
+        "每个微批次之后",
+        "只在累积窗口内最后一个微批次之后",
+        "为了保险每个窗口执行两次",
+        "从不执行；优化器被替换掉了"
+      ],
+      "correct": 1,
+      "explanation": "在累积中途步进会污染所有参数，而后续整个训练都依赖这些参数。优化器步进每个有效批次只触发一次。"
+    },
+    {
+      "stage": "check",
+      "question": "在真实的多 GPU 运行中，no_sync 上下文包住的是什么？",
+      "options": [
+        "前向传播",
+        "优化器步进",
+        "非最后的微批次，使梯度 all-reduce 只在最后一次反向传播后触发一次，而不是 N 次",
+        "数据加载器"
+      ],
+      "correct": 2,
+      "explanation": "DDP 的 no_sync 会跳过梯度集合通信。包住除最后一个之外的所有微批次，把每个有效步的 N 次集合通信变成一次。"
+    },
+    {
+      "stage": "check",
+      "question": "main.py 中的 equivalence_check 函数断言的是什么？",
+      "options": [
+        "损失会收敛",
+        "单次完整批次反向传播与按 accum_steps 分块、损失除以 N 的反向传播，在小容差内产生相同的梯度缓冲区和相同的步进后参数",
+        "吞吐量恒定",
+        "梯度为零"
+      ],
+      "correct": 1,
+      "explanation": "断言的界限是最大绝对差小于 1e-4。不做损失缩放时差异会爆炸；做了缩放后差异只剩浮点噪声。"
+    },
+    {
+      "stage": "post",
+      "question": "解读吞吐量对有效批次的曲线时，什么大致保持不变，什么会随之缩放？",
+      "options": [
+        "有效批次越大，每秒样本数越低",
+        "每秒样本数在硬件上限附近饱和，而每个优化器步的墙钟时间随 accum_steps 线性增长；下降的是每秒优化器步数",
+        "两个指标都随累积步数线性增长",
+        "吞吐量上升，因为模型变快了"
+      ],
+      "correct": 1,
+      "explanation": "每个微批次的前向加反向成本相同。累积换来的是每个优化器步在统计上的平滑，而不是原始吞吐量；这条曲线是用来检验坊间说法的有用现实参照。"
+    }
+  ]
+}

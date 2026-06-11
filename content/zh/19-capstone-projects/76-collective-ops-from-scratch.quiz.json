@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "对一个 T 字节的张量在 N 个 rank 上做环形 allreduce，每个 rank 的带宽开销是多少？",
+      "options": [
+        "T 字节",
+        "N * T 字节",
+        "2T(N-1)/N 字节",
+        "T log2(N) 字节"
+      ],
+      "correct": 2,
+      "explanation": "环形 allreduce 把 N-1 个大小为 T/N 的分块传输两遍（先 reduce-scatter 再 allgather）；每个 rank 的总量是 2T(N-1)/N，与集群规模无关。"
+    },
+    {
+      "stage": "pre",
+      "question": "为什么说本课的队列网格是真实集群上 NCCL 的可信替代？",
+      "options": [
+        "它运行在 CUDA 核心上",
+        "它用硬件卸载归约",
+        "它实现了相同的通信模式（沿环的有序点对点发送），只是传输介质不同",
+        "它会压缩消息"
+      ],
+      "correct": 2,
+      "explanation": "算法正确性取决于通信模式而不是介质；队列环暴露的竞争形态和分块调度与 NCCL 环形 allreduce 完全相同。"
+    },
+    {
+      "stage": "check",
+      "question": "环形 allreduce 的 reduce-scatter 阶段结束后，rank r 持有什么？",
+      "options": [
+        "什么都没有",
+        "未归约的完整张量",
+        "一个分块（张量的 N 分之一）的归约求和结果",
+        "两个分块的归约求和结果"
+      ],
+      "correct": 2,
+      "explanation": "Reduce-scatter 把一个分块的求和结果落在一个 rank 上；随后的 allgather 阶段把这些已完成的分块沿环旋转。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么用树形 broadcast，而不是从源节点发起 N-1 次直接发送？",
+      "options": [
+        "树形结构占用内存更少",
+        "树形结构每一轮让持有者数量翻倍；深度是 log2(N)，所以延迟按对数而不是按 N 增长",
+        "PyTorch 强制要求用树形结构",
+        "直接发送会丢包"
+      ],
+      "correct": 1,
+      "explanation": "当每跳延迟是瓶颈时，log2(N) 跳占主导；N-1 次串行发送要把这个延迟下限支付 N 次。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么要在相同输入上对照 torch.distributed 的 gloo 做验证？",
+      "options": [
+        "gloo 更快",
+        "gloo 是集合通信语义的权威参考；逐字节一致的输出证明你的算法符合规范，然后才能上真实集群",
+        "gloo 会自动写 JSONL",
+        "gloo 不需要任何配置"
+      ],
+      "correct": 1,
+      "explanation": "没有参考实现，原语看起来一切正常，直到真实训练跑到第 10000 步才暴露问题；gloo 在 CPU 上提供逐字节一致的真值。"
+    },
+    {
+      "stage": "post",
+      "question": "树形 allreduce 什么时候胜过环形 allreduce？",
+      "options": [
+        "永远胜出",
+        "消息很大时",
+        "消息小或链路延迟高时；在分界点以下，log2(N) 的跳数优于带宽项 2T(N-1)/N",
+        "从不胜出"
+      ],
+      "correct": 2,
+      "explanation": "NCCL 在消息大于约 1 MB 时选环形，小于时选树形；分界点取决于给定集群拓扑上的带宽与延迟之争。"
+    }
+  ]
+}

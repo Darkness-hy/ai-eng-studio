@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "为什么运行器要为每个候选代码启动一个全新的 Python 子进程，而不是内联调用 exec？",
+      "options": [
+        "它比 exec 更快",
+        "它能避免污染 builtins",
+        "它把超时、输出超限和危险导入与宿主评测进程隔离开来",
+        "exec 在现代 Python 中已被弃用"
+      ],
+      "correct": 2,
+      "explanation": "候选代码中的无限循环或失控的内存分配只会让子进程崩溃，宿主评测进程仍能继续推进。"
+    },
+    {
+      "stage": "pre",
+      "question": "一个任务有三条断言，两条通过、一条失败，得分是多少？",
+      "options": [
+        "1.0",
+        "0.667",
+        "0.0",
+        "0.5"
+      ],
+      "correct": 1,
+      "explanation": "得分等于通过数除以总数。三条中通过两条即 0.667，退出码为 assertion_fail。"
+    },
+    {
+      "stage": "check",
+      "question": "当候选代码无法解析时，运行器返回哪个退出码？",
+      "options": [
+        "error",
+        "assertion_fail",
+        "timeout",
+        "syntax_error"
+      ],
+      "correct": 3,
+      "explanation": "compile() 在运行器内部抛出 SyntaxError，内层脚本捕获后写入 exit_code=syntax_error。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么真正承重的控制手段是墙钟超时，而不是 import 拒绝清单？",
+      "options": [
+        "Python 中无法拦截导入",
+        "大多数失败是无限循环，而蓄意的对手可以绕过任何进程内拒绝清单",
+        "subprocess.run 不支持拒绝清单",
+        "墙钟时间在编译期检查"
+      ],
+      "correct": 1,
+      "explanation": "拒绝清单挡得住粗心的代码，超时才能挡住无限循环。拒绝清单是兜底，超时才是底线。"
+    },
+    {
+      "stage": "check",
+      "question": "当 n - c < k 时，pass_at_k(n, c, k) 返回什么？",
+      "options": [
+        "零，因为样本无定义",
+        "一，因为样本必然至少包含一个通过解",
+        "c / n，即经验通过率",
+        "抛出 ValueError"
+      ],
+      "correct": 1,
+      "explanation": "如果失败数少于样本大小，任何大小为 k 的样本都必然包含至少一个通过解，所以概率为 1。"
+    },
+    {
+      "stage": "post",
+      "question": "运行器如何报告输出溢出？上限为什么是 256 KB？",
+      "options": [
+        "子进程的 stdout 被流式读取；累计总量一旦超过 256 KB 就杀掉子进程，任务记录为 exit_code=error，详情为 \"output overflow\"",
+        "只看 stderr；大小与操作系统管道默认值一致",
+        "指候选源码大小，封顶是为了让生成的代码保持精简",
+        "指得分数值，以保留两位小数的百分比表示"
+      ],
+      "correct": 0,
+      "explanation": "上限是为了保护宿主。向 stdout 倾泻数据的候选代码会在传输途中被杀掉；运行器将结果规范化为 exit_code=error 加详情 \"output overflow\"，而不是新造一个退出码。"
+    }
+  ]
+}
