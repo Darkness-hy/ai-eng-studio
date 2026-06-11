@@ -1,0 +1,19 @@
+{
+  "01-audio-fundamentals": "音频基础与傅里叶变换",
+  "02-spectrograms-mel-features": "频谱图与 Mel 特征",
+  "03-audio-classification": "音频分类：从 MFCC 到 AST",
+  "04-speech-recognition-asr": "语音识别（ASR）",
+  "05-whisper-architecture-finetuning": "Whisper 架构与微调",
+  "06-speaker-recognition-verification": "说话人识别与验证",
+  "07-text-to-speech": "语音合成（TTS）",
+  "08-voice-cloning-conversion": "声音克隆与语音转换",
+  "09-music-generation": "音乐生成",
+  "10-audio-language-models": "音频语言模型",
+  "11-real-time-audio-processing": "实时音频处理",
+  "12-voice-assistant-pipeline": "实战：构建语音助手",
+  "13-neural-audio-codecs": "神经音频编解码器",
+  "14-voice-activity-detection-turn-taking": "语音活动检测与话轮转换",
+  "15-streaming-speech-to-speech-moshi-hibiki": "流式语音到语音对话",
+  "16-anti-spoofing-audio-watermarking": "语音反欺骗与音频水印",
+  "17-audio-evaluation-metrics": "音频评估指标"
+}

@@ -1,0 +1,90 @@
+{
+  "lesson": "08-memory-blocks-sleep-time-compute",
+  "title": "Memory Blocks and Sleep-Time Compute (Letta)",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "Letta 的三个记忆层级是什么？",
+      "options": [
+        "Cache、KV、archival",
+        "Core、recall、archival",
+        "RAM、swap、磁盘",
+        "工作记忆、情景记忆、语义记忆"
+      ],
+      "correct": 1,
+      "explanation": "Letta 使用 core（始终可见）、recall（对话历史）和 archival（外部存储）三个层级。"
+    },
+    {
+      "stage": "pre",
+      "question": "睡眠时计算针对的是哪个生产环境问题？",
+      "options": [
+        "在关键路径上做记忆整理导致的尾延迟",
+        "提高数学题的准确率",
+        "降低嵌入成本",
+        "加快 JSON 解析"
+      ],
+      "correct": 0,
+      "explanation": "睡眠时计算把裁剪/摘要/调和移出面向用户的路径，让主代理的响应保持快速。"
+    },
+    {
+      "stage": "check",
+      "question": "下列哪个属性不是 Letta 记忆块的字段？",
+      "options": [
+        "label",
+        "value",
+        "limit",
+        "embedding_model_version"
+      ],
+      "correct": 3,
+      "explanation": "块包含 id、label、value、limit、description；嵌入模型版本不属于块的 schema。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么睡眠时代理可以使用比主代理更强的模型？",
+      "options": [
+        "它获得了一个专用的 API key",
+        "它位于关键路径之外，因此不受延迟约束",
+        "它不受速率限制",
+        "记忆操作只消耗一半 token"
+      ],
+      "correct": 1,
+      "explanation": "因为它不会阻塞用户响应，睡眠时代理可以更慢、更昂贵。"
+    },
+    {
+      "stage": "check",
+      "question": "Human 块和 Persona 块泛化成了什么模式？",
+      "options": [
+        "向量嵌入",
+        "任意用户自定义的类型化可编辑块（Task、Project、Safety 等）",
+        "JSON-RPC 通道",
+        "操作系统进程"
+      ],
+      "correct": 1,
+      "explanation": "Letta 把 MemGPT 的两个块泛化为任意用户自定义块，每个块带有 id、label、value、limit、description。"
+    },
+    {
+      "stage": "post",
+      "question": "在这个模式中，什么是静默漂移（silent drift）？",
+      "options": [
+        "睡眠时代理在底层重写了块，主代理却始终没有察觉；解决办法是加版本并展示可见的差异",
+        "磁盘写入缓慢",
+        "嵌入模型升级",
+        "速率限制抖动"
+      ],
+      "correct": 0,
+      "explanation": "给块加版本并在轨迹中展示差异，让主循环能看到睡眠时的重写。"
+    },
+    {
+      "stage": "post",
+      "question": "Letta V1 用什么取代了内联 `Thought:` 标记和 send_message/heartbeat 模式？",
+      "options": [
+        "在独立通道上输出并跨轮次传递的原生推理",
+        "一个专门负责思考的第二个 LLM",
+        "更大的系统提示词",
+        "用户手动输入的思考内容"
+      ],
+      "correct": 0,
+      "explanation": "Letta V1（letta_v1_agent）使用供应商层面的原生推理，而不是嵌入提示词的思考内容。"
+    }
+  ]
+}

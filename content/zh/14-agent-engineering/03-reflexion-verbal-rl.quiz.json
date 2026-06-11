@@ -1,0 +1,88 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "Reflexion 替换了标准强化学习中的什么？",
+      "options": [
+        "用常数奖励替换奖励塑形",
+        "用在试验之间存储的自然语言反思替换梯度更新",
+        "用随机搜索替换策略网络",
+        "用参数化记忆替换情景记忆"
+      ],
+      "correct": 1,
+      "explanation": "Reflexion 用情景记忆中的自然语言反思取代了权重更新。"
+    },
+    {
+      "stage": "pre",
+      "question": "构成 Reflexion 系统的三个组件是什么？",
+      "options": [
+        "Planner、Worker、Solver",
+        "Actor、Evaluator、Self-Reflector",
+        "Generator、Critic、Optimizer",
+        "Selector、Expander、Backpropagator"
+      ],
+      "correct": 1,
+      "explanation": "Reflexion 把智能体拆分为执行轨迹的 Actor、给轨迹打分的 Evaluator，以及写下经验教训的 Self-Reflector。"
+    },
+    {
+      "stage": "check",
+      "question": "哪种评估器类型使用外部二元信号，例如单元测试或已知正确答案？",
+      "options": [
+        "启发式",
+        "标量",
+        "自评估",
+        "投票式"
+      ],
+      "correct": 1,
+      "explanation": "标量评估器从真值中读取通过/失败信号（ALFWorld 的成功判定、HumanEval 的测试）。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么自评估的信号比标量反馈弱？",
+      "options": [
+        "它的计算速度更慢",
+        "模型给自己打分时没有外部依据，可能给自己的答案盖章放行",
+        "它总是需要更大的模型",
+        "它无法在工具上运行"
+      ],
+      "correct": 1,
+      "explanation": "自评估缺少外部检验，一个充满自信的幻觉也能得高分；应与工具锚定的验证配合使用。"
+    },
+    {
+      "stage": "check",
+      "question": "课程中列出的 Reflexion 帮不上忙的情况是哪一种？",
+      "options": [
+        "可以用测试打分的代码生成",
+        "外部瞬时故障，比如网络断了",
+        "ALFWorld 导航任务",
+        "HotpotQA 多跳问题"
+      ],
+      "correct": 1,
+      "explanation": "针对瞬时外部故障的反思，对未来的运行没有帮助。"
+    },
+    {
+      "stage": "post",
+      "question": "在 Reflexion 模式中，什么是记忆腐烂（memory rot）？",
+      "options": [
+        "进程重启时丢失反思",
+        "情景缓冲区被过时或错误的反思填满，拖慢或带偏后续试验",
+        "反思被提供商加密",
+        "反思提示词超出上下文窗口"
+      ],
+      "correct": 1,
+      "explanation": "累积的过期或错误反思会让行为退化；用压缩或 TTL 来缓解。"
+    },
+    {
+      "stage": "post",
+      "question": "课程中与 Reflexion 对应得最明确的生产模式是哪一个？",
+      "options": [
+        "Cursor 的 apply-edits 流程",
+        "Claude Code 把 CLAUDE.md 中的经验前置到未来会话",
+        "OpenAI 的 batch API",
+        "Anthropic 的提示词缓存"
+      ],
+      "correct": 1,
+      "explanation": "CLAUDE.md 经验沉淀、pro-workflow 的 learn-rule 和 Letta 的 sleep-time compute，都把情景反思缓冲区外化了出来。"
+    }
+  ]
+}

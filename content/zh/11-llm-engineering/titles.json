@@ -1,0 +1,19 @@
+{
+  "01-prompt-engineering": "提示工程技巧与模式",
+  "02-few-shot-cot": "Few-Shot 与思维链",
+  "03-structured-outputs": "结构化输出",
+  "04-embeddings": "嵌入与向量表示",
+  "05-context-engineering": "上下文工程",
+  "06-rag": "RAG 检索增强生成",
+  "07-advanced-rag": "进阶 RAG",
+  "08-fine-tuning-lora": "LoRA 与 QLoRA 微调",
+  "09-function-calling": "函数调用与工具使用",
+  "10-evaluation": "LLM 应用评估与测试",
+  "11-caching-cost": "缓存、限流与成本优化",
+  "12-guardrails": "护栏与内容安全",
+  "13-production-app": "构建生产级 LLM 应用",
+  "14-model-context-protocol": "MCP 协议",
+  "15-prompt-caching": "提示缓存与上下文缓存",
+  "16-langgraph-state-machines": "LangGraph 状态机",
+  "17-agent-framework-tradeoffs": "Agent 框架选型对比"
+}

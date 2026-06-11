@@ -1,0 +1,15 @@
+{
+  "01-the-perceptron": "感知机",
+  "02-multi-layer-networks": "多层网络与前向传播",
+  "03-backpropagation": "从零实现反向传播",
+  "04-activation-functions": "激活函数",
+  "05-loss-functions": "损失函数",
+  "06-optimizers": "优化器",
+  "07-regularization": "正则化",
+  "08-weight-initialization": "权重初始化与训练稳定性",
+  "09-learning-rate-schedules": "学习率调度与预热",
+  "10-mini-framework": "构建自己的迷你框架",
+  "11-intro-to-pytorch": "PyTorch 入门",
+  "12-intro-to-jax": "JAX 入门",
+  "13-debugging-neural-networks": "神经网络调试"
+}

@@ -1,0 +1,14 @@
+{
+  "01-mdps-states-actions-rewards": "MDP：状态、动作与奖励",
+  "02-dynamic-programming": "动态规划：策略与价值迭代",
+  "03-monte-carlo-methods": "蒙特卡洛方法",
+  "04-q-learning-sarsa": "时序差分：Q-Learning 与 SARSA",
+  "05-dqn": "深度 Q 网络（DQN）",
+  "06-policy-gradients-reinforce": "策略梯度与 REINFORCE",
+  "07-actor-critic-a2c-a3c": "Actor-Critic：A2C 与 A3C",
+  "08-ppo": "近端策略优化（PPO）",
+  "09-reward-modeling-rlhf": "奖励建模与 RLHF",
+  "10-multi-agent-rl": "多智能体强化学习",
+  "11-sim-to-real-transfer": "Sim-to-Real 迁移",
+  "12-rl-for-games": "游戏 RL：AlphaZero 与 MuZero"
+}

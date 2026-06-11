@@ -1,0 +1,39 @@
+{
+  "questions": [
+    {
+      "question": "在深度学习框架中，Module 抽象承担哪三项职责？",
+      "options": ["加载数据、预处理数据、数据增强", "forward() 负责计算，backward() 负责梯度，parameters() 负责可训练权重", "编译、优化、部署", "分词、嵌入、解码"],
+      "correct": 1,
+      "explanation": "每个 Module 都实现 forward() 来计算输出、backward() 来传播梯度、parameters() 来暴露可训练权重。这套统一接口使任何模块都能与其他模块组合。",
+      "stage": "pre"
+    },
+    {
+      "question": "为什么 Sequential 在反向传播时要按逆序处理模块？",
+      "options": ["顺序是任意的——哪个方向都行", "梯度从损失出发逆向流过网络，所以最后一层最先计算梯度", "逆序占用的内存更少", "逆序可以防止梯度爆炸"],
+      "correct": 1,
+      "explanation": "反向传播从损失开始，将梯度向输入方向传播。最后一层最先接收到损失梯度，计算其局部梯度，再传给前一层。",
+      "stage": "pre"
+    },
+    {
+      "question": "为什么 optimizer.zero_grad() 是一个单独的调用，而不是自动完成？",
+      "options": ["这是 PyTorch 的设计失误", "它允许在执行一次优化器更新之前，跨多个批次累积梯度", "它能节省内存", "它让调试更容易"],
+      "correct": 1,
+      "explanation": "把 zero_grad 与 step 分开可以实现梯度累积：你可以（跨多个小批量）多次运行 backward()，把梯度求和后再调用 step()。这相当于模拟更大的批大小。",
+      "stage": "post"
+    },
+    {
+      "question": "训练循环中各操作的正确顺序是什么？",
+      "options": ["backward、forward、zero_grad、step", "forward、loss、zero_grad、backward、step", "zero_grad、forward、loss、backward、step", "forward、zero_grad、backward、loss、step"],
+      "correct": 2,
+      "explanation": "标准模式是：zero_grad（清除旧梯度）、forward（计算预测）、loss（计算标量损失）、backward（计算梯度）、step（更新参数）。顺序弄错会引发隐蔽的 bug。",
+      "stage": "post"
+    },
+    {
+      "question": "DataLoader 在框架中扮演什么角色？",
+      "options": ["它负责训练模型", "它把数据切分成批次，并可选地在 epoch 之间打乱顺序，以支持小批量梯度下降", "它负责计算损失函数", "它负责初始化权重"],
+      "correct": 1,
+      "explanation": "DataLoader 解决两个实际问题：分批（所有数据装不进内存）和打乱（随机顺序防止模型记住数据的排列顺序）。",
+      "stage": "post"
+    }
+  ]
+}

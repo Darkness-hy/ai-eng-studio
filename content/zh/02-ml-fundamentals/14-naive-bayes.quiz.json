@@ -1,0 +1,69 @@
+{
+  "questions": [
+    {
+      "id": "nb-pre-1",
+      "stage": "pre",
+      "question": "朴素贝叶斯中的「朴素」假设指的是什么？",
+      "options": [
+        "每个类别的先验概率相等",
+        "在给定类别标签的条件下，所有特征相互条件独立",
+        "数据服从正态分布",
+        "模型没有需要学习的参数"
+      ],
+      "correct": 1,
+      "explanation": "朴素贝叶斯假设在给定类别的条件下，每个特征都与其他特征相互独立。这个假设在数学上是错的（比如「machine」和「learning」总是共现），但在实践中效果很好。"
+    },
+    {
+      "id": "nb-pre-2",
+      "stage": "pre",
+      "question": "拉普拉斯平滑在朴素贝叶斯中防止的是什么问题？",
+      "options": [
+        "在大数据集上过拟合",
+        "训练时某类别中从未出现过的词导致的零概率",
+        "高维数据上训练太慢",
+        "数据集中的类别不平衡"
+      ],
+      "correct": 1,
+      "explanation": "不做平滑时，一个从未在「垃圾邮件」训练数据中出现过的词会得到 P(word|spam) = 0，使整个连乘积变为零，无论其他证据多么有力。拉普拉斯平滑给每个计数加 1。"
+    },
+    {
+      "id": "nb-post-1",
+      "stage": "post",
+      "question": "朴素独立性假设对文本来说显然是错的。为什么朴素贝叶斯仍然能分类得很好？",
+      "options": [
+        "它只在独立性成立的极小词表上有效",
+        "分类只需要正确的类别排序，不需要正确的概率估计，而且该假设引入的误差稳定，对所有类别的影响相似",
+        "现代实现悄悄移除了独立性假设",
+        "它只在特征真正独立时才有效"
+      ],
+      "correct": 1,
+      "explanation": "NB 需要的是正确地排序类别，而不是估计精确的概率。独立性假设是高偏差但低方差的，使模型在数据有限时保持稳定。相关特征带来的证据虽被重复计算，但对正确类别同样被重复计算。"
+    },
+    {
+      "id": "nb-post-2",
+      "stage": "post",
+      "question": "什么时候该用 Multinomial NB，什么时候该用 Gaussian NB？",
+      "options": [
+        "Multinomial 用于回归，Gaussian 用于分类",
+        "Multinomial 用于词计数/频率特征，Gaussian 用于连续实值特征",
+        "Multinomial 用于二值数据，Gaussian 用于多分类问题",
+        "两者可以互换——哪个快就用哪个"
+      ],
+      "correct": 1,
+      "explanation": "Multinomial NB 对特征计数（文本中的词频）建模。Gaussian NB 假设特征服从正态分布，适合测量值或传感器读数等连续特征。"
+    },
+    {
+      "id": "nb-post-3",
+      "stage": "post",
+      "question": "一封邮件中「free」出现两次、「money」出现一次。在使用对数概率的 Multinomial NB 中，垃圾邮件得分如何计算？",
+      "options": [
+        "log P(spam) + log P(free|spam) + log P(money|spam)",
+        "log P(spam) + 2 * log P(free|spam) + 1 * log P(money|spam)",
+        "P(spam) * P(free|spam) * P(money|spam)",
+        "log P(spam) * 2 * log P(free|spam)"
+      ],
+      "correct": 1,
+      "explanation": "Multinomial NB 把各词的似然按其出现次数取幂后相乘。在对数空间中即：log P(spam) + 2*log P(free|spam) + 1*log P(money|spam)。词的计数充当指数。"
+    }
+  ]
+}

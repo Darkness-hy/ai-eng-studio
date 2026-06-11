@@ -1,0 +1,90 @@
+{
+  "lesson": "05-self-refine-and-critic",
+  "title": "Self-Refine 与 CRITIC：迭代式输出改进",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "Self-Refine 循环由哪三个提示词组成？",
+      "options": [
+        "规划、执行、求解",
+        "生成、反馈、改进",
+        "执行者、评估者、反思者",
+        "搜索、打分、综合"
+      ],
+      "correct": 1,
+      "explanation": "Self-Refine 让一个模型扮演三种角色：生成、反馈、改进。"
+    },
+    {
+      "stage": "pre",
+      "question": "为什么 Self-Refine 在改进步骤中需要历史记录？",
+      "options": [
+        "服务商只对历史记录做缓存",
+        "没有之前的输出和批评意见，改进步骤会重复早先的错误；消融实验显示质量大幅下降",
+        "历史记录是计费所需",
+        "它能加快 token 生成速度"
+      ],
+      "correct": 1,
+      "explanation": "改进提示词以完整历史为条件，模型才不会重复之前犯过的错误。"
+    },
+    {
+      "stage": "check",
+      "question": "相对于 Self-Refine，CRITIC 改变了什么？",
+      "options": [
+        "它去掉了改进步骤",
+        "它把自我反馈步骤替换为基于外部工具的验证器",
+        "它用更大的模型做生成",
+        "它把反馈步骤并行运行"
+      ],
+      "correct": 1,
+      "explanation": "CRITIC 把自我批评换成验证步骤，交由搜索引擎、代码解释器、计算器或领域验证器来完成。"
+    },
+    {
+      "stage": "check",
+      "question": "哪个 Anthropic 工作流模式是 Self-Refine 和 CRITIC 在 Claude 语境下的对应？",
+      "options": [
+        "路由器（Router）",
+        "提示词链（Prompt chain）",
+        "评估器-优化器（Evaluator-Optimizer）",
+        "并行采样（Parallel sampling）"
+      ],
+      "correct": 2,
+      "explanation": "Anthropic 把这一模式命名为评估器-优化器：评估器打分，优化器修订，循环直至收敛。"
+    },
+    {
+      "stage": "check",
+      "question": "什么是盖章式循环？本课建议如何避免？",
+      "options": [
+        "一个永远通过的测试；删掉该测试",
+        "同一模型用同一提示词批评并认可自己的输出；用结构上不同的提示词或单独的小模型批评器",
+        "一个永远失败的重试；提高预算",
+        "一个超时的护栏；放宽超时时间"
+      ],
+      "correct": 1,
+      "explanation": "同一风格的自我批评会收敛到「我觉得没问题」；要让评估器与优化器有所区分。"
+    },
+    {
+      "stage": "post",
+      "question": "OpenAI Agents SDK 中哪个特性是 CRITIC 形态的？",
+      "options": [
+        "交接（Handoffs）",
+        "会话（Sessions）",
+        "输出护栏（可以调用工具）",
+        "追踪（Tracing）"
+      ],
+      "correct": 2,
+      "explanation": "输出护栏验证智能体的最终输出并且可以调用工具，对应 CRITIC 的验证器角色。"
+    },
+    {
+      "stage": "post",
+      "question": "本课为 2026 年的评估器-优化器循环推荐什么停止条件？",
+      "options": [
+        "只在验证器通过时停止",
+        "只在模型说「没问题」时停止",
+        "组合条件：验证器通过，或（模型说没问题且迭代次数 >= 2），或迭代次数 >= max_iterations",
+        "永不停止；让智能体无限自我改进"
+      ],
+      "correct": 2,
+      "explanation": "组合条件可以避免单一条件的失效模式。"
+    }
+  ]
+}

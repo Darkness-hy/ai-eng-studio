@@ -1,0 +1,88 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "相比自由发挥的 LLM 计划，HTN 多提供了什么？",
+      "options": [
+        "在强制执行算子前置条件和效果时，正确性可被证明",
+        "更便宜的推理",
+        "更短的提示词",
+        "更好的嵌入"
+      ],
+      "correct": 0,
+      "explanation": "HTN 的符号算子带有前置条件和效果，从构造上保证了计划的可靠性。"
+    },
+    {
+      "stage": "pre",
+      "question": "AlphaEvolve 是为哪类问题设计的？",
+      "options": [
+        "自由文本生成",
+        "拥有机器可校验、确定性适应度函数的优化问题",
+        "多轮对话记忆",
+        "向量搜索排序"
+      ],
+      "correct": 1,
+      "explanation": "进化搜索需要一个确定性评估器；AlphaEvolve 面向存在这种评估器的领域。"
+    },
+    {
+      "stage": "check",
+      "question": "ChatHTN 在使用 LLM 的同时如何保持计划的可靠性？",
+      "options": [
+        "无法保持；可靠性只是尽力而为",
+        "LLM 的建议只能以候选分解的形式进入系统，并经过算子模式校验；正确性由符号层负责",
+        "在 HTN 轨迹上微调 LLM",
+        "使用向量数据库"
+      ],
+      "correct": 1,
+      "explanation": "LLM 负责扩充方法库，但无法绕过算子的前置条件和效果。"
+    },
+    {
+      "stage": "check",
+      "question": "本课引用了 AlphaEvolve 的哪项成果？",
+      "options": [
+        "56 年来首次在 4x4 复数矩阵乘法上超越 Strassen 算法",
+        "让 Gemini 推理提速 10 倍",
+        "在 HumanEval 上击败 GPT-4",
+        "首次证明 P=NP"
+      ],
+      "correct": 0,
+      "explanation": "AlphaEvolve 为 4x4 复数矩阵乘法找到了 48 次标量乘法的方案，是 56 年来对 Strassen 算法的首次改进。"
+    },
+    {
+      "stage": "check",
+      "question": "HTN 中哪个元素是带前置条件和效果、可直接执行的原子动作？",
+      "options": [
+        "任务（Task）",
+        "方法（Method）",
+        "算子（Operator）",
+        "状态（State）"
+      ],
+      "correct": 2,
+      "explanation": "算子是原子单元；方法负责分解复合任务；状态是一组事实。"
+    },
+    {
+      "stage": "post",
+      "question": "对于没有真实评估器的 AlphaEvolve，本课给出了什么警告？",
+      "options": [
+        "它运行很慢",
+        "问 LLM 代码是不是更好了并不是适应度函数；评估器必须确定且快速",
+        "它违反 Apache 2.0 协议",
+        "它无法在 GPU 上运行"
+      ],
+      "correct": 1,
+      "explanation": "没有确定性评估器，搜索就没有可供收敛的信号。"
+    },
+    {
+      "stage": "post",
+      "question": "什么时候应该选 ReAct 或 ReWOO，而不是 HTN 或 AlphaEvolve？",
+      "options": [
+        "永远不应该；HTN 严格更优",
+        "当你不需要形式化可靠性或机器可校验的适应度时；大多数智能体任务都属于这种情况",
+        "当你有 GPU 集群可用时",
+        "当延迟低于 100 毫秒时"
+      ],
+      "correct": 1,
+      "explanation": "本课明确警告不要过度工程：大多数任务既不需要形式化规划，也不需要进化搜索。"
+    }
+  ]
+}

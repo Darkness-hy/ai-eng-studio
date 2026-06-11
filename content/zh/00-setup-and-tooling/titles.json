@@ -1,0 +1,14 @@
+{
+  "01-dev-environment": "开发环境搭建",
+  "02-git-and-collaboration": "Git 与协作",
+  "03-gpu-setup-and-cloud": "GPU 配置与云端",
+  "04-apis-and-keys": "API 与密钥",
+  "05-jupyter-notebooks": "Jupyter Notebook",
+  "06-python-environments": "Python 环境管理",
+  "07-docker-for-ai": "面向 AI 的 Docker",
+  "08-editor-setup": "编辑器配置",
+  "09-data-management": "数据管理",
+  "10-terminal-and-shell": "终端与 Shell",
+  "11-linux-for-ai": "面向 AI 的 Linux",
+  "12-debugging-and-profiling": "调试与性能分析"
+}

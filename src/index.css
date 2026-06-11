@@ -1,0 +1,235 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-canvas: #fbfbfa;
+  --color-bone: #f7f6f3;
+  --color-paper: #ffffff;
+  --color-ink: #2f3437;
+  --color-faint: #787774;
+  --color-hairline: #eaeaea;
+
+  --color-pale-red: #fdebec;
+  --color-ink-red: #9f2f2d;
+  --color-pale-blue: #e1f3fe;
+  --color-ink-blue: #1f6c9f;
+  --color-pale-green: #edf3ec;
+  --color-ink-green: #346538;
+  --color-pale-yellow: #fbf3db;
+  --color-ink-yellow: #956400;
+
+  --font-serif: 'Newsreader', 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+  --font-sans:
+    'SF Pro Display', -apple-system, 'PingFang SC', 'Noto Sans SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, 'PingFang SC', monospace;
+
+  --shadow-lift: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --ease-out-quiet: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-pale-yellow);
+}
+
+kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 4px;
+  background: var(--color-bone);
+  padding: 1px 5px;
+  color: var(--color-faint);
+}
+
+/* ── quiet entrance ─────────────────────────────────────────── */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rise {
+  animation: rise-in 600ms var(--ease-out-quiet) both;
+  animation-delay: calc(var(--stagger, 0) * 70ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* ── lesson prose (editorial document style) ────────────────── */
+.prose-doc {
+  font-size: 16px;
+  line-height: 1.85;
+  color: var(--color-ink);
+}
+
+.prose-doc > * + * {
+  margin-top: 1.1em;
+}
+
+.prose-doc h2 {
+  font-family: var(--font-serif);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin-top: 2.4em;
+  padding-top: 1.2em;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.prose-doc h3 {
+  font-family: var(--font-serif);
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-top: 1.8em;
+}
+
+.prose-doc h4 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 1.6em;
+}
+
+.prose-doc p,
+.prose-doc li {
+  max-width: 72ch;
+}
+
+.prose-doc a {
+  color: var(--color-ink-blue);
+  text-decoration: underline;
+  text-decoration-color: var(--color-hairline);
+  text-underline-offset: 3px;
+}
+
+.prose-doc a:hover {
+  text-decoration-color: var(--color-ink-blue);
+}
+
+.prose-doc strong {
+  font-weight: 600;
+}
+
+.prose-doc ul,
+.prose-doc ol {
+  padding-left: 1.4em;
+}
+
+.prose-doc ul {
+  list-style: disc;
+}
+
+.prose-doc ol {
+  list-style: decimal;
+}
+
+.prose-doc ul ::marker,
+.prose-doc ol ::marker {
+  color: var(--color-faint);
+}
+
+.prose-doc li + li {
+  margin-top: 0.35em;
+}
+
+.prose-doc blockquote {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--color-faint);
+  border-left: 2px solid var(--color-ink);
+  padding-left: 1.2em;
+  margin: 1.6em 0;
+}
+
+.prose-doc code:not(pre code) {
+  font-family: var(--font-mono);
+  font-size: 0.84em;
+  background: var(--color-bone);
+  border: 1px solid var(--color-hairline);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+
+.prose-doc pre {
+  margin: 1.4em 0;
+}
+
+.prose-doc table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 1.4em 0;
+}
+
+.prose-doc th {
+  font-weight: 600;
+  text-align: left;
+  border-bottom: 1px solid var(--color-ink);
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
+.prose-doc td {
+  border-bottom: 1px solid var(--color-hairline);
+  padding: 8px 12px;
+  vertical-align: top;
+}
+
+.prose-doc hr {
+  border: none;
+  border-top: 1px solid var(--color-hairline);
+  margin: 2.4em 0;
+}
+
+.prose-doc img {
+  max-width: 100%;
+  border: 1px solid var(--color-hairline);
+  border-radius: 8px;
+}
+
+/* ── shiki code blocks ──────────────────────────────────────── */
+.code-shell pre {
+  background: transparent !important;
+  padding: 16px 20px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.code-shell code {
+  font-family: var(--font-mono);
+}
+
+/* ── mermaid diagrams ───────────────────────────────────────── */
+.mermaid-box svg {
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+}

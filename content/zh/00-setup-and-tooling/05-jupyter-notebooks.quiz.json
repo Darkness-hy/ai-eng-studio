@@ -1,0 +1,39 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "什么是 Jupyter notebook？",
+      "options": ["一种编写 Python 脚本的文本编辑器", "一种交互式文档，把可执行的代码单元格、markdown 文本和内联输出混排在一起", "一种数据科学项目的版本控制系统", "一种 Python 库的包管理器"],
+      "correct": 1,
+      "explanation": "Jupyter notebook（.ipynb）是一种交互式环境：你可以在单元格中编写并执行代码、内联查看输出，还能把代码和格式化的文字说明混排在一起。"
+    },
+    {
+      "stage": "pre",
+      "question": "Jupyter 内核（kernel）的作用是什么？",
+      "options": ["把 markdown 单元格渲染成 HTML", "运行单元格中的代码，并在多次执行之间把变量保留在内存中", "管理 notebook 的文件存储", "把 notebook 连接到 GitHub 做版本控制"],
+      "correct": 1,
+      "explanation": "内核是一个独立的 Python 进程，负责执行单元格代码并在内存中维护状态（变量、导入的模块）。一个 notebook 里的所有单元格共享同一个内核。"
+    },
+    {
+      "stage": "post",
+      "question": "%timeit 和 %%time 这两个魔法命令有什么区别？",
+      "options": ["%timeit 测量墙钟时间，%%time 测量 CPU 时间", "%timeit 把代码运行很多次然后取平均，%%time 只运行一次", "%timeit 作用于单行代码，%%time 作用于整个 notebook", "没有区别，它们是别名"],
+      "correct": 1,
+      "explanation": "%timeit 会把语句运行很多次以得到统计平均值（适合微基准测试）。%%time 只把单元格运行一次并报告墙钟时间（适合训练任务）。"
+    },
+    {
+      "stage": "post",
+      "question": "一个 notebook 在你的机器上能跑、但别人从头到尾依次运行就失败，最常见的原因是什么？",
+      "options": ["使用了不同的 Python 版本", "乱序执行单元格，产生了对执行顺序的隐藏依赖", "缺少 %matplotlib inline 魔法命令", "用了太多 markdown 单元格"],
+      "correct": 1,
+      "explanation": "乱序运行单元格会产生隐藏的状态依赖。某个变量之所以存在，可能是因为你先运行了单元格 5 再运行单元格 2。用 Kernel > Restart & Run All 可以验证线性执行是否成立。"
+    },
+    {
+      "stage": "post",
+      "question": "什么时候应该把代码从 notebook 移到 .py 脚本中？",
+      "options": ["只要写的代码超过 10 行就该移", "当代码是可复用的工具函数、训练流水线或生产代码时", "永远不需要——notebook 在 AI 工作中总是更好", "只有需要在 GPU 上运行时才移"],
+      "correct": 1,
+      "explanation": "规则是「在 notebook 里探索，用脚本交付」。可复用的工具函数、训练流水线，以及任何要在生产环境运行的代码都应该是 .py 文件。Notebook 用于探索和原型验证。"
+    }
+  ]
+}

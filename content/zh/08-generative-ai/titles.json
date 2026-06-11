@@ -1,0 +1,17 @@
+{
+  "01-generative-models-taxonomy-history": "生成模型：分类与历史",
+  "02-autoencoders-vae": "自编码器与 VAE",
+  "03-gans-generator-discriminator": "GAN：生成器与判别器",
+  "04-conditional-gans-pix2pix": "条件 GAN 与 Pix2Pix",
+  "05-stylegan": "StyleGAN",
+  "06-diffusion-ddpm-from-scratch": "从零实现 DDPM",
+  "07-latent-diffusion-stable-diffusion": "潜在扩散与 Stable Diffusion",
+  "08-controlnet-lora-conditioning": "ControlNet、LoRA 与条件控制",
+  "09-inpainting-outpainting-editing": "图像修复、扩展与编辑",
+  "10-video-generation": "视频生成",
+  "11-audio-generation": "音频生成",
+  "12-3d-generation": "3D 生成",
+  "13-flow-matching-rectified-flows": "流匹配与 Rectified Flow",
+  "14-evaluation-fid-clip-score": "评估：FID 与 CLIP Score",
+  "19-visual-autoregressive-var": "视觉自回归模型（VAR）"
+}

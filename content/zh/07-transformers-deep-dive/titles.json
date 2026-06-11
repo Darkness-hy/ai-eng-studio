@@ -1,0 +1,18 @@
+{
+  "01-why-transformers": "为什么需要 Transformer",
+  "02-self-attention-from-scratch": "从零实现自注意力",
+  "03-multi-head-attention": "多头注意力",
+  "04-positional-encoding": "位置编码：RoPE 与 ALiBi",
+  "05-full-transformer": "完整 Transformer 架构",
+  "06-bert-masked-language-modeling": "BERT 与掩码语言建模",
+  "07-gpt-causal-language-modeling": "GPT 与因果语言建模",
+  "08-t5-bart-encoder-decoder": "T5 与 BART 编码器-解码器",
+  "09-vision-transformers": "视觉 Transformer（ViT）",
+  "10-audio-transformers-whisper": "音频 Transformer 与 Whisper",
+  "11-mixture-of-experts": "混合专家模型（MoE）",
+  "12-kv-cache-flash-attention": "KV Cache 与 Flash Attention",
+  "13-scaling-laws": "缩放定律（Scaling Laws）",
+  "14-build-a-transformer-capstone": "从零构建 Transformer 实战",
+  "15-attention-variants": "注意力机制变体",
+  "16-speculative-decoding": "投机解码（Speculative Decoding）"
+}
