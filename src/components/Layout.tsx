@@ -103,7 +103,7 @@ export function Layout() {
                 className="h-9 w-9 rounded-lg"
               />
               <div>
-                <div className="font-mono text-[10.5px] tracking-[0.16em] text-faint">
+                <div className="font-mono text-[13px] font-medium tracking-[0.18em] text-faint">
                   {lang === 'zh' ? '独家冠名' : 'PRESENTED BY'}
                 </div>
                 <div className="font-brand mt-0.5 text-[16px] leading-snug">
@@ -132,9 +132,9 @@ export function Layout() {
                 </a>
               </div>
               <img
-                src={`${import.meta.env.BASE_URL}brand/lavira-tag.png`}
+                src={`${import.meta.env.BASE_URL}brand/lavira-tag-light.png`}
                 alt="LaViRA — Like A Very Intelligent Real Assistant"
-                className="h-12 rounded-xl border border-ink/15 shadow-lift"
+                className="h-11"
               />
             </div>
           </div>

@@ -1,0 +1,78 @@
+{
+  "lesson": "03-gpu-autoscaling-kubernetes",
+  "title": "GPU Autoscaling on Kubernetes — Karpenter, KAI Scheduler, Gang Scheduling",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "HPA 通常默认基于哪个信号扩缩，而本课认为它对 vLLM 类服务是不可用的？",
+      "options": [
+        "队列深度",
+        "P99 TTFT",
+        "KV cache 利用率",
+        "DCGM_FI_DEV_GPU_UTIL 占空比"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "KAI Scheduler 的 gang scheduling 主要防止哪种问题？",
+      "options": [
+        "GPU 显存碎片化",
+        "分词器的 GIL 争用",
+        "部分分配陷阱：8 块 GPU 中 7 块空闲，干等第八块",
+        "冷启动延迟"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "为什么 Karpenter 默认的 consolidationPolicy WhenEmptyOrUnderutilized 对推理 GPU 池很危险？",
+      "options": [
+        "它在突发流量下拒绝扩容",
+        "它只整合 spot 实例",
+        "它会终止正在运行的 GPU 节点以迁移 pod，这会驱逐正在处理的请求并重新加载模型权重",
+        "它会阻止 Karpenter 供给新节点"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "与 Cluster Autoscaler 相比，Karpenter 供给一个 GPU 节点大约快多少？",
+      "options": [
+        "大约快 40%（约 45-60 秒对比约 90-120 秒）",
+        "大约慢 10 倍",
+        "差不多一样",
+        "大约快 5%"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "对于分离式 prefill / decode pod（Phase 17 · 17），本课推荐哪些扩缩信号？",
+      "options": [
+        "只做手动扩缩",
+        "用一个基于占空比的 HPA 同时覆盖两类 pod",
+        "prefill pod 用队列深度，decode pod 用 KV cache 压力，按角色分别配置 HPA",
+        "两者都用 Cluster Autoscaler"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "为避免驱逐正在运行的任务，本课为推理 GPU 池推荐哪种 Karpenter disruption 配置？",
+      "options": [
+        "consolidationPolicy: WhenEmptyOrUnderutilized 加 consolidateAfter: 0s",
+        "consolidationPolicy: WhenEmpty 加 consolidateAfter: 1h",
+        "始终使用 spot 实例并关闭整合",
+        "彻底禁用 Karpenter"
+      ],
+      "correct": 1,
+      "explanation": ""
+    }
+  ]
+}
