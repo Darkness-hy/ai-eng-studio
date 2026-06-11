@@ -56,7 +56,7 @@ begin
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data ->> 'display_name', split_part(new.email, '@', 1)),
-    case when new.email in ('admin@example.com', 'admin@example.com') then 'admin' else 'student' end
+    case when new.email in ('admin@example.com', 'admin@example.com', 'admin@example.com') then 'admin' else 'student' end
   );
   return new;
 end;
