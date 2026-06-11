@@ -1,0 +1,88 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "OpenAI Agents SDK 的五个原语是什么？",
+      "options": [
+        "Agent、Handoff、Guardrail、Session、Tracing",
+        "Node、Edge、Reducer、Checkpointer、Subgraph",
+        "Plan、Worker、Solver、Evaluator、Reflector",
+        "Tool、Prompt、Model、Memory、Trace"
+      ],
+      "correct": 0,
+      "explanation": "SDK 内置的就是这五个原语。"
+    },
+    {
+      "stage": "pre",
+      "question": "模型是如何看到交接（handoff）的？",
+      "options": [
+        "一个自定义的 HTTP 端点",
+        "一个名为 transfer_to_<agent_name> 的工具",
+        "一条系统消息",
+        "一个特殊 token"
+      ],
+      "correct": 1,
+      "explanation": "交接以工具的形式暴露给模型，名称形态为 transfer_to_<agent>。"
+    },
+    {
+      "stage": "check",
+      "question": "SDK 内置了哪三种护栏？",
+      "options": [
+        "输入护栏、输出护栏和工具护栏",
+        "前置、后置和内联护栏",
+        "硬性、软性和尽力而为护栏",
+        "静态、动态和联邦护栏"
+      ],
+      "correct": 0,
+      "explanation": "输入护栏（第一个智能体）、输出护栏（最后一个智能体）和工具护栏（针对每个函数工具）。"
+    },
+    {
+      "stage": "check",
+      "question": "并行护栏和阻塞护栏的区别是什么？",
+      "options": [
+        "并行护栏与主 LLM 同时运行（延迟更低，触发时浪费 token）；阻塞护栏先运行（触发时不浪费 token）",
+        "阻塞是异步的；并行是同步的",
+        "并行总是花更多钱",
+        "阻塞只对输出生效"
+      ],
+      "correct": 0,
+      "explanation": "并行模式以触发时浪费 token 为代价换取更低延迟；阻塞模式省 token 但增加延迟。"
+    },
+    {
+      "stage": "check",
+      "question": "SDK 中的追踪是如何启用的？",
+      "options": [
+        "默认关闭；按智能体逐个启用",
+        "默认开启；设置 OPENAI_AGENTS_DISABLE_TRACING=1 可退出",
+        "只能通过 OpenTelemetry collector 启用",
+        "只在托管仪表盘上可用"
+      ],
+      "correct": 1,
+      "explanation": "LLM、工具、交接和护栏的 span 默认都会发出；一个环境变量即可禁用。"
+    },
+    {
+      "stage": "post",
+      "question": "什么是交接漂移？课程建议如何缓解？",
+      "options": [
+        "追踪跟不上节奏；减少 span 数量",
+        "智能体 A 交接给 B，B 又交接回 A 形成循环；加一个跳数计数器",
+        "会话溢出；归档旧会话",
+        "护栏失去同步；重新训练"
+      ],
+      "correct": 1,
+      "explanation": "跳数计数器为转移链设置上限，防止其无限循环。"
+    },
+    {
+      "stage": "post",
+      "question": "为什么内置工具是护栏的盲区？",
+      "options": [
+        "它们比函数工具慢",
+        "工具护栏只对函数工具生效；内置工具（文件读取器、网页抓取）需要单独的策略",
+        "它们无法被追踪",
+        "它们不支持交接"
+      ],
+      "correct": 1,
+      "explanation": "逐工具护栏只覆盖函数工具；内置工具需要单独的策略层。"
+    }
+  ]
+}

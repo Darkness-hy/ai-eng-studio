@@ -1,0 +1,88 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "在 GenAI 约定中，哪个 span 名称表示一次智能体运行？",
+      "options": [
+        "agent.start",
+        "invoke_agent（可选地以 gen_ai.agent.name 作为后缀）",
+        "run_chain",
+        "agent_loop"
+      ],
+      "correct": 1,
+      "explanation": "invoke_agent 是规范名称；设置了智能体名称属性时，它会出现在 span 名称中。"
+    },
+    {
+      "stage": "pre",
+      "question": "GenAI SIG 定义了哪三类 span？",
+      "options": [
+        "模型/客户端、智能体、工具",
+        "前端、后端、数据库",
+        "读、写、执行",
+        "延迟、错误、吞吐量"
+      ],
+      "correct": 0,
+      "explanation": "三个类别分别是模型/客户端（LLM 调用）、智能体（创建/调用）、工具（每次调用一个）。"
+    },
+    {
+      "stage": "check",
+      "question": "invoke_agent span 何时使用 CLIENT 类型，何时使用 INTERNAL 类型？",
+      "options": [
+        "总是 INTERNAL",
+        "远程智能体服务（OpenAI Assistants、Bedrock Agents）用 CLIENT；进程内框架（LangChain、CrewAI、本地 ReAct）用 INTERNAL",
+        "只有 HTTPS 用 CLIENT",
+        "总是 CLIENT"
+      ],
+      "correct": 1,
+      "explanation": "远程智能体调用是 CLIENT；进程内智能体运行是 INTERNAL。"
+    },
+    {
+      "stage": "check",
+      "question": "内容捕获（输入与输出）的默认规则是什么？",
+      "options": [
+        "默认捕获所有内容",
+        "instrumentation 默认不应（SHOULD NOT）捕获；需通过 gen_ai.* 属性显式开启",
+        "只捕获输出，从不捕获输入",
+        "只在出错时捕获"
+      ],
+      "correct": 1,
+      "explanation": "内容捕获默认关闭可保护 PII 和密钥；开启必须是显式的。"
+    },
+    {
+      "stage": "check",
+      "question": "哪个属性标识本次检索查询了哪个语料库或存储？",
+      "options": [
+        "gen_ai.provider.name",
+        "gen_ai.request.model",
+        "gen_ai.data_source.id",
+        "gen_ai.agent.name"
+      ],
+      "correct": 2,
+      "explanation": "gen_ai.data_source.id 标注检索命中的 RAG 语料库或存储。"
+    },
+    {
+      "stage": "post",
+      "question": "对于生产环境中提示词内容的存储，本课的推荐做法是什么？",
+      "options": [
+        "在每个 span 上以纯文本形式捕获完整提示词",
+        "将内容存储在外部（S3、日志存储），在 span 上只记录引用 ID",
+        "从不存储任何内容",
+        "在 span 属性中加密存储提示词"
+      ],
+      "correct": 1,
+      "explanation": "外部存储加指针 ID 可以避免 PII 泄露到运维人员可读的追踪数据中。"
+    },
+    {
+      "stage": "post",
+      "question": "如何选择启用 GenAI 约定的实验性稳定预览版？",
+      "options": [
+        "修改 OTel collector 配置",
+        "设置 OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental",
+        "从源码重新构建 SDK",
+        "付费购买许可证"
+      ],
+      "correct": 1,
+      "explanation": "该环境变量会固定实验性约定，使属性不会被悄悄重命名。"
+    }
+  ]
+}

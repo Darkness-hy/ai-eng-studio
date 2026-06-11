@@ -1,0 +1,90 @@
+{
+  "lesson": "40-multi-session-handoff",
+  "title": "Multi-Session Handoff",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "在交接包中，哪个字段是承重字段？",
+      "options": [
+        "summary",
+        "next_action（缺了它，这份文档就是状态报告，而不是交接）",
+        "commands_run",
+        "verdict_pointer"
+      ],
+      "correct": 1,
+      "explanation": "只缺 next_action、其他都齐全的交接包是一份状态报告；下一个具体步骤才是让下一个会话高效启动的关键。"
+    },
+    {
+      "stage": "pre",
+      "question": "为什么交接应当生成而不是手写？",
+      "options": [
+        "生成器更快",
+        "手写的交接在艰难的一天里会被跳过；生成器读取工作台产物并输出交接包，智能体只需把工作台留在生成器能总结的状态",
+        "生成器加密效果更好",
+        "Apache 2.0 协议要求这样做"
+      ],
+      "correct": 1,
+      "explanation": "自动化弥合了意图与一致性之间的差距。"
+    },
+    {
+      "stage": "check",
+      "question": "交接包以哪两种形态交付？",
+      "options": [
+        "PDF 和 PNG",
+        "handoff.md（人类可读）和 handoff.json（机器可读，二者来自同一批源产物；出现分歧时以 JSON 为准）",
+        "Email 和 Slack",
+        "YAML 和 TOML"
+      ],
+      "correct": 1,
+      "explanation": "Markdown 给人读，JSON 给下一个智能体读；两者出自同一个生成器。"
+    },
+    {
+      "stage": "check",
+      "question": "本课如何区分压缩与交接？",
+      "options": [
+        "它们是一回事",
+        "压缩是延长一个会话；交接是干净地关闭一个会话并在全新上下文中开始下一个。交接包让这次切换变得廉价",
+        "压缩收费，交接免费",
+        "交接需要 GPU"
+      ],
+      "correct": 1,
+      "explanation": "Hermes Issue 20372 的提法：在就地压缩开始劣化质量之前写一份紧凑的交接，然后在全新会话中继续。"
+    },
+    {
+      "stage": "check",
+      "question": "关于何时收尾一个会话，本课给出了什么建议？",
+      "options": [
+        "撑到上下文 100% 时再慌乱补救",
+        "在上下文预算的 50-75% 之前收尾，趁上下文还完整；在压缩伪影污染状态之前写交接成本很低",
+        "只在午夜收尾",
+        "只在合并之后收尾"
+      ],
+      "correct": 1,
+      "explanation": "提前收尾能让生成器的输入保持干净。"
+    },
+    {
+      "stage": "post",
+      "question": "本课建议把反馈日志裁剪成什么样放进交接包？",
+      "options": [
+        "只保留前 K 条",
+        "最后 K 条加上所有退出码非零的条目，这样交接包保持小巧，同时失败历史得以保留",
+        "随机 N 条",
+        "只保留最新一条"
+      ],
+      "correct": 1,
+      "explanation": "不对称裁剪：失败记录必须保留；尾部的琐碎记录保留成本很低。"
+    },
+    {
+      "stage": "post",
+      "question": "什么元数据让多智能体会话之间的协同得以运转？",
+      "options": [
+        "绝密级加密",
+        "branch、last_known_good_commit，以及 status（active | superseded | archived）；每个分支和主题只保留一个活跃交接",
+        "一个共享的 Slack 频道",
+        "一个中心化队列"
+      ],
+      "correct": 1,
+      "explanation": "过期交接是多智能体场景的主要故障来源；status + branch + LKG（最后已知良好提交）让活跃集合保持精简。"
+    }
+  ]
+}

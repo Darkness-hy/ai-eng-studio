@@ -1,0 +1,88 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "反馈运行器强制智能体做什么？",
+      "options": [
+        "对想象中的输出做出反应",
+        "对事实做出反应：每条命令的 stdout/stderr/退出码/耗时都被捕获成结构化记录并送回循环",
+        "跳过验证",
+        "换用另一个模型"
+      ],
+      "correct": 1,
+      "explanation": "运行器消除了“测试通过”（想象的）和“测试真的运行了且退出码为零”（记录在案的）之间的落差。"
+    },
+    {
+      "stage": "pre",
+      "question": "反馈与遥测有什么区别？",
+      "options": [
+        "遥测是收费的",
+        "反馈服务于本次运行的下一轮；遥测服务于跨时间回顾运行情况的运维者（不同文件，不同保留策略）",
+        "遥测用 OTel；反馈用 GraphQL",
+        "两者是同一回事"
+      ],
+      "correct": 1,
+      "explanation": "两者字段有重叠，但存放在不同文件中、保留策略不同；反馈是运行内的，遥测是跨运行的。"
+    },
+    {
+      "stage": "check",
+      "question": "哪个字段必须出现在每条反馈记录中？",
+      "options": [
+        "model_id",
+        "exit_code（且退出码为 null 时必须拒绝推进循环）",
+        "embedding_vector",
+        "prompt_cache_token"
+      ],
+      "correct": 1,
+      "explanation": "exit_code 是无歧义的成功信号；退出码为 null 意味着不能有任何进展。"
+    },
+    {
+      "stage": "check",
+      "question": "运行器如何截断大体积输出？",
+      "options": [
+        "随机采样",
+        "确定性的头部+尾部截断，并附带“truncated N lines”标记，同样的输出永远产生同样的记录",
+        "只保留前 10 行",
+        "用 gzip 压缩"
+      ],
+      "correct": 1,
+      "explanation": "确定性截断在控制 token 成本的同时保持记录可回放；失败摘要保留在尾部。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么要在写入时脱敏而不是在读取时？",
+      "options": [
+        "为了压缩",
+        "攻击者拿到的正是磁盘上的文件；只在读取时脱敏会把密钥留在 JSONL 文件里",
+        "读取时脱敏会破坏 JSON 格式",
+        "因为更快"
+      ],
+      "correct": 1,
+      "explanation": "在追加写入之前剔除匹配 Bearer、password=、api_key=、AKIA...、xox[baprs]- 的行；并每季度审计这些规则。"
+    },
+    {
+      "stage": "post",
+      "question": "parent_command_id 给工作台带来了什么？",
+      "options": [
+        "更便宜的推理",
+        "重试与父级尝试关联起来，审阅者和审计能看到完整的失败链；没有它，重试看起来就像彼此独立的成功",
+        "更快的文件 I/O",
+        "更低的内存占用"
+      ],
+      "correct": 1,
+      "explanation": "父级关联让重试链对审阅者（第 39 课）和验证关卡可见。"
+    },
+    {
+      "stage": "post",
+      "question": "为什么要把 feedback_record.jsonl 限制在 1 MB 并做轮转？",
+      "options": [
+        "JSON 处理不了更大的文件",
+        "智能体只读取当前文件；轮转让运行时开销有界，CI 工件则保留完整记录集",
+        "磁盘太慢",
+        "服务商按字节计费"
+      ],
+      "correct": 1,
+      "explanation": "有界的当前文件加上轮转的历史文件，正是 logrotate 使用的模式；热循环中的开销可预测。"
+    }
+  ]
+}

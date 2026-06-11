@@ -1,0 +1,90 @@
+{
+  "lesson": "13-langgraph-stateful-graphs",
+  "title": "LangGraph: Stateful Graphs and Durable Execution",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "LangGraph 把什么视为 agent 的核心单元？",
+      "options": [
+        "一次自由形式的 LLM 调用",
+        "一台由类型化状态、函数节点和条件边组成的状态机",
+        "一个单一的工具注册表",
+        "一个向量索引"
+      ],
+      "correct": 1,
+      "explanation": "LangGraph 把 agent 建模为状态图：节点是纯函数，边是状态转移，状态是类型化且不可变的。"
+    },
+    {
+      "stage": "pre",
+      "question": "持久化执行解决的是哪个问题？",
+      "options": [
+        "降低推理成本",
+        "当一个 40 步的运行失败时，带着精确状态从第 38 步恢复，而不是从头再来",
+        "更快地生成嵌入",
+        "在不同提供商之间做转换"
+      ],
+      "correct": 1,
+      "explanation": "每个节点之后的检查点让运行时能够从最后一个成功的步骤恢复。"
+    },
+    {
+      "stage": "check",
+      "question": "以下哪一项不属于 LangGraph 支持的三种拓扑？",
+      "options": [
+        "监督者（Supervisor）",
+        "Swarm（点对点）",
+        "层级式（嵌套子图）",
+        "梯度环（Gradient ring）"
+      ],
+      "correct": 3,
+      "explanation": "三种拓扑是监督者、swarm 和层级式。梯度环并不是 LangGraph 的拓扑。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么节点必须是确定性的，恢复机制才能正常工作？",
+      "options": [
+        "提供商要求确定性",
+        "恢复机制假设相同的输入会产生相同的状态更新；随机种子、墙上时钟和外部 API 都必须被捕获记录",
+        "确定性能降低 token 成本",
+        "这是 GIL 的要求"
+      ],
+      "correct": 1,
+      "explanation": "如果节点依赖未被捕获的非确定性因素，恢复时就无法重建步骤执行后的状态。"
+    },
+    {
+      "stage": "check",
+      "question": "什么是条件边？",
+      "options": [
+        "按训练损失加权的边",
+        "由一个以状态为输入的函数选择的边，用于在图中产生分支",
+        "只在 GPU 上运行的边",
+        "带 TTL 的边"
+      ],
+      "correct": 1,
+      "explanation": "条件边根据状态进行分支；滥用条件边会让图变得难以推理。"
+    },
+    {
+      "stage": "post",
+      "question": "检查点范围太小会出什么问题？",
+      "options": [
+        "工具状态和记忆写入无法恢复；完整状态必须可序列化",
+        "磁盘会被写满",
+        "图无法到达 END",
+        "模型会生成更短的回答"
+      ],
+      "correct": 0,
+      "explanation": "只对对话轮次做检查点，会让工具状态和记忆写入落在恢复机制的覆盖范围之外。"
+    },
+    {
+      "stage": "post",
+      "question": "人在回路在 LangGraph 的设计中处于什么位置？",
+      "options": [
+        "需要 fork 运行时才能实现",
+        "在关键节点前暂停，把序列化后的状态呈现给人类，接受修改，然后恢复执行；检查点机制让这一切代价很低",
+        "只能发生在 START 和 END 处",
+        "需要通过一个独立的提供商 API"
+      ],
+      "correct": 1,
+      "explanation": "由于节点之间的状态本来就已序列化，人工审查与修改自然就是一种暂停-恢复模式。"
+    }
+  ]
+}

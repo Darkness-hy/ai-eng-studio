@@ -64,8 +64,10 @@ export function LessonPage() {
   }
 
   const quiz = lang === 'zh' && lesson.quizZh ? lesson.quizZh : lesson.quizEn;
+  // Upstream uses three stages: pre (warm-up), post and check (both verify
+  // after reading) — render post+check together so no questions are dropped.
   const preQuiz = quiz?.filter((q) => q.stage === 'pre') ?? [];
-  const postQuiz = quiz?.filter((q) => q.stage === 'post') ?? [];
+  const postQuiz = quiz?.filter((q) => q.stage !== 'pre') ?? [];
   const isDone = Boolean(progress.lessons[lesson.id]?.done);
   const title = lessonTitle(lesson, lang);
 

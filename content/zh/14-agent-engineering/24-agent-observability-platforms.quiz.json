@@ -1,0 +1,90 @@
+{
+  "lesson": "24-agent-observability-platforms",
+  "title": "Agent 可观测性：Langfuse、Phoenix、Opik",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "2025 年 6 月将原商业模块开源之后，Langfuse 以什么许可证发布？",
+      "options": [
+        "GPLv3",
+        "MIT",
+        "Elastic License 2.0",
+        "Apache 2.0"
+      ],
+      "correct": 1,
+      "explanation": "Langfuse 采用 MIT 许可证，2025 年 6 月之后还涵盖了 LLM-as-a-judge、标注队列、提示词实验和 Playground。"
+    },
+    {
+      "stage": "pre",
+      "question": "根据本课内容，Arize Phoenix 最擅长什么？",
+      "options": [
+        "提示词版本管理",
+        "深度的 Agent 专项评估：trace 聚类、异常检测、RAG 检索相关性、OpenInference 自动插桩",
+        "自动化优化闭环",
+        "代码静态分析"
+      ],
+      "correct": 1,
+      "explanation": "Phoenix 借助 OpenInference 自动插桩，专注于行为漂移和 RAG 评估。"
+    },
+    {
+      "stage": "check",
+      "question": "哪个平台把自动化提示词优化、护栏（PII 脱敏、话题约束）以及 LLM 评审幻觉检测结合在一起？",
+      "options": [
+        "Langfuse",
+        "Phoenix",
+        "Opik",
+        "Jaeger"
+      ],
+      "correct": 2,
+      "explanation": "Opik 以优化 + 护栏闭环为核心。"
+    },
+    {
+      "stage": "check",
+      "question": "对于带提示词管理的一体化方案，本课推荐哪个平台？",
+      "options": [
+        "Langfuse",
+        "Phoenix",
+        "Opik",
+        "Datadog APM"
+      ],
+      "correct": 0,
+      "explanation": "Langfuse 端到端覆盖链路追踪 + 提示词管理 + 评估 + 会话回放。"
+    },
+    {
+      "stage": "check",
+      "question": "关于厂商公布的平台基准测试，本课怎么说？",
+      "options": [
+        "它们是权威结论",
+        "仅作方向性参考；要在自己的语料上测量",
+        "OpenTelemetry 禁止发布基准",
+        "只有 Opik 的数据可靠"
+      ],
+      "correct": 1,
+      "explanation": "即使是文中引用的 Opik 与 Langfuse 之间约 14 倍的差距，也应该先在自己的数据上测量再做决定。"
+    },
+    {
+      "stage": "post",
+      "question": "为什么说没有评估的链路追踪只是昂贵的日志记录？",
+      "options": [
+        "磁盘比 CPU 更贵",
+        "你能看到运行记录却没有打分，因此回归不可见，也无法二分定位",
+        "服务商按 span 收费",
+        "span 无法回放"
+      ],
+      "correct": 1,
+      "explanation": "评估才能把 trace 变成可付诸行动的质量信号。"
+    },
+    {
+      "stage": "post",
+      "question": "本课对自研 LLM 评审给出了什么警告？",
+      "options": [
+        "Apache 2.0 禁止自研评审",
+        "CRITIC 同样适用：评审需要外部事实依据来做核验，否则就会沦为走过场的盖章",
+        "它们只能用 TypeScript 实现",
+        "它们必须运行在 GPU 上"
+      ],
+      "correct": 1,
+      "explanation": "缺少外部工具支撑的核验，LLM 评审会逐渐倾向于无脑放行（CRITIC，第 5 课）。"
+    }
+  ]
+}

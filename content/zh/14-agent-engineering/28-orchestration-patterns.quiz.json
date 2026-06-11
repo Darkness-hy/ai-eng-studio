@@ -1,0 +1,90 @@
+{
+  "lesson": "28-orchestration-patterns",
+  "title": "Orchestration Patterns: Supervisor, Swarm, Hierarchical",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "本课列出了哪四种编排模式？",
+      "options": [
+        "监督者-工作者、蜂群/点对点、层级式、辩论",
+        "顺序、并行、分布式、联邦式",
+        "规划、行动、反思、改进",
+        "推送、拉取、批处理、流式"
+      ],
+      "correct": 0,
+      "explanation": "监督者-工作者、蜂群、层级式和辩论这四种模式在 2026 年的各类框架中反复出现。"
+    },
+    {
+      "stage": "pre",
+      "question": "2026 年 LangChain 关于监督的建议是什么？",
+      "options": [
+        "始终使用 create_supervisor",
+        "优先使用直接工具调用而非 create_supervisor，以获得更精细的上下文工程控制",
+        "完全避免使用监督",
+        "在 GPU 上运行监督者"
+      ],
+      "correct": 1,
+      "explanation": "基于工具调用的监督让你能精确控制每个专家看到的内容。"
+    },
+    {
+      "stage": "check",
+      "question": "蜂群与监督者-工作者拓扑的区别是什么？",
+      "options": [
+        "蜂群使用 GPU",
+        "蜂群没有中心路由器；智能体通过共享的工具界面直接相互移交",
+        "蜂群是单智能体",
+        "蜂群只能通过 cron 运行"
+      ],
+      "correct": 1,
+      "explanation": "蜂群是点对点的；监督者模式则把路由集中到一个 LLM 上。"
+    },
+    {
+      "stage": "check",
+      "question": "什么情况下使用层级式编排才是合理的？",
+      "options": [
+        "任何时候；它可以无代价地扩展",
+        "当单个监督者的上下文预算装不下所有专家的描述时",
+        "只有在使用 GPU 时",
+        "永远不要；它是一种反模式"
+      ],
+      "correct": 1,
+      "explanation": "嵌套监督者适用于超出单个监督者预算的大规模专家群体。"
+    },
+    {
+      "stage": "check",
+      "question": "Anthropic 支持的推荐决策顺序是什么？",
+      "options": [
+        "总是从层级式多智能体开始",
+        "从单智能体加工作流模式开始；只在需要时才引入拓扑；监督者优先于蜂群，蜂群优先于层级式；当准确性比成本更重要时使用辩论",
+        "从辩论开始",
+        "从蜂群开始，再收缩到单智能体"
+      ],
+      "correct": 1,
+      "explanation": "Anthropic 的指导原则是为你的需求构建合适的系统，而不是最复杂精巧的系统。"
+    },
+    {
+      "stage": "post",
+      "question": "本课中的虚假层级指的是什么？",
+      "options": [
+        "标错标签的 YAML",
+        "因为要\"企业级\"就搭三层监督者，而实际只有两个团队；应当将其压扁",
+        "用 TypeScript 写的编排器",
+        "一个测试夹具"
+      ],
+      "correct": 1,
+      "explanation": "与真实团队不对应的层级只会增加运维复杂度，却没有回报。"
+    },
+    {
+      "stage": "post",
+      "question": "如何缓解蜂群中的来回弹跳移交（A -> B -> A -> B）？",
+      "options": [
+        "把 temperature 固定为 0",
+        "添加跳数计数器，在 N 次转移后拒绝",
+        "关闭追踪",
+        "降低速率限制"
+      ],
+      "correct": 1,
+      "explanation": "跳数计数器能在蜂群陷入无限循环之前限制循环次数。"
+    }
+  ]
+}

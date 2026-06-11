@@ -1,0 +1,88 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "验证关卡回答的唯一问题是什么？",
+      "options": [
+        "模型快不快？",
+        "这个任务真的完成了吗？（读取范围、规则、反馈和 diff 产物）",
+        "提示词是否最优？",
+        "token 预算是否健康？"
+      ],
+      "correct": 1,
+      "explanation": "关卡是作用于工作台产物的确定性函数，产出通过/不通过裁决。"
+    },
+    {
+      "stage": "pre",
+      "question": "为什么关卡必须是确定性的？",
+      "options": [
+        "确定性没有任何成本",
+        "同一组产物每次必须产生相同裁决；LLM 裁判属于评审侧（定性评估），而不是关卡（状态判定）",
+        "服务商有此要求",
+        "可以省钱"
+      ],
+      "correct": 1,
+      "explanation": "把模型判断混入关卡，会让确定性与定性评估的分工坍塌。"
+    },
+    {
+      "stage": "check",
+      "question": "关卡的推翻（override）纪律是什么？",
+      "options": [
+        "任何人都可以悄悄推翻",
+        "block 级发现只能由人推翻，且需在签名审计日志中记录 override_reason 和 overridden_by 用户 id",
+        "推翻需要一封经理邮件",
+        "禁止任何推翻"
+      ],
+      "correct": 1,
+      "explanation": "签名推翻记录写入 outputs/verification/overrides.jsonl；智能体不能自行推翻。"
+    },
+    {
+      "stage": "check",
+      "question": "本课引用的 Hybrid Norm 配对是什么？",
+      "options": [
+        "冷热提示词",
+        "可验证奖励（测试、schema、退出码）回答“问题解决了吗？”；LLM 评分细则回答“代码是否可读、安全、合乎风格？”",
+        "GPU 与 CPU 的分工",
+        "缓存与不缓存"
+      ],
+      "correct": 1,
+      "explanation": "Anthropic 2026 年的指导：关卡跑前一类；评审者（第 39 课）跑后一类。"
+    },
+    {
+      "stage": "check",
+      "question": "纵深防御是如何分层布置关卡的？",
+      "options": [
+        "只在合并时设一个关卡",
+        "pre-commit 钩子 -> CI 状态检查 -> 工具调用前鉴权钩子 -> 合并前关卡；每层都是确定性的，一层漏掉的失败会被下一层捕获",
+        "只靠 IDE 警告",
+        "只靠聊天里的提醒"
+      ],
+      "correct": 1,
+      "explanation": "多个不可绕过的层级能捕获单一层级会漏掉的问题。"
+    },
+    {
+      "stage": "post",
+      "question": "coverage_floor 检查防范的是什么？",
+      "options": [
+        "热路径延迟",
+        "智能体悄悄删掉失败的测试；实测覆盖率跌破下限或比上次合并低超过 1 个百分点时，关卡判失败",
+        "冷启动",
+        "过期的 lockfile"
+      ],
+      "correct": 1,
+      "explanation": "没有覆盖率下限，智能体可以暗中降低覆盖率来保住绿色裁决。"
+    },
+    {
+      "stage": "post",
+      "question": "--strict 模式应在什么时候把每个 warn 升级为 block？",
+      "options": [
+        "始终如此",
+        "发布分支、阻断发版的 PR、事故后排查；不作为日常默认，因为对一切都从严会侵蚀工作流",
+        "永远不用",
+        "只在周日"
+      ],
+      "correct": 1,
+      "explanation": "--strict 按分支自愿启用；留给高风险时刻使用。"
+    }
+  ]
+}

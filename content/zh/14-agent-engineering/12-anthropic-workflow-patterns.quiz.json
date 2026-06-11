@@ -1,0 +1,90 @@
+{
+  "lesson": "12-anthropic-workflow-patterns",
+  "title": "Anthropic's Workflow Patterns: Simple Over Complex",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "Anthropic 如何区分工作流与智能体？",
+      "options": [
+        "工作流使用嵌入；智能体使用工具",
+        "工作流是由工程师掌控的预定义图；智能体是由模型掌控的动态工具指挥",
+        "工作流跑在 CPU 上；智能体需要 GPU",
+        "工作流是无状态的；智能体是有状态的"
+      ],
+      "correct": 1,
+      "explanation": "工作流 = 由工程师掌控的预定义代码路径；智能体 = 由模型掌控的图。"
+    },
+    {
+      "stage": "pre",
+      "question": "支撑全部五种模式的增强型 LLM 具备哪三种能力？",
+      "options": [
+        "搜索（检索）、工具（行动）、记忆（持久化）",
+        "嵌入、微调、RAG",
+        "向量、KV、图",
+        "规划、执行、反思"
+      ],
+      "correct": 0,
+      "explanation": "原子单元是一个接入了检索、工具和记忆的 LLM。"
+    },
+    {
+      "stage": "check",
+      "question": "以下哪一项不属于 Anthropic 的五种工作流模式？",
+      "options": [
+        "提示链（Prompt chaining）",
+        "路由（Routing）",
+        "评估器-优化器（Evaluator-optimizer）",
+        "梯度蒸馏（Gradient distillation）"
+      ],
+      "correct": 3,
+      "explanation": "五种模式是提示链、路由、并行化、编排器-工作器、评估器-优化器。梯度蒸馏是一个训练领域的概念。"
+    },
+    {
+      "stage": "check",
+      "question": "并行化有哪两种形态？",
+      "options": [
+        "同步和异步",
+        "分段（不同的块）和投票（同一提示词运行 N 次后聚合）",
+        "热和冷",
+        "有状态和无状态"
+      ],
+      "correct": 1,
+      "explanation": "并行化分为分段和投票两种形态；两者都是扇出 N 次调用再聚合。"
+    },
+    {
+      "stage": "check",
+      "question": "哪种工作流模式是 Self-Refine 的泛化形式？",
+      "options": [
+        "提示链（Prompt chaining）",
+        "路由（Routing）",
+        "编排器-工作器（Orchestrator-workers）",
+        "评估器-优化器（Evaluator-optimizer）"
+      ],
+      "correct": 3,
+      "explanation": "评估器-优化器是 Anthropic 对 Self-Refine / CRITIC 这类迭代模式的命名。"
+    },
+    {
+      "stage": "post",
+      "question": "根据本课内容，工作流在什么情况下胜过智能体？",
+      "options": [
+        "永远胜过",
+        "在可预测、成本受限或合规受限的任务上，即图可以被枚举和审计的场景",
+        "只适用于聊天",
+        "只适用于 GPU"
+      ],
+      "correct": 1,
+      "explanation": "工作流更便宜、更易调试、可审计；当步骤可以预先确定时就选工作流。"
+    },
+    {
+      "stage": "post",
+      "question": "本课推荐的默认起点是什么？",
+      "options": [
+        "多智能体框架",
+        "直接调用 API；只有当持久化状态、actor 并发或角色模板化值回成本时才引入框架",
+        "微调模型",
+        "自己实现一套 MCTS"
+      ],
+      "correct": 1,
+      "explanation": "Schluntz 与 Zhang 的观点：从简单做起；只有在有正当理由时才引入框架的复杂性。"
+    }
+  ]
+}

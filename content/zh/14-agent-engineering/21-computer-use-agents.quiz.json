@@ -1,0 +1,90 @@
+{
+  "lesson": "21-computer-use-agents",
+  "title": "Computer Use: Claude, OpenAI CUA, Gemini",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "Claude computer use 接收什么输入，输出什么？",
+      "options": [
+        "输入无障碍树，输出键盘/鼠标指令",
+        "输入屏幕截图（基于视觉），输出键盘/鼠标指令",
+        "输入 DOM XML，输出 JavaScript",
+        "输入 JSON，输出 SQL"
+      ],
+      "correct": 1,
+      "explanation": "Claude 直接读取像素并输出键盘/鼠标动作；不使用操作系统的无障碍 API。"
+    },
+    {
+      "stage": "pre",
+      "question": "Gemini 2.5 Computer Use 标志性的安全特性是什么？",
+      "options": [
+        "逐步安全服务：在执行前评估每个动作，拒绝不安全的动作",
+        "硬编码的 WAF 规则",
+        "强制 CAPTCHA",
+        "默认只读模式"
+      ],
+      "correct": 0,
+      "explanation": "Gemini 2.5 Computer Use 把逐步安全分类器作为标志性特性内置发布。"
+    },
+    {
+      "stage": "check",
+      "question": "本课指出三个模型都把哪些内容视为不可信输入？",
+      "options": [
+        "只有 HTTPS 响应",
+        "屏幕截图、DOM 文本、工具输出、PDF 内容、任何检索到的内容",
+        "只有 PDF 内容",
+        "没有；一切都可信"
+      ],
+      "correct": 1,
+      "explanation": "只有用户的直接指令才算授权；其余一切都不可信。"
+    },
+    {
+      "stage": "check",
+      "question": "本课引用了 OpenAI CUA 发布时的哪些 OSWorld / WebArena 数字？",
+      "options": [
+        "OSWorld 38.1%，WebArena 58.1%，WebVoyager 87%",
+        "OSWorld 0%，WebArena 0%",
+        "OSWorld 99%，WebArena 99%",
+        "未报告数字"
+      ],
+      "correct": 0,
+      "explanation": "这些就是本课引用的发布时数字。"
+    },
+    {
+      "stage": "check",
+      "question": "下列哪个防御模式不在 2026 年共识清单中？",
+      "options": [
+        "逐步安全分类器",
+        "导航目标的白名单/黑名单",
+        "敏感操作的人工确认",
+        "为节省时间自动点掉所有对话框"
+      ],
+      "correct": 3,
+      "explanation": "自动点掉对话框与安全背道而驰；本课推荐的是显式确认。"
+    },
+    {
+      "stage": "post",
+      "question": "本课重点强调的针对 computer-use 智能体的主要攻击是什么？",
+      "options": [
+        "网络中断",
+        "恶意页面或 PDF 在检索内容中嵌入指令，模型把它当成用户意图",
+        "渲染缓慢",
+        "操作系统更新滞后"
+      ],
+      "correct": 1,
+      "explanation": "把屏幕截图或 DOM 文本当作授权，是间接提示注入最典型的失效方式。"
+    },
+    {
+      "stage": "post",
+      "question": "在什么情况下特别推荐人工确认（human-in-the-loop）？",
+      "options": [
+        "只读导航时",
+        "登录、购买、删除文件等敏感操作时",
+        "只在模型主动要求时",
+        "从不需要"
+      ],
+      "correct": 1,
+      "explanation": "敏感操作（涉及金钱、数据暴露、新登录）需要明确的人工确认。"
+    }
+  ]
+}

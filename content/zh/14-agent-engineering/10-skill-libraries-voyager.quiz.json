@@ -1,0 +1,90 @@
+{
+  "lesson": "10-skill-libraries-voyager",
+  "title": "Skill Libraries and Lifelong Learning (Voyager)",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "Voyager 把什么作为动作空间？",
+      "options": [
+        "Minecraft 原子命令",
+        "可执行代码（JavaScript 函数），可存储、检索和组合",
+        "只有文本提示词",
+        "强化学习的 Q 值"
+      ],
+      "correct": 1,
+      "explanation": "Voyager 的贡献在于让代码成为动作：技能是程序，而不是原始命令。"
+    },
+    {
+      "stage": "pre",
+      "question": "Voyager 智能体由哪三个组件构成？",
+      "options": [
+        "编码器、解码器、价值头",
+        "自动课程、技能库、迭代提示",
+        "规划器、执行器、评审器",
+        "检索器、生成器、排序器"
+      ],
+      "correct": 1,
+      "explanation": "Voyager 围绕课程、技能库和迭代提示来构建智能体。"
+    },
+    {
+      "stage": "check",
+      "question": "一次技能执行尝试可能返回哪三种信号？",
+      "options": [
+        "通过、失败、重试",
+        "成功、错误（带堆栈跟踪）、自我验证失败",
+        "绿、黄、红",
+        "心跳、ack、nack"
+      ],
+      "correct": 1,
+      "explanation": "Voyager 的迭代提示机制由这三种信号驱动，并将它们回馈到下一个版本。"
+    },
+    {
+      "stage": "check",
+      "question": "自动课程如何挑选下一个任务？",
+      "options": [
+        "在动作空间上均匀随机选取",
+        "基于环境状态和技能清单，挑选略高于当前能力的任务（探索的最佳区间）",
+        "总是选可用任务中最难的",
+        "只用用户提供的列表"
+      ],
+      "correct": 1,
+      "explanation": "提议器瞄准略高于当前能力的任务，使进展保持稳定。"
+    },
+    {
+      "stage": "check",
+      "question": "本课中与 Voyager 技能最对应的 2026 年产品是哪一个？",
+      "options": [
+        "OpenAI 微调",
+        "Claude Agent SDK skills：有名称、可检索的代码加指令，按需加载",
+        "Pinecone 索引",
+        "AWS Lambda layers"
+      ],
+      "correct": 1,
+      "explanation": "Agent SDK skills 正好对应 Voyager 有名称、可检索、可组合的代码模式。"
+    },
+    {
+      "stage": "post",
+      "question": "本课为什么建议技能库在写入时去重？",
+      "options": [
+        "磁盘很贵",
+        "不去重的话，同一技能会以略有差异的描述被多次添加；检索应该只返回一个规范版本",
+        "服务提供商会拒绝重复项",
+        "Git 会阻止重复"
+      ],
+      "correct": 1,
+      "explanation": "近似重复的描述会被归并为单个规范技能，使检索结果保持干净。"
+    },
+    {
+      "stage": "post",
+      "question": "组合技能漂移（composed-skill drift）描述的是什么问题？",
+      "options": [
+        "Python 升级后某个技能无法编译",
+        "父技能悄悄用上了从未一起测试过的子技能改进版本；解决方法是固定技能版本",
+        "技能在存储中被加密",
+        "检索什么也返回不了"
+      ],
+      "correct": 1,
+      "explanation": "没有版本固定时，对子技能的一次改进会悄悄改变父技能的行为。"
+    }
+  ]
+}

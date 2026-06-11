@@ -1,0 +1,88 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "Pipecat 流水线使用哪两个流动方向？",
+      "options": [
+        "读和写",
+        "DOWNSTREAM（从源到汇）和 UPSTREAM（反馈、取消、抢话打断）",
+        "入站和出站",
+        "热和冷"
+      ],
+      "correct": 1,
+      "explanation": "帧沿 DOWNSTREAM 方向从源流向汇，沿 UPSTREAM 方向传递控制和取消信号。"
+    },
+    {
+      "stage": "pre",
+      "question": "Pipecat 的标准语音流水线是什么？",
+      "options": [
+        "VAD -> STT -> LLM -> TTS -> transport",
+        "TTS -> STT -> LLM -> VAD",
+        "LLM -> 嵌入 -> 检索 -> 回答",
+        "音频 -> JSON -> SQL -> 响应"
+      ],
+      "correct": 0,
+      "explanation": "VAD 检测语音活动，STT 转写，LLM 生成回复，TTS 合成语音，传输层负责送达。"
+    },
+    {
+      "stage": "check",
+      "question": "LiveKit Agents 提供哪两种语音智能体类？",
+      "options": [
+        "MultimodalAgent（直接处理音频）和 VoicePipelineAgent（STT/LLM/TTS 级联）",
+        "BatchAgent 和 StreamAgent",
+        "TextAgent 和 SpeechAgent",
+        "LocalAgent 和 CloudAgent"
+      ],
+      "correct": 0,
+      "explanation": "MultimodalAgent 直接处理音频（Realtime 风格）；VoicePipelineAgent 使用 STT->LLM->TTS，提供文本层面控制。"
+    },
+    {
+      "stage": "check",
+      "question": "什么是抢话打断（barge-in），如何处理？",
+      "options": [
+        "LLM 成本飙升；减少 token 用量",
+        "智能体说话时被用户打断；用 UPSTREAM 取消帧让 TTS 半句即停",
+        "服务商宕机；切换区域",
+        "验证码失败；重试"
+      ],
+      "correct": 1,
+      "explanation": "抢话打断指用户中途打断；Pipecat 用 UPSTREAM 取消机制干净地处理它。"
+    },
+    {
+      "stage": "check",
+      "question": "课程把多少端到端延迟称为顶级水平？",
+      "options": [
+        "约 50 ms",
+        "约 450-600 ms",
+        "约 1500 ms",
+        "约 5000 ms"
+      ],
+      "correct": 1,
+      "explanation": "顶级技术栈落在 450-600 ms 左右；800-1200 ms 是常态；超过 1500 ms 就让人觉得坏了。"
+    },
+    {
+      "stage": "post",
+      "question": "忽略 STT 置信度会出什么问题？",
+      "options": [
+        "延迟会改善",
+        "低置信度的转写结果被当成真理喂给 LLM，产生错误回答；应按置信度门控或请用户确认",
+        "TTS 会变快",
+        "通话成本会降低"
+      ],
+      "correct": 1,
+      "explanation": "把低置信度的 STT 结果当真，是语音智能体最常见的失败模式之一。"
+    },
+    {
+      "stage": "post",
+      "question": "课程为什么建议在上线前把各组件延迟加总？",
+      "options": [
+        "服务商按延迟计费",
+        "每个组件都会增加 50-200 ms；总和决定体验是否让人觉得坏了",
+        "这是合规要求",
+        "WebRTC 强制要求延迟"
+      ],
+      "correct": 1,
+      "explanation": "上线前先加总整条链路（VAD + STT + LLM + TTS + 传输层）的延迟；目标非常紧。"
+    }
+  ]
+}

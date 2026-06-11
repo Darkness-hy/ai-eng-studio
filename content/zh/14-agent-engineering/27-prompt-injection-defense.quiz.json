@@ -1,0 +1,88 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "什么是间接提示注入？",
+      "options": [
+        "用户直接输入「忽略所有规则」",
+        "嵌入在智能体检索数据（网页、PDF、邮件、记忆笔记）中的指令，在内容读入时覆盖开发者提示",
+        "模型误点击",
+        "系统提示里的拼写错误"
+      ],
+      "correct": 1,
+      "explanation": "Greshake 等人提出了间接提示注入这一概念：攻击者控制的检索内容中携带指令。"
+    },
+    {
+      "stage": "pre",
+      "question": "本课指出，处理检索到的提示等价于什么？",
+      "options": [
+        "言论自由",
+        "在智能体的工具调用面上执行任意代码",
+        "一次静态分析",
+        "一次纯函数调用"
+      ],
+      "correct": 1,
+      "explanation": "这是 Greshake 的核心论断：被注入的指令可以触达智能体能访问的任何工具。"
+    },
+    {
+      "stage": "check",
+      "question": "以下哪一项不属于论文演示的五类利用方式？",
+      "options": [
+        "数据窃取",
+        "蠕虫式传播",
+        "持久化记忆投毒",
+        "缓存失效"
+      ],
+      "correct": 3,
+      "explanation": "五类利用方式是：数据窃取、蠕虫式传播、持久化记忆投毒、信息生态污染、任意工具调用。"
+    },
+    {
+      "stage": "check",
+      "question": "PVE 是什么的缩写？",
+      "options": [
+        "Prompt-Validator-Executor：在昂贵的主模型确认之前，便宜快速的验证器先检查每次工具调用",
+        "Provider-Verifier-Encoder",
+        "Plan-Verify-Execute，一种 HTN 变体",
+        "Pre-Vectorize-Embed"
+      ],
+      "correct": 0,
+      "explanation": "PVE 在主模型确认前，用便宜的验证器包裹每一次工具调用。"
+    },
+    {
+      "stage": "check",
+      "question": "为什么「系统提示里写了忽略不可信指令」是不够的？",
+      "options": [
+        "因为它写得太短",
+        "因为这只是指令遵循而非强制执行；足够有说服力的注入内容仍可能让模型偏离",
+        "因为提供商会把它删掉",
+        "因为它被加密了"
+      ],
+      "correct": 1,
+      "explanation": "真正的防御需要来源标签、白名单、逐步安全评估和 PVE 式验证，而不只是写提示。"
+    },
+    {
+      "stage": "post",
+      "question": "什么是对检索到的记忆的过度信任？",
+      "options": [
+        "缓存过于激进",
+        "昨天的智能体写下了被投毒的记忆笔记；今天的智能体读取它并再次执行注入指令",
+        "加载了错误的模型",
+        "忘记对索引做 vacuum"
+      ],
+      "correct": 1,
+      "explanation": "持久化记忆投毒意味着：如果记忆被当作可信内容，注入会跨会话存活。"
+    },
+    {
+      "stage": "post",
+      "question": "本课建议给每段内容附加什么元数据？",
+      "options": [
+        "加密密钥",
+        "来源标签：user_message、tool_output、retrieved；验证器拒绝 retrieved 内容中的指令",
+        "仅时间戳",
+        "token 计数"
+      ],
+      "correct": 1,
+      "explanation": "溯源标签让验证器能够根据内容的信任级别区别对待。"
+    }
+  ]
+}

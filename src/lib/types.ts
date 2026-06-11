@@ -27,7 +27,7 @@ export interface CourseIndex {
 }
 
 export interface QuizQuestion {
-  stage: 'pre' | 'post';
+  stage: 'pre' | 'post' | 'check';
   question: string;
   options: string[];
   correct: number;

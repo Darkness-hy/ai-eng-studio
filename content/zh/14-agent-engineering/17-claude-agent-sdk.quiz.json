@@ -1,0 +1,90 @@
+{
+  "lesson": "17-claude-agent-sdk",
+  "title": "Claude Agent SDK：子智能体与会话存储",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "Anthropic Client SDK 与 Claude Agent SDK 的区别是什么？",
+      "options": [
+        "Client SDK 是原始的 Messages API；Agent SDK 是 Claude Code 执行框架形态，自带内置工具、MCP、钩子、子智能体和会话存储",
+        "Client SDK 收费；Agent SDK 免费",
+        "Client SDK 只支持 Python",
+        "两者没有区别"
+      ],
+      "correct": 0,
+      "explanation": "Client SDK 把循环交给你自己实现；Agent SDK 则把循环预先构建好提供给你。"
+    },
+    {
+      "stage": "pre",
+      "question": "文档中给出的子智能体的两个用途是什么？",
+      "options": [
+        "并行化与上下文隔离",
+        "缓存与限流",
+        "日志与指标",
+        "认证与授权"
+      ],
+      "correct": 0,
+      "explanation": "子智能体并发执行相互独立的工作，并通过隔离上下文来保留编排者的上下文预算。"
+    },
+    {
+      "stage": "check",
+      "question": "以下哪个方法不属于会话存储接口？",
+      "options": [
+        "append",
+        "load",
+        "list_subkeys",
+        "compile_prompt"
+      ],
+      "correct": 3,
+      "explanation": "会话存储提供 append、load、list_sessions、delete、list_subkeys；compile_prompt 不是会话 API。"
+    },
+    {
+      "stage": "check",
+      "question": "以下哪个不是 Claude Agent SDK 的生命周期钩子？",
+      "options": [
+        "PreToolUse",
+        "PostToolUse",
+        "PreCompact",
+        "PreEmbedding"
+      ],
+      "correct": 3,
+      "explanation": "钩子包括 PreToolUse、PostToolUse、SessionStart/End、UserPromptSubmit、PreCompact、Stop、Notification。PreEmbedding 不是钩子。"
+    },
+    {
+      "stage": "check",
+      "question": "链路追踪上下文如何在智能体与 CLI 子进程之间传播？",
+      "options": [
+        "通过文件系统",
+        "通过传入 CLI 子进程的 W3C trace context 头",
+        "只能通过服务商的控制台",
+        "只通过环境变量"
+      ],
+      "correct": 1,
+      "explanation": "调用方上的 OTel span 通过 W3C trace context 传播到 CLI 子进程，因此整个多进程运行呈现为同一条 trace。"
+    },
+    {
+      "stage": "post",
+      "question": "什么是子智能体滥发？它在什么情况下发生？",
+      "options": [
+        "为 100 个微小任务派生 100 个子智能体，开销占了大头；应该改为批处理",
+        "忘记关闭子智能体",
+        "在 SessionStart 之前派生",
+        "派生的子智能体数量超过 CPU 核心数"
+      ],
+      "correct": 0,
+      "explanation": "子智能体有开销；小任务应该批处理，而不是每个任务派生一个。"
+    },
+    {
+      "stage": "post",
+      "question": "相比自托管 SDK，Claude Managed Agents 做了什么取舍？",
+      "options": [
+        "以控制权换取托管基础设施（长时异步、内置提示词缓存、内置上下文压缩）",
+        "以延迟换成本",
+        "以工具换内存",
+        "以追踪换流式输出"
+      ],
+      "correct": 0,
+      "explanation": "Managed Agents 是面向长时异步任务的托管替代方案；控制权更少，运维面也更小。"
+    }
+  ]
+}
