@@ -1,0 +1,78 @@
+{
+  "lesson": "04-vllm-serving-internals",
+  "title": "vLLM 服务内幕：PagedAttention、连续批处理与分块预填充",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "面对长短混合的请求，经典静态批处理的主要问题是什么？",
+      "options": [
+        "它只能配合 FP4 使用",
+        "它要求每块 GPU 之间都有 NVLink",
+        "它完全无法使用 GPU",
+        "填充到最长提示词和最长输出会浪费显存，并让整个批次卡在最慢的序列上"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "PagedAttention 是如何把 KV 缓存碎片率从 60-80% 降到 4% 以下的？",
+      "options": [
+        "通过完全禁用 KV 缓存",
+        "通过把权重压缩到 INT4",
+        "通过以固定大小的块（默认 16 个 token）分配 KV 缓存，并由每序列一张的块表来引用",
+        "通过把完整提示词放在 CPU 内存中"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "vLLM V1 调度器中，定义连续批处理的不变式是什么？",
+      "options": [
+        "调度器每个请求只运行一次，且批次永不变化",
+        "每个请求都获得自己专属的 GPU 流",
+        "调度器等待 10 ms 的时间窗口攒满批次后再运行",
+        "调度器每个解码迭代运行一次，把完成的序列移出、把等待中的序列接纳进来"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "混合负载下，分块预填充主要保护的是哪个延迟指标？",
+      "options": [
+        "平均吞吐量",
+        "冷启动时间",
+        "网络 RTT",
+        "P99 token 间延迟（ITL）"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "在 vLLM v0.18.0 中，哪种投机解码变体仍与 --enable-chunked-prefill 兼容？",
+      "options": [
+        "仅 EAGLE-1",
+        "V1 调度器中的 N-gram GPU 投机解码",
+        "没有任何投机解码与之兼容",
+        "草稿模型投机解码"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "为什么分块预填充单独使用并不能提升平均吞吐量？",
+      "options": [
+        "它运行在与解码不同的另一块 GPU 上",
+        "它在底层使用了投机解码",
+        "它对权重做了更激进的压缩",
+        "它只降低解码时的抖动；实践中的吞吐量收益来自在长预填充期间让解码序列保持活跃，而不是改变了总计算量"
+      ],
+      "correct": 3,
+      "explanation": ""
+    }
+  ]
+}

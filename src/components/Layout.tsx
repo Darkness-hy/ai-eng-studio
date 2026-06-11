@@ -112,30 +112,23 @@ export function Layout() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3 text-[13px]">
-                <a
-                  href="https://robo-lavira.github.io/lavira-zs-vln/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-md border border-hairline bg-paper px-3 py-1.5 text-faint transition-colors hover:bg-bone hover:text-ink"
-                >
-                  LaViRA ↗
-                </a>
-                <a
-                  href="https://xetroubadour.github.io/Uni-LaViRA/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-md border border-hairline bg-paper px-3 py-1.5 text-faint transition-colors hover:bg-bone hover:text-ink"
-                >
-                  Uni-LaViRA ↗
-                </a>
-              </div>
-              <img
-                src={`${import.meta.env.BASE_URL}brand/lavira-tag-light.png`}
-                alt="LaViRA — Like A Very Intelligent Real Assistant"
-                className="h-11"
-              />
+            <div className="ml-auto flex items-center justify-end gap-3 text-[13.5px]">
+              <a
+                href="https://robo-lavira.github.io/lavira-zs-vln/"
+                target="_blank"
+                rel="noreferrer"
+                className="font-brand rounded-md border border-hairline bg-paper px-3 py-1.5 text-faint transition-colors hover:bg-bone hover:text-ink"
+              >
+                LaViRA ↗
+              </a>
+              <a
+                href="https://xetroubadour.github.io/Uni-LaViRA/"
+                target="_blank"
+                rel="noreferrer"
+                className="font-brand rounded-md border border-hairline bg-paper px-3 py-1.5 text-faint transition-colors hover:bg-bone hover:text-ink"
+              >
+                Uni-LaViRA ↗
+              </a>
             </div>
           </div>
         </div>

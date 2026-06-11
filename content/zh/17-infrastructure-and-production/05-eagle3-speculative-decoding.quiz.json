@@ -1,0 +1,78 @@
+{
+  "lesson": "05-eagle3-speculative-decoding",
+  "title": "EAGLE-3 Speculative Decoding in Production",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "投机解码为什么能利用普通解码中存在的差距？",
+      "options": [
+        "解码是算力受限的，所以增加算力是免费的",
+        "解码无法从批处理中受益",
+        "解码比预填充需要更多的网络带宽",
+        "解码是内存带宽受限的，GPU 大部分时间在闲等 HBM 读取权重"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "接受率 alpha 衡量的是什么？",
+      "options": [
+        "解码期间使用的 GPU 内存比例",
+        "草稿模型提议的 token 被目标模型接受的比例",
+        "草稿模型的延迟开销",
+        "KV 缓存的命中率"
+      ],
+      "correct": 1,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "EAGLE-3 相对 EAGLE-2 改变了什么，使通用对话上的 alpha 达到约 0.6-0.8？",
+      "options": [
+        "它使用同系列的全尺寸草稿模型",
+        "它在 CPU 而不是 GPU 上运行",
+        "它完全去掉了验证步骤",
+        "草稿头在目标模型的多个层上训练，而不只是最后一层"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "按这节课的说法，在 2026 年的大多数硬件上，高并发下 alpha 大约低于多少时投机解码变成净负收益？",
+      "options": [
+        "0.95",
+        "0.05",
+        "0.55",
+        "0.85"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "开启 EAGLE-3 后，即使平均 ITL 下降，你也应该最密切关注哪个指标？",
+      "options": [
+        "冷启动时间",
+        "GPU 内存利用率",
+        "P99 ITL，因为拒稿引发的两遍计算在满 batch 下会串行执行",
+        "平均端到端延迟"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "按这节课的说法，为什么投机解码在 vLLM 2026 中是显式开启而非默认开启？",
+      "options": [
+        "接受率取决于负载，不测 alpha 就打开开关是一种生产环境反模式",
+        "它只能在 Blackwell GPU 上运行",
+        "它与 PagedAttention 不兼容",
+        "它需要单独的许可证"
+      ],
+      "correct": 0,
+      "explanation": ""
+    }
+  ]
+}

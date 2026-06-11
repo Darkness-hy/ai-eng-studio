@@ -1,0 +1,78 @@
+{
+  "lesson": "15-batch-apis",
+  "title": "批量 API（Batch API）——成为行业标准的五折优惠",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "2026 年 OpenAI、Anthropic 和 Google 的批量 API 共同提供的条件是什么？",
+      "options": [
+        "九折优惠，1 小时内返回",
+        "一折优惠，7 天内返回",
+        "1k token 以内免费",
+        "五折优惠，24 小时内返回"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "在本课的表述中，\"24 小时返回\"实际保证的是什么？",
+      "options": [
+        "24 小时是缓存的 TTL",
+        "批量任务总是要花 24 小时",
+        "厂商承诺在 24 小时内返回结果，典型 P50 约为 2-6 小时",
+        "只有 1k 个请求以内的批量任务才符合条件"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "在共享系统提示词的工作负载上，批量与缓存输入叠加后，账单相对同步无缓存方案会如何变化？",
+      "options": [
+        "没有影响，因为缓存是自动的",
+        "只有模型部署在 Vertex 上才有用",
+        "可以降到同步无缓存基线的大约 10%",
+        "成本反而增加 50%"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "2026 年对内容流水线和离线标注任务来说，默认选哪条分流通道是错误的？",
+      "options": [
+        "交互式，因为听起来很紧急",
+        "批量，因为用户感知不到 24 小时的延迟",
+        "批量与缓存混合方案",
+        "带异步队列的半交互式"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "跨厂商的输出格式陷阱是什么？",
+      "options": [
+        "Anthropic 不支持 JSONL",
+        "所有厂商都使用相同的 OpenAI JSONL 格式",
+        "Vertex 只接受 Parquet",
+        "批量文件格式因厂商而异（OpenAI JSONL、Anthropic JSONL、Vertex BigQuery/GCS），所以可移植的客户端需要为每家厂商写适配器"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "按照本课的说法，把工作负载分流到批量通道的最简单判定规则是什么？",
+      "options": [
+        "提示词不到 1k token 就走批量",
+        "用到工具就走批量",
+        "只有网关要求时才走批量",
+        "如果用户不会注意到 24 小时后才交付，就永远走批量（并叠加缓存）"
+      ],
+      "correct": 3,
+      "explanation": ""
+    }
+  ]
+}

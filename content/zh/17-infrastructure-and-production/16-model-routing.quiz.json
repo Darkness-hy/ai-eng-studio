@@ -1,0 +1,78 @@
+{
+  "lesson": "16-model-routing",
+  "title": "Model Routing as a Cost-Reduction Primitive",
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "模型级联（model cascading）的核心思想是什么？",
+      "options": [
+        "并行运行两个模型并对输出取平均",
+        "始终按随机权重路由",
+        "每个请求都先在最贵的模型上运行",
+        "先运行便宜模型，仅在置信度低或拒答时升级到前沿模型"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "本课列出了哪四种路由决策信号？",
+      "options": [
+        "任务分类、提示词长度、与已知难例集的嵌入相似度、首轮输出的自置信度",
+        "仅 token 数量",
+        "仅用户等级",
+        "GPU 温度、风扇转速、室内湿度、一天中的时间"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "级联路由器的预期延迟表现是怎样的？",
+      "options": [
+        "总是慢 10 倍",
+        "与前沿模型完全相同",
+        "中位延迟约 1.2 倍（便宜模型运行加校验），升级请求约 2 倍（约占流量 10%）",
+        "总是比预路由更快"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "哪种路由模式在前端增加 5-10ms 延迟且整体最快？",
+      "options": [
+        "带分类器的预路由（Pre-route）",
+        "集成路由（Ensemble route）",
+        "级联（Cascade）",
+        "随机轮询"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "路由中的廉价模型漂移（cheap-model drift）指的是什么？",
+      "options": [
+        "便宜模型变贵了",
+        "级联 100% 落到前沿模型",
+        "任务分布发生偏移，但训练好的路由器仍把请求发给便宜模型，质量悄然下降",
+        "便宜模型出现延迟漂移"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "本课推荐用什么防护手段来捕捉路由漂移？",
+      "options": [
+        "只用离线评估集",
+        "在生产环境中禁用路由",
+        "只做季度工程评审",
+        "在线质量指标——每条路由的点赞/点踩、对留出样本的 LLM 评判、升级率、拒答率"
+      ],
+      "correct": 3,
+      "explanation": ""
+    }
+  ]
+}

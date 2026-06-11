@@ -1,0 +1,76 @@
+{
+  "questions": [
+    {
+      "stage": "pre",
+      "question": "在没有任何缓解手段的情况下，70B 模型在全新节点上的冷启动大约需要多久？",
+      "options": [
+        "超过 1 小时",
+        "30-60 秒",
+        "3-8 分钟",
+        "10 秒以内"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "本课推荐用哪个 AWS 侧特性来预置容器镜像，从而让第 2 步的镜像拉取消失？",
+      "options": [
+        "在 EC2NodeClass 中引用 Bottlerocket 双卷架构",
+        "ECS 任务定义",
+        "Spot fleet 调度放置",
+        "仅使用 EBS 卷快照"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "哪个 Modal 特性通过把加载完成后的状态直接反序列化进 HBM，最接近\"几秒内启动一块温 GPU\"？",
+      "options": [
+        "NVMe 到 DRAM 的分层加载",
+        "实时迁移",
+        "GPU 内存快照（checkpoint）",
+        "Run:ai Model Streamer"
+      ],
+      "correct": 2,
+      "explanation": ""
+    },
+    {
+      "stage": "check",
+      "question": "实时迁移为什么在节点间传输输入 token 而不是 KV 缓存？",
+      "options": [
+        "实时迁移是 GDPR 的强制要求",
+        "输入 token 的熵更大",
+        "KV 缓存被加密无法移动",
+        "在目标节点重算 KV 比在网络上传输 GB 级 KV 缓存更便宜"
+      ],
+      "correct": 3,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "哪个 serverless 层面通过保持至少一个副本在线，用直接的 GPU 成本换取可预测的就绪状态？",
+      "options": [
+        "min_workers >= 1 的温池",
+        "分层加载",
+        "Bottlerocket 预置",
+        "实时迁移"
+      ],
+      "correct": 0,
+      "explanation": ""
+    },
+    {
+      "stage": "post",
+      "question": "本课为什么说冷启动缓解必须跨层叠加，而不是只挑一个工具？",
+      "options": [
+        "没有任何单一层面能消除所有步骤（节点供给、镜像拉取、权重加载、引擎初始化）；叠加各层才能压缩每一步",
+        "这是监管要求",
+        "Modal 拥有整个技术栈",
+        "全部五层都已打包在 vLLM 中"
+      ],
+      "correct": 0,
+      "explanation": ""
+    }
+  ]
+}
