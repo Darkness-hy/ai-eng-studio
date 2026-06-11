@@ -106,24 +106,7 @@ export function Layout() {
       </main>
 
       <footer className="mt-24 border-t border-hairline">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-8 text-[12.5px] text-faint">
-          <span>
-            {lang === 'zh' ? '课程内容来自开源项目 ' : 'Course content from '}
-            <a
-              href="https://github.com/rohitg00/ai-engineering-from-scratch"
-              target="_blank"
-              rel="noreferrer"
-              className="underline decoration-hairline underline-offset-2 hover:text-ink"
-            >
-              ai-engineering-from-scratch
-            </a>
-            {' · MIT License'}
-          </span>
-          <span className="font-mono text-[11px] tracking-[0.12em]">
-            FROM SCRATCH · 20 PHASES · BUILT BY HAND
-          </span>
-        </div>
-        <div className="border-t border-hairline bg-bone/40">
+        <div className="bg-bone/40">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-8 gap-y-4 px-5 py-6">
             <div className="flex items-center gap-4">
               <img
@@ -159,6 +142,25 @@ export function Layout() {
                 Uni-LaViRA ↗
               </a>
             </div>
+          </div>
+        </div>
+        <div className="border-t border-hairline">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-8 text-[12.5px] text-faint">
+            <span>
+              {lang === 'zh' ? '课程内容来自开源项目 ' : 'Course content from '}
+              <a
+                href="https://github.com/rohitg00/ai-engineering-from-scratch"
+                target="_blank"
+                rel="noreferrer"
+                className="underline decoration-hairline underline-offset-2 hover:text-ink"
+              >
+                ai-engineering-from-scratch
+              </a>
+              {' · MIT License'}
+            </span>
+            <span className="font-mono text-[11px] tracking-[0.12em]">
+              FROM SCRATCH · 20 PHASES · BUILT BY HAND
+            </span>
           </div>
         </div>
       </footer>
