@@ -246,3 +246,25 @@ kbd {
   max-width: 100%;
   height: auto;
 }
+
+/* ── upstream interactive lesson figures (hydrated by public/figures) ─ */
+/* The widget scripts theme themselves via CSS variables; map them to ours. */
+.lesson-figure {
+  --bg: var(--color-paper);
+  --bg-surface: var(--color-bone);
+  --blueprint: var(--color-ink-blue);
+  --blueprint-tint: var(--color-pale-blue);
+  --blueprint-tint-strong: #cfe7fb;
+  --ink: var(--color-ink);
+  --ink-soft: #555350;
+  --ink-mute: var(--color-faint);
+  --rule-soft: var(--color-hairline);
+  --warn: var(--color-ink-yellow);
+  --font-body: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+.lesson-figure svg {
+  max-width: 100%;
+  height: auto;
+}

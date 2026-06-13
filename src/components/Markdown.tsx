@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { slugify } from '../lib/md';
 import { CodeBlock } from './CodeBlock';
+import { LessonFigure } from './LessonFigure';
 import { MermaidDiagram } from './Mermaid';
 
 function flatten(node: ReactNode): string {
@@ -48,6 +49,7 @@ export function Markdown({ content }: { content: string }) {
             const text = flatten(children).replace(/\n$/, '');
             const lang = /language-(\w+)/.exec(className ?? '')?.[1];
             const isBlock = lang != null || text.includes('\n');
+            if (lang === 'figure') return <LessonFigure name={text.trim()} />;
             if (!isBlock) return <code>{text}</code>;
             if (lang === 'mermaid') return <MermaidDiagram chart={text} />;
             return <CodeBlock code={text} lang={lang ?? 'text'} />;
