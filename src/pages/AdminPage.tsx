@@ -5,13 +5,26 @@ import { LineChart } from '../components/charts/LineChart';
 import { useAuth } from '../lib/auth';
 import { fetchIndex } from '../lib/data';
 import { useLang } from '../lib/i18n';
+import { AREAS, QUESTIONS, QUESTIONS_PER_AREA } from '../lib/placement';
 import { getSupabase, type ActivityRow, type ProfileRow, type ProgressRow } from '../lib/supabase';
 import type { CourseIndex, Lang } from '../lib/types';
+
+const LETTERS = ['A', 'B', 'C', 'D'];
+
+interface PlacementRow {
+  user_id: string;
+  answers: number[]; // per-question chosen index, -1 = unanswered
+  area_scores: Record<string, number>;
+  total: number;
+  entry: number;
+  taken_at: string;
+}
 
 interface AdminData {
   profiles: ProfileRow[];
   progress: ProgressRow[];
   activity: ActivityRow[];
+  placement: PlacementRow[];
   index: CourseIndex;
 }
 
@@ -32,6 +45,7 @@ interface StudentStat {
   streak: number;
   lastActive: string | null;
   recentQuizzes: ProgressRow[]; // newest first, max 10
+  placement: PlacementRow | null;
 }
 
 interface Metrics {
@@ -43,6 +57,15 @@ interface Metrics {
   phaseBars: { label: string; value: number; hint: string }[];
   activityPoints: { label: string; value: number }[];
   histBuckets: { label: string; count: number }[];
+  placementCount: number;
+  placementQuestionBars: { label: string; value: number; hint: string }[];
+}
+
+/** Grade one placement answer against the answer key. */
+function gradeAnswer(answers: number[] | undefined, i: number): 'correct' | 'wrong' | 'blank' {
+  const a = answers?.[i];
+  if (a == null || a === -1) return 'blank';
+  return a === QUESTIONS[i].correct ? 'correct' : 'wrong';
 }
 
 const pad2 = (n: number): string => String(n).padStart(2, '0');
@@ -66,8 +89,11 @@ function computeStreak(days: ReadonlySet<string>): number {
 }
 
 function buildMetrics(data: AdminData): Metrics {
-  const { profiles, progress, activity, index } = data;
+  const { profiles, progress, activity, placement, index } = data;
   const totalLessons = index.stats.lessons;
+
+  const placementByUser = new Map<string, PlacementRow>();
+  for (const row of placement) placementByUser.set(row.user_id, row);
 
   const doneByUser = new Map<string, Set<string>>();
   const postByUser = new Map<string, ProgressRow[]>();
@@ -126,9 +152,31 @@ function buildMetrics(data: AdminData): Metrics {
         recentQuizzes: [...postRows]
           .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
           .slice(0, 10),
+        placement: placementByUser.get(p.id) ?? null,
       };
     });
   students.sort((a, b) => b.doneCount - a.doneCount);
+
+  // Class-wide per-question correct rate: among students who attempted each
+  // question (i.e. answered it), the share who got it right.
+  const placedStudents = students.filter((s) => s.placement);
+  const placementQuestionBars = QUESTIONS.map((q, i) => {
+    let attempted = 0;
+    let correct = 0;
+    for (const s of placedStudents) {
+      const a = s.placement!.answers[i];
+      if (a != null && a !== -1) {
+        attempted += 1;
+        if (a === q.correct) correct += 1;
+      }
+    }
+    const area = AREAS[Math.floor(i / QUESTIONS_PER_AREA)];
+    return {
+      label: String(i + 1),
+      value: attempted ? (correct / attempted) * 100 : 0,
+      hint: `${area.zh} · Q${i + 1}`,
+    };
+  });
 
   const avgDonePct = students.length
     ? students.reduce((acc, s) => acc + s.donePct, 0) / students.length
@@ -184,6 +232,8 @@ function buildMetrics(data: AdminData): Metrics {
     phaseBars,
     activityPoints,
     histBuckets,
+    placementCount: placedStudents.length,
+    placementQuestionBars,
   };
 }
 
@@ -203,11 +253,13 @@ export function AdminPage() {
       supabase.from('profiles').select('*'),
       supabase.from('progress').select('*'),
       supabase.from('activity').select('*'),
+      supabase.from('placement').select('*'),
       fetchIndex(),
     ])
-      .then(([profilesRes, progressRes, activityRes, index]) => {
+      .then(([profilesRes, progressRes, activityRes, placementRes, index]) => {
         if (!live) return;
-        const failed = profilesRes.error ?? progressRes.error ?? activityRes.error;
+        const failed =
+          profilesRes.error ?? progressRes.error ?? activityRes.error ?? placementRes.error;
         if (failed) {
           setError(failed.message);
           return;
@@ -216,6 +268,7 @@ export function AdminPage() {
           profiles: (profilesRes.data ?? []) as ProfileRow[],
           progress: (progressRes.data ?? []) as ProgressRow[],
           activity: (activityRes.data ?? []) as ActivityRow[],
+          placement: (placementRes.data ?? []) as PlacementRow[],
           index,
         });
       })
@@ -284,6 +337,18 @@ function AdminDashboard({ data, lang }: { data: AdminData; lang: Lang }) {
         <ChartCard label={zh ? '课后测验得分分布' : 'Post-quiz score distribution'}>
           <Histogram buckets={m.histBuckets} />
         </ChartCard>
+        {m.placementCount > 0 && (
+          <ChartCard
+            label={
+              zh
+                ? `定级题目正确率（全班 ${m.placementCount} 人，越低越难）`
+                : `Placement question accuracy (${m.placementCount} graded)`
+            }
+            wide
+          >
+            <BarChart data={m.placementQuestionBars} maxValue={100} format={fmtPct} />
+          </ChartCard>
+        )}
       </section>
 
       <section className="mt-8 rounded-lg border border-hairline bg-paper">
@@ -460,9 +525,73 @@ function StudentRow({
                 })}
               </div>
             )}
+            {stat.placement && <PlacementDetail placement={stat.placement} zh={zh} />}
           </td>
         </tr>
       )}
     </>
+  );
+}
+
+function PlacementDetail({ placement: pl, zh }: { placement: PlacementRow; zh: boolean }) {
+  const areaScore = (key: string): number => pl.area_scores[key] ?? 0;
+  const blanks = pl.answers.filter((a) => a === -1).length;
+  const strongest = AREAS.reduce((best, a) => (areaScore(a.key) > areaScore(best.key) ? a : best));
+  const weakest = AREAS.reduce((worst, a) => (areaScore(a.key) < areaScore(worst.key) ? a : worst));
+
+  return (
+    <div className="mt-5">
+      <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">
+        {zh ? '定级测试答题情况' : 'Placement quiz answers'}
+      </div>
+      <div className="mt-2 font-mono text-[11.5px] text-faint">
+        {zh ? '总分' : 'Total'} {pl.total}/50 · {zh ? '起点 阶段 ' : 'Entry Phase '}
+        {pl.entry} · {zh ? '测于 ' : 'taken '}
+        {pl.taken_at.slice(0, 10)}
+      </div>
+      <div className="mt-3 space-y-1.5">
+        {AREAS.map((a, ai) => (
+          <div key={a.key} className="flex items-center gap-3">
+            <span className="w-36 shrink-0 text-[11.5px]">
+              {zh ? a.zh : a.en}{' '}
+              <span className="font-mono text-faint">
+                {areaScore(a.key)}/{QUESTIONS_PER_AREA}
+              </span>
+            </span>
+            <div className="flex flex-wrap gap-1">
+              {Array.from({ length: QUESTIONS_PER_AREA }, (_, k) => {
+                const idx = ai * QUESTIONS_PER_AREA + k;
+                const g = gradeAnswer(pl.answers, idx);
+                const sel = pl.answers[idx];
+                const cls =
+                  g === 'correct'
+                    ? 'bg-pale-green text-ink-green'
+                    : g === 'wrong'
+                      ? 'bg-pale-red text-ink-red'
+                      : 'border border-hairline bg-paper text-faint';
+                const selLabel = sel == null || sel === -1 ? (zh ? '未答' : 'blank') : LETTERS[sel];
+                const title =
+                  `Q${idx + 1} · ${zh ? a.zh : a.en}\n` +
+                  `${zh ? '你的选择' : 'chose'}: ${selLabel} · ${zh ? '正确答案' : 'key'}: ${LETTERS[QUESTIONS[idx].correct]}`;
+                return (
+                  <span
+                    key={idx}
+                    title={title}
+                    className={`flex h-6 w-6 items-center justify-center rounded font-mono text-[9.5px] ${cls}`}
+                  >
+                    {idx + 1}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2.5 text-[12px] text-faint">
+        {zh
+          ? `最强：${strongest.zh}（${areaScore(strongest.key)}/10）· 最弱：${weakest.zh}（${areaScore(weakest.key)}/10）· 未作答 ${blanks} 题`
+          : `Strongest: ${strongest.en} (${areaScore(strongest.key)}/10) · Weakest: ${weakest.en} (${areaScore(weakest.key)}/10) · ${blanks} blank`}
+      </div>
+    </div>
   );
 }
