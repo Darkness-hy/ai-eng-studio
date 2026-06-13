@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { ChallengeWidget } from '../components/ChallengeWidget';
 import { CodeTabs } from '../components/CodeTabs';
 import { INTERACTIVE } from '../components/interactive/registry';
 import { Markdown } from '../components/Markdown';
@@ -158,6 +159,10 @@ export function LessonPage() {
         <Markdown content={body} />
 
         {lesson.code.length > 0 && <CodeTabs files={lesson.code} />}
+
+        {lesson.challenge && (
+          <ChallengeWidget key={lesson.id} challenge={lesson.challenge} lessonId={lesson.id} />
+        )}
 
         {postQuiz.length > 0 && (
           <Quiz key={`${lesson.id}:post`} lessonId={lesson.id} stage="post" questions={postQuiz} />

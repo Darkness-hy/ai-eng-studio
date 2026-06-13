@@ -21,6 +21,7 @@ const PHASES_DIR = path.join(UPSTREAM, 'phases');
 const ROADMAP_PATH = path.join(UPSTREAM, 'ROADMAP.md');
 const GLOSSARY_PATH = path.join(UPSTREAM, 'glossary', 'terms.md');
 const ZH_DIR = path.join(APP_ROOT, 'content', 'zh');
+const CHALLENGE_DIR = path.join(APP_ROOT, 'content', 'challenges');
 const OUT_DIR = path.join(APP_ROOT, 'public', 'data');
 
 const CODE_EXTS = new Set(['.py', '.ts', '.tsx', '.js', '.rs', '.jl', '.json', '.sh', '.yml', '.yaml', '.md', '.toml']);
@@ -249,6 +250,7 @@ function build() {
           ...f,
           runnable: f.lang === 'python' ? pyodideRunnable(f.content) : false,
         })),
+        challenge: readJsonIfExists(path.join(CHALLENGE_DIR, phaseSlug, `${lessonSlug}.json`)),
       };
 
       const outPhaseDir = path.join(OUT_DIR, 'lessons', phaseSlug);

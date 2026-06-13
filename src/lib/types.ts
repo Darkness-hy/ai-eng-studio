@@ -42,6 +42,16 @@ export interface CodeFile {
   runnable: boolean;
 }
 
+export interface Challenge {
+  titleZh: string;
+  titleEn: string;
+  promptZh: string;
+  promptEn: string;
+  starter: string;
+  tests: string;
+  solution: string;
+}
+
 export interface Lesson {
   id: string;
   phase: string;
@@ -55,6 +65,7 @@ export interface Lesson {
   quizEn: QuizQuestion[] | null;
   quizZh: QuizQuestion[] | null;
   code: CodeFile[];
+  challenge: Challenge | null;
 }
 
 export interface GlossaryTerm {
