@@ -172,7 +172,7 @@ function PlacementCard({ index }: { index: CourseIndex }) {
       style={{ ['--stagger' as string]: 5 }}
     >
       <span className="text-[13.5px] font-medium text-ink-blue">
-        {zh ? '不知道从哪开始？10 题找到你的起点' : 'Not sure where to start? Find your level'}
+        {zh ? '不知道从哪开始？50 题找到你的起点' : 'Not sure where to start? Find your level'}
       </span>
       <span className="font-serif text-[16px] text-ink-blue transition-transform group-hover:translate-x-1">
         →

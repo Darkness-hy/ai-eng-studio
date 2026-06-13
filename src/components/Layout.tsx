@@ -125,21 +125,24 @@ export function Layout() {
               </div>
             </div>
             <div className="ml-auto flex items-center justify-end gap-3 text-[13.5px]">
+              <span className="hidden text-[12.5px] text-faint sm:inline">
+                {lang === 'zh' ? '觉得有用的话，给我们点个 Star 吧 👉' : 'Find it useful? Give us a Star 👉'}
+              </span>
               <a
-                href="https://robo-lavira.github.io/lavira-zs-vln/"
+                href="https://github.com/NJU-R-L-Group-Embodied-Lab/lavira-code"
                 target="_blank"
                 rel="noreferrer"
                 className="font-brand rounded-md border border-hairline bg-paper px-3 py-1.5 text-faint transition-colors hover:bg-bone hover:text-ink"
               >
-                LaViRA ↗
+                LaViRA ★
               </a>
               <a
-                href="https://xetroubadour.github.io/Uni-LaViRA/"
+                href="https://github.com/NJU-R-L-Group-Embodied-Lab/uni-lavira-code"
                 target="_blank"
                 rel="noreferrer"
                 className="font-brand rounded-md border border-hairline bg-paper px-3 py-1.5 text-faint transition-colors hover:bg-bone hover:text-ink"
               >
-                Uni-LaViRA ↗
+                Uni-LaViRA ★
               </a>
             </div>
           </div>
