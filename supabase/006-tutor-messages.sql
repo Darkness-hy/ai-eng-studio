@@ -24,3 +24,8 @@ create policy tutor_messages_select on public.tutor_messages
 drop policy if exists tutor_messages_insert on public.tutor_messages;
 create policy tutor_messages_insert on public.tutor_messages
   for insert with check (auth.uid() = user_id);
+
+-- 本人可删自己的(清空对话历史)。
+drop policy if exists tutor_messages_delete on public.tutor_messages;
+create policy tutor_messages_delete on public.tutor_messages
+  for delete using (auth.uid() = user_id);
