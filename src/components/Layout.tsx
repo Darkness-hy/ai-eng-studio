@@ -67,6 +67,11 @@ export function Layout() {
                 )}
               </span>
             </NavLink>
+            {authEnabled && profile && (
+              <NavLink to="/classes" className={navCls}>
+                {lang === 'zh' ? '班级' : 'Classes'}
+              </NavLink>
+            )}
             {authEnabled && profile?.role === 'admin' && (
               <NavLink to="/admin" className={navCls}>
                 {lang === 'zh' ? '管理后台' : 'Admin'}
