@@ -10,6 +10,7 @@ import { LoginPage } from './pages/LoginPage';
 import { PhasePage } from './pages/PhasePage';
 import { PlacementPage } from './pages/PlacementPage';
 import { ProgressPage } from './pages/ProgressPage';
+import { ReviewPage } from './pages/ReviewPage';
 
 const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
 
@@ -42,6 +43,7 @@ export default function App() {
                 <Route path="/glossary" element={<GlossaryPage />} />
                 <Route path="/progress" element={<ProgressPage />} />
                 <Route path="/find-your-level" element={<PlacementPage />} />
+              <Route path="/review" element={<ReviewPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route
                   path="/admin"

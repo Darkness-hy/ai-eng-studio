@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { useLang } from '../lib/i18n';
+import { dueCount, useReview } from '../lib/review';
 import { CommandPalette } from './CommandPalette';
 
 function ScrollToTop() {
@@ -16,6 +17,8 @@ export function Layout() {
   const { lang, setLang, t } = useLang();
   const { enabled: authEnabled, profile, signOut } = useAuth();
   const [paletteOpen, setPaletteOpen] = useState(false);
+  useReview(); // re-render the due badge when the review queue changes
+  const due = dueCount();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -53,6 +56,16 @@ export function Layout() {
             </NavLink>
             <NavLink to="/progress" className={navCls}>
               {t('nav_progress')}
+            </NavLink>
+            <NavLink to="/review" className={navCls}>
+              <span className="inline-flex items-center gap-1.5">
+                {lang === 'zh' ? '复习' : 'Review'}
+                {due > 0 && (
+                  <span className="rounded-full bg-pale-red px-1.5 py-0.5 font-mono text-[10px] leading-none text-ink-red">
+                    {due}
+                  </span>
+                )}
+              </span>
             </NavLink>
             {authEnabled && profile?.role === 'admin' && (
               <NavLink to="/admin" className={navCls}>

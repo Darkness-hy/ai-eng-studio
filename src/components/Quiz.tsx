@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLang } from '../lib/i18n';
 import { getProgress, saveQuizScore, setLessonDone } from '../lib/progress';
+import { addReviewItem } from '../lib/review';
 import type { QuizQuestion } from '../lib/types';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -43,8 +44,12 @@ export function Quiz({ lessonId, stage, questions }: QuizProps) {
     if (finished && questions.length > 0 && stage === 'post') {
       saveQuizScore(lessonId, stage, score, questions.length);
       setLessonDone(lessonId, true); // finishing the post-lesson check completes the lesson
+      // Missed questions go into the spaced-repetition review queue.
+      picked.forEach((p, i) => {
+        if (p != null && p !== questions[i].correct) addReviewItem(lessonId, i);
+      });
     }
-  }, [finished, score, lessonId, stage, questions.length]);
+  }, [finished, score, lessonId, stage, questions, picked]);
 
   if (questions.length === 0) return null;
 
