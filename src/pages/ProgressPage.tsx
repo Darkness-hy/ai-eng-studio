@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { BadgeWall } from '../components/BadgeWall';
 import { Heatmap } from '../components/Heatmap';
 import { computeBadges, dailyCompletions } from '../lib/achievements';
+import { useAuth } from '../lib/auth';
+import { generateCertificate, generateShareCard, downloadBlob } from '../lib/certificate';
 import { fetchIndex } from '../lib/data';
 import { phaseTitle, useLang } from '../lib/i18n';
 import { exportProgress, importProgress, streakDays, useProgress } from '../lib/progress';
@@ -10,6 +12,7 @@ import type { CourseIndex } from '../lib/types';
 
 export function ProgressPage() {
   const { lang, t } = useLang();
+  const { profile } = useAuth();
   const [index, setIndex] = useState<CourseIndex | null>(null);
   const progress = useProgress();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -36,6 +39,35 @@ export function ProgressPage() {
             100,
         )
       : null;
+
+  const zh = lang === 'zh';
+  const certName =
+    profile?.display_name ?? profile?.email?.split('@')[0] ?? (zh ? '学习者' : 'Learner');
+  const certDate = new Date().toLocaleDateString(zh ? 'zh-CN' : 'en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  const completedPhases = index.phases.filter(
+    (p) => p.lessons.length > 0 && p.lessons.every((l) => progress.lessons[`${p.slug}/${l.slug}`]?.done),
+  );
+  const dlCert = async (achievement: string, file: string) => {
+    downloadBlob(await generateCertificate({ name: certName, achievement, date: certDate, zh }), file);
+  };
+  const dlShare = async () => {
+    const badges = computeBadges(progress, index).filter((b) => b.unlocked).length;
+    downloadBlob(
+      await generateShareCard({
+        name: certName,
+        doneCount: doneTotal,
+        totalLessons: index.stats.lessons,
+        streak: streakDays(),
+        badges,
+        zh,
+      }),
+      'ai-eng-share.png',
+    );
+  };
 
   const download = () => {
     const blob = new Blob([exportProgress()], { type: 'application/json' });
@@ -101,6 +133,53 @@ export function ProgressPage() {
       {/* achievement badges */}
       <section className="mt-12">
         <BadgeWall badges={computeBadges(progress, index)} lang={lang} />
+      </section>
+
+      {/* certificates & sharing */}
+      <section className="mt-12">
+        <div className="mb-3 font-mono text-[10.5px] uppercase tracking-[0.16em] text-faint">
+          {zh ? '证书与分享' : 'Certificates & sharing'}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={dlShare}
+            className="rounded-md border border-hairline bg-paper px-3 py-1.5 text-[13px] text-faint transition-colors hover:bg-bone hover:text-ink"
+          >
+            {zh ? '下载学习成就卡' : 'Achievement card'}
+          </button>
+          {doneTotal === index.stats.lessons && (
+            <button
+              type="button"
+              onClick={() => dlCert(zh ? '完成全部 499 节课程' : 'completed all 499 lessons', 'certificate-full.png')}
+              className="rounded-md border border-ink-green/30 bg-pale-green px-3 py-1.5 text-[13px] text-ink-green transition-colors hover:bg-pale-green/70"
+            >
+              {zh ? '结业证书' : 'Full certificate'}
+            </button>
+          )}
+          {completedPhases.map((p) => (
+            <button
+              key={p.slug}
+              type="button"
+              onClick={() =>
+                dlCert(
+                  zh
+                    ? `完成「${p.titleZh}」阶段（${p.lessons.length} 课）`
+                    : `completed ${p.titleEn} (${p.lessons.length} lessons)`,
+                  `certificate-phase-${p.num}.png`,
+                )
+              }
+              className="rounded-md border border-hairline bg-paper px-3 py-1.5 text-[13px] text-faint transition-colors hover:bg-bone hover:text-ink"
+            >
+              {zh ? `阶段 ${p.num} 证书` : `Phase ${p.num} cert`}
+            </button>
+          ))}
+        </div>
+        {completedPhases.length === 0 && doneTotal < index.stats.lessons && (
+          <p className="mt-2 text-[12.5px] text-faint">
+            {zh ? '完成一个阶段的全部课程即可领取该阶段结业证书。' : 'Complete a phase to earn its certificate.'}
+          </p>
+        )}
       </section>
 
       <div className="mt-12 mb-4 font-mono text-[10.5px] uppercase tracking-[0.16em] text-faint">
