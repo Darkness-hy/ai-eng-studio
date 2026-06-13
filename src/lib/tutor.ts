@@ -1,3 +1,4 @@
+import { cloudEnabled, getSupabase } from './supabase';
 import type { Lang, Lesson } from './types';
 
 const endpoint = import.meta.env.VITE_AI_TUTOR_ENDPOINT as string | undefined;
@@ -34,11 +35,40 @@ export function tutorContextSnapshot(): TutorContext | null {
   return context;
 }
 
-/** 从课程对象生成精简上下文(标题 + 正文截断到 ~4000 字)。 */
+/**
+ * 把「当前页面对应的整篇课文」作为 RAG 知识库注入:标题 + 完整正文 +
+ * 本课测验的关键问答(浓缩的知识点)。截断到一个宽松上限,覆盖绝大多数整课。
+ */
 export function lessonContext(lesson: Lesson, lang: Lang): TutorContext {
-  const title = (lang === 'zh' ? lesson.titleZh : null) ?? lesson.title;
-  const body = (lang === 'zh' ? lesson.bodyZh : null) ?? lesson.bodyEn;
-  return { lessonId: lesson.id, title, text: `# ${title}\n\n${body}`.slice(0, 4000) };
+  const zh = lang === 'zh';
+  const title = (zh ? lesson.titleZh : null) ?? lesson.title;
+  const body = (zh ? lesson.bodyZh : null) ?? lesson.bodyEn;
+  const quiz = (zh ? lesson.quizZh : null) ?? lesson.quizEn ?? [];
+  const parts = [`# ${title}`, '', body];
+  if (quiz.length) {
+    parts.push('', zh ? '## 本课测验要点' : '## Key quiz points');
+    for (const q of quiz) {
+      const ans = q.options[q.correct] ?? '';
+      parts.push(`- ${q.question} → ${ans}${q.explanation ? ` —— ${q.explanation}` : ''}`);
+    }
+  }
+  return { lessonId: lesson.id, title, text: parts.join('\n').slice(0, 12000) };
+}
+
+/** 把一轮问答(用户问 + 助教答)存到 Supabase,按用户隔离。best-effort,失败不打扰用户。 */
+export async function saveTutorMessages(
+  userId: string,
+  lessonId: string | null,
+  turns: { role: 'user' | 'assistant'; content: string }[],
+): Promise<void> {
+  if (!cloudEnabled) return;
+  try {
+    await getSupabase()
+      .from('tutor_messages')
+      .insert(turns.map((t) => ({ user_id: userId, lesson_id: lessonId, role: t.role, content: t.content })));
+  } catch {
+    /* 存储是附带功能,失败静默 */
+  }
 }
 
 export interface AskOptions {

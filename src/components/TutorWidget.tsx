@@ -1,7 +1,11 @@
-import { useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { useAuth } from '../lib/auth';
 import { useLang } from '../lib/i18n';
 import {
   askTutor,
+  saveTutorMessages,
   subscribeTutorContext,
   tutorContextSnapshot,
   type ChatMessage,
@@ -12,22 +16,110 @@ interface Turn {
   content: string;
 }
 
+/** Compact markdown for chat bubbles — bold, lists, inline/blocks, links. */
+function ChatMarkdown({ text }: { text: string }) {
+  return (
+    <div className="space-y-2 [&_p]:m-0 [&>:last-child]:mb-0">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          strong: ({ children }) => <strong className="font-semibold text-ink">{children}</strong>,
+          em: ({ children }) => <em className="italic">{children}</em>,
+          ul: ({ children }) => <ul className="list-disc space-y-0.5 pl-5">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal space-y-0.5 pl-5">{children}</ol>,
+          a: ({ children, href }) => (
+            <a href={href} target="_blank" rel="noreferrer" className="underline decoration-faint underline-offset-2 hover:text-ink">
+              {children}
+            </a>
+          ),
+          h1: ({ children }) => <div className="font-serif text-[14.5px] font-semibold">{children}</div>,
+          h2: ({ children }) => <div className="font-serif text-[14px] font-semibold">{children}</div>,
+          h3: ({ children }) => <div className="font-semibold">{children}</div>,
+          code: ({ children }) => (
+            <code className="rounded bg-bone px-1 py-0.5 font-mono text-[12px] text-ink">{children}</code>
+          ),
+          pre: ({ children }) => (
+            <pre className="overflow-x-auto rounded-md bg-bone p-2.5 font-mono text-[12px] leading-relaxed [&_code]:bg-transparent [&_code]:p-0">
+              {children}
+            </pre>
+          ),
+        }}
+      >
+        {text}
+      </ReactMarkdown>
+    </div>
+  );
+}
+
 export function TutorWidget() {
   const { lang } = useLang();
   const zh = lang === 'zh';
+  const { profile } = useAuth();
   const ctx = useSyncExternalStore(subscribeTutorContext, tutorContextSnapshot, tutorContextSnapshot);
 
   const [open, setOpen] = useState(false);
   const [turns, setTurns] = useState<Turn[]>([]);
+  const [streamShown, setStreamShown] = useState('');
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const fullRef = useRef(''); // all text received from the network so far
+  const shownLenRef = useRef(0); // chars currently revealed (typewriter cursor)
+  const doneRef = useRef(false); // network stream finished
+  const drainRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pendingRef = useRef<{ q: string; lessonId: string | null } | null>(null);
+
+  useEffect(() => () => { if (drainRef.current) clearInterval(drainRef.current); }, []);
 
   const scrollDown = () => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
+  };
+
+  const stopDrain = () => {
+    if (drainRef.current) {
+      clearInterval(drainRef.current);
+      drainRef.current = null;
+    }
+  };
+
+  // Move the finished in-flight message into the committed list + persist it.
+  const commit = () => {
+    const full = fullRef.current;
+    stopDrain();
+    setStreamShown('');
+    setBusy(false);
+    if (full) {
+      setTurns((prev) => [...prev, { role: 'assistant', content: full }]);
+      const p = pendingRef.current;
+      if (profile && p) {
+        void saveTutorMessages(profile.id, p.lessonId, [
+          { role: 'user', content: p.q },
+          { role: 'assistant', content: full },
+        ]);
+      }
+    }
+    pendingRef.current = null;
+    scrollDown();
+  };
+
+  // Reveal received text at a steady pace so bursty network delivery looks like
+  // smooth typing (decouples render cadence from arrival).
+  const startDrain = () => {
+    stopDrain();
+    drainRef.current = setInterval(() => {
+      const target = fullRef.current.length;
+      if (shownLenRef.current < target) {
+        shownLenRef.current = Math.min(target, shownLenRef.current + Math.max(1, Math.min(3, target - shownLenRef.current)));
+        setStreamShown(fullRef.current.slice(0, shownLenRef.current));
+        scrollDown();
+      } else if (doneRef.current) {
+        commit();
+      }
+    }, 30);
   };
 
   const send = async (text: string) => {
@@ -36,39 +128,40 @@ export function TutorWidget() {
     setError(null);
     setInput('');
     const history: ChatMessage[] = turns.map((t) => ({ role: t.role, content: t.content }));
-    setTurns((prev) => [...prev, { role: 'user', content: q }, { role: 'assistant', content: '' }]);
+    setTurns((prev) => [...prev, { role: 'user', content: q }]);
+    fullRef.current = '';
+    shownLenRef.current = 0;
+    doneRef.current = false;
+    pendingRef.current = { q, lessonId: ctx?.lessonId ?? null };
+    setStreamShown('');
     setBusy(true);
+    startDrain();
     const ac = new AbortController();
     abortRef.current = ac;
     try {
       await askTutor(q, history, ctx, lang, {
         signal: ac.signal,
         onDelta: (delta) => {
-          setTurns((prev) => {
-            const next = prev.slice();
-            const last = next[next.length - 1];
-            if (last && last.role === 'assistant') next[next.length - 1] = { ...last, content: last.content + delta };
-            return next;
-          });
-          scrollDown();
+          fullRef.current += delta;
         },
       });
+      doneRef.current = true; // drain finishes revealing, then commits
     } catch (err) {
-      if (!ac.signal.aborted) {
+      doneRef.current = true;
+      if (ac.signal.aborted) {
+        commit(); // keep whatever streamed so far
+      } else {
+        stopDrain();
+        setStreamShown('');
+        setBusy(false);
         setError(err instanceof Error ? err.message : String(err));
-        // drop the empty assistant placeholder on hard failure
-        setTurns((prev) => (prev[prev.length - 1]?.content === '' ? prev.slice(0, -1) : prev));
+        pendingRef.current = null;
       }
     }
-    setBusy(false);
     abortRef.current = null;
-    scrollDown();
   };
 
-  const stop = () => {
-    abortRef.current?.abort();
-    setBusy(false);
-  };
+  const stop = () => abortRef.current?.abort();
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -82,6 +175,11 @@ export function TutorWidget() {
     : zh
       ? ['我该从哪个阶段开始?', '什么是 Transformer?', '帮我规划学习路线']
       : ['Where should I start?', 'What is a Transformer?', 'Plan my learning path'];
+
+  const userBubble =
+    'max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-ink px-3.5 py-2 text-[13.5px] leading-relaxed text-white';
+  const asstBubble =
+    'max-w-[90%] rounded-2xl rounded-bl-sm bg-paper px-3.5 py-2 text-[13.5px] leading-relaxed text-ink';
 
   if (!open) {
     return (
@@ -129,7 +227,7 @@ export function TutorWidget() {
       </header>
 
       <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-        {turns.length === 0 && (
+        {turns.length === 0 && !busy && (
           <div className="space-y-2">
             <p className="text-[13px] leading-relaxed text-faint">
               {zh
@@ -150,17 +248,18 @@ export function TutorWidget() {
         )}
         {turns.map((t, i) => (
           <div key={i} className={t.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
-            <div
-              className={
-                t.role === 'user'
-                  ? 'max-w-[85%] rounded-2xl rounded-br-sm bg-ink px-3.5 py-2 text-[13.5px] leading-relaxed text-white'
-                  : 'max-w-[90%] whitespace-pre-wrap rounded-2xl rounded-bl-sm bg-paper px-3.5 py-2 text-[13.5px] leading-relaxed text-ink'
-              }
-            >
-              {t.content || (busy && i === turns.length - 1 ? <span className="text-faint">…</span> : '')}
+            <div className={t.role === 'user' ? userBubble : asstBubble}>
+              {t.role === 'user' ? t.content : <ChatMarkdown text={t.content} />}
             </div>
           </div>
         ))}
+        {busy && (
+          <div className="flex justify-start">
+            <div className={asstBubble}>
+              {streamShown ? <ChatMarkdown text={streamShown} /> : <span className="text-faint">…</span>}
+            </div>
+          </div>
+        )}
         {error && <div className="rounded-lg bg-pale-red px-3 py-2 text-[12.5px] text-ink-red">{error}</div>}
       </div>
 
