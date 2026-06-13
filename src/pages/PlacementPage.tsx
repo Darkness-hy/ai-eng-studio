@@ -6,6 +6,7 @@ import { phaseTitle, useLang } from '../lib/i18n';
 import {
   AREAS,
   QUESTIONS,
+  QUESTIONS_PER_AREA,
   clearPlacement,
   deletePlacementCloud,
   entryPhase,
@@ -57,8 +58,8 @@ export function PlacementPage() {
     setAnswers(QUESTIONS.map(() => null));
   }} />;
 
-  const qa = round * 2;
-  const roundQuestions = [qa, qa + 1];
+  const qa = round * QUESTIONS_PER_AREA;
+  const roundQuestions = Array.from({ length: QUESTIONS_PER_AREA }, (_, k) => qa + k);
   const roundDone = roundQuestions.every((i) => answers[i] != null);
   const roundScore = roundQuestions.filter((i) => answers[i] === QUESTIONS[i].correct).length;
   const area = AREAS[round];
@@ -71,8 +72,8 @@ export function PlacementPage() {
       </h1>
       <p className="mt-2 text-[14.5px] leading-relaxed text-faint">
         {zh
-          ? '10 道题、5 个知识领域。根据得分把你映射到合适的起始阶段，并生成带工时估算的个性化学习路径。答完才揭晓对错。'
-          : 'Ten questions across five areas. Your score maps to a starting phase and a personalized path with hour estimates.'}
+          ? '50 道题、5 个知识领域，每领域 10 题。根据得分把你映射到合适的起始阶段，并生成带工时估算的个性化学习路径。答完才揭晓对错。'
+          : 'Fifty questions across five areas (ten each). Your score maps to a starting phase and a personalized path with hour estimates.'}
       </p>
 
       {/* round progress */}
@@ -130,8 +131,8 @@ export function PlacementPage() {
       <div className="mt-6 flex items-center justify-between">
         <span className="font-mono text-[12px] text-faint">
           {zh ? `第 ${round + 1} / 5 轮` : `Round ${round + 1} / 5`}
-          {roundDone &&
-            ` · ${zh ? area.zh : area.en}: ${roundScore}/2`}
+          {` · ${roundQuestions.filter((i) => answers[i] != null).length}/${QUESTIONS_PER_AREA}`}
+          {roundDone && ` · ${zh ? area.zh : area.en}: ${roundScore}/${QUESTIONS_PER_AREA}`}
         </span>
         <button
           type="button"
@@ -193,18 +194,20 @@ function ResultView({
                 <span className="text-[13.5px]">{zh ? a.zh : a.en}</span>
                 <div className="h-[5px] overflow-hidden rounded-full bg-bone">
                   <div
-                    className={`h-full rounded-full ${s === 2 ? 'bg-ink-green' : s === 1 ? 'bg-ink-yellow' : 'bg-ink-red/60'}`}
-                    style={{ width: `${(s / 2) * 100}%` }}
+                    className={`h-full rounded-full ${s >= 8 ? 'bg-ink-green' : s >= 4 ? 'bg-ink-yellow' : 'bg-ink-red/60'}`}
+                    style={{ width: `${(s / QUESTIONS_PER_AREA) * 100}%` }}
                   />
                 </div>
-                <span className="text-right font-mono text-[12px] text-faint">{s}/2</span>
+                <span className="text-right font-mono text-[12px] text-faint">{s}/{QUESTIONS_PER_AREA}</span>
               </div>
             );
           })}
         </div>
         <div className="mt-4 flex items-baseline justify-between border-t border-hairline pt-4">
           <span className="text-[13.5px] text-faint">{zh ? '总分' : 'Total'}</span>
-          <span className="font-serif text-[28px] font-semibold">{result.total}/10</span>
+          <span className="font-serif text-[28px] font-semibold">
+            {result.total}/{AREAS.length * QUESTIONS_PER_AREA}
+          </span>
         </div>
       </section>
 
