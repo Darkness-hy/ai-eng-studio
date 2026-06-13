@@ -6,3 +6,6 @@ dist/
 .env
 .env.*
 .env.local
+
+# AI 助教对话日志(含 IP + 完整问答,绝不入库)
+server/tutor/logs/

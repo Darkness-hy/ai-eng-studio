@@ -17,6 +17,14 @@ ENV PATH="/opt/venv/bin:${PATH}"
 
 COPY server.py .
 
+# Run as a non-root user; give it a writable HOME (claude CLI cache) and logs dir.
+# (If you bind-mount ./logs, `chown 10001 ./logs` on the host or logs won't be writable.)
+RUN useradd --create-home --uid 10001 tutor \
+  && mkdir -p /app/logs \
+  && chown -R tutor:tutor /app
+USER tutor
+ENV HOME=/home/tutor
+
 ENV PORT=8787
 EXPOSE 8787
 CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port ${PORT}"]

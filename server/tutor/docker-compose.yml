@@ -15,8 +15,18 @@ services:
       TUTOR_LOG_DIR: ${TUTOR_LOG_DIR:-logs}
       TUTOR_ALLOWED_ORIGINS: ${TUTOR_ALLOWED_ORIGINS:-https://darkness-hy.github.io,http://localhost:5180}
       TUTOR_BEARER: ${TUTOR_BEARER:-}
-      TUTOR_RATE_PER_MIN: ${TUTOR_RATE_PER_MIN:-0}
+      # abuse limits default ON (protect your one subscription); 0 to disable
+      TUTOR_RATE_PER_MIN: ${TUTOR_RATE_PER_MIN:-20}
+      TUTOR_RATE_GLOBAL_PER_MIN: ${TUTOR_RATE_GLOBAL_PER_MIN:-60}
+      # trust X-Forwarded-For from the reverse proxy; set 0 if :8787 is directly reachable
+      TUTOR_TRUST_PROXY: ${TUTOR_TRUST_PROXY:-1}
     volumes:
       # transcripts survive container restarts; inspect on the host under ./logs
+      # container runs as uid 10001 (non-root) — `chown 10001 ./logs` so it can write
       - ./logs:/app/logs
     restart: unless-stopped
+    # drop privileges: no extra Linux caps needed, and block setuid escalation
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true

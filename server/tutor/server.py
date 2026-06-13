@@ -25,9 +25,15 @@ Env:
   TUTOR_MAX_QUEUE           default 15  (extra waiters before 429)
   TUTOR_TIMEOUT             default 120 (seconds per request)
   TUTOR_LOG_DIR             default logs  (JSONL transcripts; "" to disable)
+  TUTOR_LOG_FULL            default 0   0 = log metadata only; 1 = also log message+reply
+  TUTOR_LOG_RETAIN_DAYS     default 14  delete transcripts older than N days (0 = keep)
   TUTOR_ALLOWED_ORIGINS     comma list; default the Pages + localhost origins
   TUTOR_BEARER              optional shared secret; if set, require it
-  TUTOR_RATE_PER_MIN        default 0 (disabled); >0 enables per-IP rate limit
+  TUTOR_RATE_PER_MIN        default 20  per-IP requests/min (0 = disabled)
+  TUTOR_RATE_GLOBAL_PER_MIN default 60  total requests/min across ALL IPs — caps the
+                            burn on your single subscription (0 = disabled)
+  TUTOR_TRUST_PROXY         default 1   trust X-Forwarded-For (set 0 if :PORT is
+                            reachable directly, not only via your reverse proxy)
   TUTOR_CLAUDE_BIN          default "claude" (override for testing)
   PORT                      default 8787
 """
@@ -35,6 +41,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import time
 from collections import defaultdict, deque
@@ -45,17 +52,22 @@ from typing import Dict, List, Optional
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 MODEL = os.environ.get("TUTOR_MODEL", "claude-sonnet-4-6")
 EFFORT = os.environ.get("TUTOR_EFFORT", "medium")
 BEARER = os.environ.get("TUTOR_BEARER", "")
-RATE_PER_MIN = int(os.environ.get("TUTOR_RATE_PER_MIN", "0"))  # 0 = disabled
+RATE_PER_MIN = int(os.environ.get("TUTOR_RATE_PER_MIN", "20"))  # per-IP/min; 0 = disabled
+RATE_GLOBAL_PER_MIN = int(os.environ.get("TUTOR_RATE_GLOBAL_PER_MIN", "60"))  # all IPs/min; protects the single subscription; 0 = disabled
+TRUST_PROXY = os.environ.get("TUTOR_TRUST_PROXY", "1").lower() not in ("0", "false", "no", "")
 MAX_CONCURRENCY = int(os.environ.get("TUTOR_MAX_CONCURRENCY", "3"))
 MAX_QUEUE = int(os.environ.get("TUTOR_MAX_QUEUE", "15"))
 TIMEOUT = int(os.environ.get("TUTOR_TIMEOUT", "120"))
 LOG_DIR = os.environ.get("TUTOR_LOG_DIR", "logs")
+LOG_FULL = os.environ.get("TUTOR_LOG_FULL", "0").lower() not in ("0", "false", "no", "")
+LOG_RETAIN_DAYS = int(os.environ.get("TUTOR_LOG_RETAIN_DAYS", "14"))  # 0 = keep forever
 CLAUDE_BIN = os.environ.get("TUTOR_CLAUDE_BIN", "claude")
+logger = logging.getLogger("tutor")
 ORIGINS = [
     o.strip()
     for o in os.environ.get(
@@ -78,32 +90,44 @@ app.add_middleware(
 _sem = asyncio.Semaphore(MAX_CONCURRENCY)
 _inflight = 0
 _hits: Dict[str, deque] = defaultdict(deque)
+_global_hits: deque = deque()
 
 
-def rate_ok(ip: str) -> bool:
-    if RATE_PER_MIN <= 0:
+def _window_ok(q: deque, limit: int) -> bool:
+    """Sliding 60s window: record a hit and return True if under `limit`; <=0 disables."""
+    if limit <= 0:
         return True
     now = time.time()
-    q = _hits[ip]
     while q and now - q[0] > 60:
         q.popleft()
-    if len(q) >= RATE_PER_MIN:
+    if len(q) >= limit:
         return False
     q.append(now)
     return True
 
 
+def rate_ok(ip: str) -> bool:
+    # Per-IP first (a rejected IP shouldn't consume a global slot), then a global cap
+    # across ALL IPs. The global cap is what actually protects your single Claude
+    # subscription, since per-IP limits can be dodged by rotating/spoofing source IPs.
+    if not _window_ok(_hits[ip], RATE_PER_MIN):
+        return False
+    return _window_ok(_global_hits, RATE_GLOBAL_PER_MIN)
+
+
 class Turn(BaseModel):
     role: str
-    content: str
+    content: str = Field(default="", max_length=8000)
 
 
 class ChatRequest(BaseModel):
-    message: str
-    history: List[Turn] = []
-    lesson_id: Optional[str] = None
-    context: Optional[str] = None
-    user_profile: Optional[str] = None  # 学习者的个人学习档案(前端汇总)
+    # 硬上限:拒绝超大请求(永不信任前端的截断)。超限请求在 spawn claude 之前就被自动 422 拦掉,
+    # 避免被超长 message / 海量 history / 巨大 context 放大 token 消耗或撑爆内存。
+    message: str = Field(..., max_length=4000)
+    history: List[Turn] = Field(default_factory=list, max_length=50)
+    lesson_id: Optional[str] = Field(default=None, max_length=200)
+    context: Optional[str] = Field(default=None, max_length=16000)
+    user_profile: Optional[str] = Field(default=None, max_length=4000)  # 学习者的个人学习档案(前端汇总)
     lang: str = "zh"
     stream: bool = True
 
@@ -144,11 +168,13 @@ def system_prompt(lang: str, context: Optional[str], user_profile: Optional[str]
     if PROJECT_BACKGROUND:
         lines.append("\n" + PROJECT_BACKGROUND)
     if user_profile:
+        user_profile = user_profile[:4000]  # 服务端二次硬截断,不依赖前端
         lines.append(
             "\n这位学习者的个人学习档案如下,请据此个性化你的回答(称呼、难度、进度与下一步建议);"
             "不要生硬复述这些数字,自然地用就好:\n<learner>\n" + user_profile + "\n</learner>"
         )
     if context:
+        context = context[:12000]  # 服务端二次硬截断,不依赖前端
         lines.append("\n以下是学习者当前所在课程的内容,作为回答依据:\n<course>\n" + context + "\n</course>")
     return "\n".join(lines)
 
@@ -167,9 +193,28 @@ def sse(obj: dict) -> str:
 
 
 def client_ip(request: Request, xff: Optional[str]) -> str:
-    if xff:  # behind a trusted reverse proxy / tunnel
+    # Only trust X-Forwarded-For when explicitly behind a known proxy (TUTOR_TRUST_PROXY).
+    # Otherwise a client hitting :PORT directly could spoof XFF to dodge per-IP limits.
+    if TRUST_PROXY and xff:
         return xff.split(",")[0].strip()
     return request.client.host if request.client else "unknown"
+
+
+def prune_logs() -> None:
+    """Delete transcripts older than LOG_RETAIN_DAYS (best-effort; 0 = keep forever)."""
+    if not LOG_DIR or LOG_RETAIN_DAYS <= 0:
+        return
+    today = datetime.now(timezone.utc).date()
+    try:
+        for p in Path(LOG_DIR).glob("chat-*.jsonl"):
+            try:
+                day = datetime.strptime(p.stem[len("chat-"):], "%Y-%m-%d").date()
+            except ValueError:
+                continue
+            if (today - day).days > LOG_RETAIN_DAYS:
+                p.unlink()
+    except OSError:
+        pass
 
 
 def log_turn(rec: dict) -> None:
@@ -180,6 +225,7 @@ def log_turn(rec: dict) -> None:
         day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         with open(Path(LOG_DIR) / f"chat-{day}.jsonl", "a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        prune_logs()
     except OSError:
         pass
 
@@ -256,7 +302,10 @@ async def stream_claude(sys_prompt: str, prompt: str):
                         stderr = await asyncio.wait_for(proc.stderr.read(), timeout=5)
                     except asyncio.TimeoutError:
                         stderr = b""
-                err_msg = stderr.decode("utf-8", "replace")[:300] or "服务出错"
+                detail = stderr.decode("utf-8", "replace").strip()
+                if detail:
+                    logger.error("claude exited %s: %s", proc.returncode, detail[:1000])
+                err_msg = "助教暂时不可用,请稍后再试"  # 不把子进程 stderr 透传给客户端
 
         yield (sse({"type": "error", "message": err_msg}) if err_msg else sse({"type": "done"})), ""
     finally:
@@ -307,16 +356,18 @@ async def chat(
                     yield frame
         finally:
             _inflight -= 1
-            log_turn({
+            rec = {
                 "ts": datetime.now(timezone.utc).isoformat(),
                 "ip": ip,
                 "lesson_id": req.lesson_id,
                 "lang": req.lang,
-                "message": req.message,
-                "reply": "".join(reply_parts),
                 "status": status,
                 "ms": int((time.time() - started) * 1000),
-            })
+            }
+            if LOG_FULL:  # 默认只记元数据;设 TUTOR_LOG_FULL=1 才落完整问答(便于排障但含隐私)
+                rec["message"] = req.message
+                rec["reply"] = "".join(reply_parts)
+            log_turn(rec)
 
     return StreamingResponse(
         gen(),

@@ -51,9 +51,10 @@ echo 'VITE_AI_TUTOR_ENDPOINT=https://<你的域名或IP>/chat' >> .env.local   #
   突发把订阅瞬间打到限速。超出的请求排队,排队超过 `TUTOR_MAX_QUEUE`(默认 15)就返回
   `429 服务繁忙`,前端显示「助教正忙,请稍后再试」。
 - **超时保护**:单个请求超过 `TUTOR_TIMEOUT`(默认 120s)即终止子进程、释放并发槽。
-- **对话留存**:每完成一轮,向 `TUTOR_LOG_DIR/chat-YYYY-MM-DD.jsonl` 追加一行
-  `{ts, ip, lesson_id, message, reply, status, ms}`,便于排查。docker compose 已把
-  `./logs` 挂出容器,在宿主机直接看。
+- **对话留存**:每完成一轮,向 `TUTOR_LOG_DIR/chat-YYYY-MM-DD.jsonl` 追加一行。
+  **默认只记元数据** `{ts, ip, lesson_id, lang, status, ms}`(不落问答正文,避免隐私/密钥留存);
+  设 `TUTOR_LOG_FULL=1` 才额外记录 `message`+`reply`。超过 `TUTOR_LOG_RETAIN_DAYS`(默认 14 天)
+  的文件会被自动清理。docker compose 已把 `./logs` 挂出容器;请勿在助教对话里粘贴密钥/口令。
 - **硬天花板**:所有人共享你**一个** Claude 订阅的速率额度。一个班(几十人偶发提问)单订阅
   够;真要几百人同时,需调高并发并准备多 token 轮换或改用 API key。
 
@@ -70,9 +71,13 @@ echo 'VITE_AI_TUTOR_ENDPOINT=https://<你的域名或IP>/chat' >> .env.local   #
 | `TUTOR_MAX_QUEUE` | `15` | 排队等待上限,超出回 429 |
 | `TUTOR_TIMEOUT` | `120` | 每请求秒数上限,超时终止并释放槽 |
 | `TUTOR_LOG_DIR` | `logs` | 对话 JSONL 目录,设为空字符串可关闭留存 |
+| `TUTOR_LOG_FULL` | `0` | `0` 只记元数据;`1` 额外记录问答正文(含隐私) |
+| `TUTOR_LOG_RETAIN_DAYS` | `14` | 自动删除早于 N 天的日志(`0` = 永久保留) |
 | `TUTOR_ALLOWED_ORIGINS` | Pages + localhost | CORS allowlist,逗号分隔 |
 | `TUTOR_BEARER` | 空 | 设了就要求前端带 `Authorization: Bearer`(前端值公开,仅作弱校验) |
-| `TUTOR_RATE_PER_MIN` | `0`(关闭) | >0 时启用每 IP 每分钟上限(代理后需正确透传 X-Forwarded-For) |
+| `TUTOR_RATE_PER_MIN` | `20` | 每 IP 每分钟上限(`0` 关闭) |
+| `TUTOR_RATE_GLOBAL_PER_MIN` | `60` | 跨所有 IP 的每分钟总上限,保护唯一订阅额度(`0` 关闭) |
+| `TUTOR_TRUST_PROXY` | `1` | 信任反代的 `X-Forwarded-For`;`:8787` 可被直连时设 `0` |
 
 ## 先验证前端(可选,不接 Claude)
 

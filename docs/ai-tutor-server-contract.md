@@ -103,9 +103,15 @@ data: {"type":"done"}
 
 - 端点是公开的(静态站点谁都能调)。`VITE_AI_TUTOR_TOKEN` 会作为 `Authorization: Bearer`
   发出,但它**打包进了前端,是公开可见的**——别把它当机密。
-- 真正的防滥用应在**服务端**做:
+- 真正的防滥用应在**服务端**做(参考实现**默认即开启**):
+  - 限流:每 IP `TUTOR_RATE_PER_MIN`(默认 20/min)+ 跨所有 IP 的全局
+    `TUTOR_RATE_GLOBAL_PER_MIN`(默认 60/min)——全局闸门才是保护你**唯一订阅额度**的关键,
+    因为每 IP 限流可被轮换/伪造源 IP 绕过;
+  - 请求体硬上限:`message ≤ 4000`、`history ≤ 50 条`(每条 `content ≤ 8000`)、`context ≤ 16000`、
+    `user_profile ≤ 4000` 字符,超限在 spawn `claude` 之前直接返回 `422`;
+  - `TUTOR_TRUST_PROXY`(默认 1)信任反代的 `X-Forwarded-For`;若 `:8787` 可被直连绕过反代,
+    设为 `0`,否则每 IP 限流可被伪造头绕过;
   - 校验 `Origin` 头是否在你的 allowlist(配合 CORS);
-  - 按 IP/会话**限流**(参考实现给了一个简单的内存限流示例);
   - 可选:在你和服务器之间放 Cloudflare/反代,加 WAF 与速率限制。
 - 你的 **Claude 订阅 token 只存在服务端**(`CLAUDE_CODE_OAUTH_TOKEN`),永远不进前端。
 
