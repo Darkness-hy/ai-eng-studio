@@ -108,13 +108,41 @@ class ChatRequest(BaseModel):
     stream: bool = True
 
 
+# 整个项目/平台的背景(对所有用户、所有请求都一样,稳定 → 命中 prompt 缓存)。
+# 从课程目录 index.json 动态生成阶段地图;课程更新后重跑 build:content + 重启即可。
+INDEX_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "public", "data", "index.json")
+
+
+def load_project_background() -> str:
+    lines = [
+        "【关于本平台】这是开源课程《从零开始的 AI 工程》(ai-engineering-from-scratch) 的中文交互学习站,"
+        "共 20 个阶段、约 499 节课,带学习者从数学基础一路做到可上线的 AI 系统。",
+        "平台功能:定级测验(找到起点)、学习进度与活跃热力图、间隔重复复习、术语闪卡、"
+        "浏览器内编程挑战、班级(老师布置作业并查看全班进度)、结业证书,以及你——AI 助教。",
+    ]
+    try:
+        with open(INDEX_PATH, encoding="utf-8") as f:
+            idx = json.load(f)
+        roadmap = [f"P{p['num']} {p['titleZh']}({len(p['lessons'])}课)" for p in idx.get("phases", [])]
+        if roadmap:
+            lines.append("课程地图(按阶段顺序,P0→P19):" + "；".join(roadmap) + "。")
+    except OSError:
+        pass
+    return "\n".join(lines)
+
+
+PROJECT_BACKGROUND = load_project_background()
+
+
 def system_prompt(lang: str, context: Optional[str], user_profile: Optional[str]) -> str:
     speak = "用简体中文回答" if lang == "zh" else "Answer in English"
     lines = [
         "你是开源课程《从零开始的 AI 工程》(ai-engineering-from-scratch) 的助教。",
-        "基于课程内容回答学习者的问题:讲不清就举例、拆步骤;",
-        "不要编造课程里不存在的 API 或结论。" + speak + "。",
+        "基于下面的平台背景与课程内容回答学习者的问题:讲不清就举例、拆步骤;",
+        "可以结合学习者的进度给出下一步学什么的建议;不要编造课程里不存在的 API 或结论。" + speak + "。",
     ]
+    if PROJECT_BACKGROUND:
+        lines.append("\n" + PROJECT_BACKGROUND)
     if user_profile:
         lines.append(
             "\n这位学习者的个人学习档案如下,请据此个性化你的回答(称呼、难度、进度与下一步建议);"
@@ -167,7 +195,7 @@ async def stream_claude(sys_prompt: str, prompt: str):
         "--model", MODEL,
         "--effort", EFFORT,
         "--tools", "",  # no tools — plain Q&A
-        "--append-system-prompt", sys_prompt,
+        "--system-prompt", sys_prompt,  # 整段替换默认系统提示,省掉 Claude Code 默认框架(~5800 token)
         "--output-format", "stream-json",
         "--verbose", "--include-partial-messages",
     ]
