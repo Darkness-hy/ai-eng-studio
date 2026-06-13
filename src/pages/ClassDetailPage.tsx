@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { AssignmentsPanel } from '../components/AssignmentsPanel';
+import { useAuth } from '../lib/auth';
 import { classMembers, getClass, type ClassRow } from '../lib/classes';
 import { fetchIndex } from '../lib/data';
 import { useLang } from '../lib/i18n';
@@ -18,69 +20,84 @@ interface MemberStat {
 export function ClassDetailPage() {
   const { classId } = useParams();
   const { lang } = useLang();
+  const { profile } = useAuth();
   const zh = lang === 'zh';
   const [cls, setCls] = useState<ClassRow | null>(null);
-  const [stats, setStats] = useState<MemberStat[] | null>(null);
+  const [index, setIndex] = useState<CourseIndex | null>(null);
+  const [stats, setStats] = useState<MemberStat[]>([]);
+  const [progressRows, setProgressRows] = useState<ProgressRow[]>([]);
   const [totalLessons, setTotalLessons] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (!classId) return;
+    if (!classId || !profile) return;
     let live = true;
     (async () => {
       const supabase = getSupabase();
-      const [c, members, index] = await Promise.all([getClass(classId), classMembers(classId), fetchIndex()]);
+      const [c, idx] = await Promise.all([getClass(classId), fetchIndex()]);
       if (!live) return;
       setCls(c);
-      const ids = members.map((m) => m.id);
-      const lessonsTotal = (index as CourseIndex).stats.lessons;
-      setTotalLessons(lessonsTotal);
-      let progress: ProgressRow[] = [];
-      let placement: { user_id: string; entry: number }[] = [];
-      let activity: { user_id: string; day: string }[] = [];
-      if (ids.length) {
-        const [p, pl, ac] = await Promise.all([
-          supabase.from('progress').select('*').in('user_id', ids),
-          supabase.from('placement').select('user_id,entry').in('user_id', ids),
-          supabase.from('activity').select('user_id,day').in('user_id', ids),
-        ]);
-        progress = (p.data ?? []) as ProgressRow[];
-        placement = (pl.data ?? []) as { user_id: string; entry: number }[];
-        activity = (ac.data ?? []) as { user_id: string; day: string }[];
+      setIndex(idx);
+      setTotalLessons(idx.stats.lessons);
+      const owner = !!c && c.owner_id === profile.id;
+      if (owner) {
+        const members = await classMembers(classId);
+        const ids = members.map((m) => m.id);
+        let progress: ProgressRow[] = [];
+        let placement: { user_id: string; entry: number }[] = [];
+        let activity: { user_id: string; day: string }[] = [];
+        if (ids.length) {
+          const [p, pl, ac] = await Promise.all([
+            supabase.from('progress').select('*').in('user_id', ids),
+            supabase.from('placement').select('user_id,entry').in('user_id', ids),
+            supabase.from('activity').select('user_id,day').in('user_id', ids),
+          ]);
+          progress = (p.data ?? []) as ProgressRow[];
+          placement = (pl.data ?? []) as { user_id: string; entry: number }[];
+          activity = (ac.data ?? []) as { user_id: string; day: string }[];
+        }
+        setProgressRows(progress);
+        const built = members.map((m): MemberStat => {
+          const mine = progress.filter((r) => r.user_id === m.id);
+          const doneSet = new Set(mine.filter((r) => r.done).map((r) => r.lesson_id));
+          let doneCount = 0;
+          for (const ph of idx.phases)
+            doneCount += ph.lessons.filter((l) => doneSet.has(`${ph.slug}/${l.slug}`)).length;
+          const post = mine.filter((r) => r.post_total != null && r.post_total > 0);
+          const quizAvg = post.length
+            ? Math.round((post.reduce((a, r) => a + (r.post_score ?? 0) / (r.post_total ?? 1), 0) / post.length) * 100)
+            : null;
+          const days = activity.filter((a) => a.user_id === m.id).map((a) => a.day).sort();
+          const pl = placement.find((x) => x.user_id === m.id);
+          return {
+            profile: m,
+            doneCount,
+            donePct: idx.stats.lessons ? (doneCount / idx.stats.lessons) * 100 : 0,
+            quizAvg,
+            entry: pl ? pl.entry : null,
+            lastActive: days.length ? days[days.length - 1] : null,
+          };
+        });
+        built.sort((a, b) => b.doneCount - a.doneCount);
+        setStats(built);
       }
-      const idx = index as CourseIndex;
-      const built = members.map((m): MemberStat => {
-        const mine = progress.filter((r) => r.user_id === m.id);
-        const doneSet = new Set(mine.filter((r) => r.done).map((r) => r.lesson_id));
-        let doneCount = 0;
-        for (const ph of idx.phases)
-          doneCount += ph.lessons.filter((l) => doneSet.has(`${ph.slug}/${l.slug}`)).length;
-        const post = mine.filter((r) => r.post_total != null && r.post_total > 0);
-        const quizAvg = post.length
-          ? Math.round((post.reduce((a, r) => a + (r.post_score ?? 0) / (r.post_total ?? 1), 0) / post.length) * 100)
-          : null;
-        const days = activity.filter((a) => a.user_id === m.id).map((a) => a.day).sort();
-        const pl = placement.find((x) => x.user_id === m.id);
-        return {
-          profile: m,
-          doneCount,
-          donePct: lessonsTotal ? (doneCount / lessonsTotal) * 100 : 0,
-          quizAvg,
-          entry: pl ? pl.entry : null,
-          lastActive: days.length ? days[days.length - 1] : null,
-        };
-      });
-      built.sort((a, b) => b.doneCount - a.doneCount);
-      setStats(built);
-    })().catch(() => live && setFailed(true));
+      setLoading(false);
+    })().catch(() => {
+      if (live) {
+        setFailed(true);
+        setLoading(false);
+      }
+    });
     return () => {
       live = false;
     };
-  }, [classId]);
+  }, [classId, profile]);
 
   if (failed) return <Notice text={zh ? '加载失败或无权访问' : 'Failed or no access'} />;
-  if (!cls || !stats) return <Notice text={zh ? '加载中…' : 'Loading…'} />;
+  if (loading || !cls || !index) return <Notice text={zh ? '加载中…' : 'Loading…'} />;
 
+  const isOwner = !!profile && cls.owner_id === profile.id;
   const avg = stats.length ? Math.round(stats.reduce((a, s) => a + s.donePct, 0) / stats.length) : 0;
 
   return (
@@ -91,14 +108,15 @@ export function ClassDetailPage() {
       <header className="mt-5 border-b border-hairline pb-6">
         <h1 className="font-serif text-[34px] font-semibold tracking-tight">{cls.name}</h1>
         <p className="mt-2 font-mono text-[12px] uppercase tracking-[0.12em] text-faint">
-          {zh ? '邀请码' : 'CODE'} {cls.invite_code} · {stats.length} {zh ? '名学生' : 'students'} ·{' '}
-          {zh ? `平均完成度 ${avg}%` : `${avg}% avg`}
+          {isOwner
+            ? `${zh ? '邀请码' : 'CODE'} ${cls.invite_code} · ${stats.length} ${zh ? '名学生' : 'students'} · ${zh ? `平均完成度 ${avg}%` : `${avg}% avg`}`
+            : zh
+              ? '我的班级 · 查看作业与完成情况'
+              : 'My class · assignments'}
         </p>
       </header>
 
-      {stats.length === 0 ? (
-        <Notice text={zh ? '还没有学生加入。把邀请码发给学生即可。' : 'No students yet — share the invite code.'} />
-      ) : (
+      {isOwner && stats.length > 0 && (
         <table className="mt-4 w-full text-[13.5px]">
           <thead>
             <tr className="border-b border-hairline text-left font-mono text-[10.5px] uppercase tracking-[0.12em] text-faint">
@@ -132,6 +150,18 @@ export function ClassDetailPage() {
           </tbody>
         </table>
       )}
+      {isOwner && stats.length === 0 && (
+        <Notice text={zh ? '还没有学生加入。把邀请码发给学生即可。' : 'No students yet — share the invite code.'} />
+      )}
+
+      <AssignmentsPanel
+        classId={cls.id}
+        isOwner={isOwner}
+        index={index}
+        progressRows={progressRows}
+        memberCount={stats.length}
+        lang={lang}
+      />
     </div>
   );
 }

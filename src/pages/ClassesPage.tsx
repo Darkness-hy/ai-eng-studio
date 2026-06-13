@@ -167,7 +167,9 @@ export function ClassesPage() {
             ) : (
               data.joined.map((c) => (
                 <div key={c.id} className="flex items-center justify-between rounded-lg border border-hairline bg-paper px-5 py-3.5">
-                  <div className="text-[15px] font-medium">{c.name}</div>
+                  <Link to={`/class/${c.id}`} className="min-w-0 flex-1 truncate text-[15px] font-medium hover:underline">
+                    {c.name}
+                  </Link>
                   <button
                     type="button"
                     onClick={() => leaveClass(c.id, profile.id).then(reload)}
