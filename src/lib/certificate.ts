@@ -1,4 +1,5 @@
 /** Canvas-rendered certificates and shareable achievement cards (PNG download). */
+import QRCode from 'qrcode';
 
 const INK = '#2f3437';
 const FAINT = '#787774';
@@ -6,11 +7,16 @@ const BLUE = '#1f6c9f';
 const CANVAS_BG = '#fbfbfa';
 const HAIRLINE = '#d9d8d4';
 const PINK = '#f2335d';
+const GOLD = '#b8922e';
+const GOLD_LT = '#d8b65a';
+
+const VERIFY_BASE = 'https://darkness-hy.github.io/ai-eng-studio/';
 
 async function ready(): Promise<void> {
   try {
     await Promise.all([
-      document.fonts.load('600 56px Newsreader'),
+      document.fonts.load('600 50px Newsreader'),
+      document.fonts.load('italic 600 28px Newsreader'),
       document.fonts.load('400 22px Newsreader'),
       document.fonts.load('600 16px "JetBrains Mono"'),
     ]);
@@ -37,14 +43,29 @@ function toBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((res) => canvas.toBlob((b) => res(b!), 'image/png'));
 }
 
-/** The LaViRA mark (rounded dark plate + light bars + pink dot). */
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = rej;
+    i.src = src;
+  });
+}
+
+/** Stable 8-char id from the certificate fields (for the QR + printed code). */
+function certId(...parts: string[]): string {
+  let h = 5381;
+  const s = parts.join('|');
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+  return ('AE' + h.toString(36).toUpperCase()).slice(0, 10);
+}
+
 function drawMark(ctx: CanvasRenderingContext2D, x: number, y: number, s: number) {
   ctx.save();
   ctx.translate(x, y);
-  const r = s * 0.22;
   ctx.fillStyle = '#111111';
   ctx.beginPath();
-  ctx.roundRect(0, 0, s, s, r);
+  ctx.roundRect(0, 0, s, s, s * 0.22);
   ctx.fill();
   ctx.fillStyle = '#f2f1ee';
   const bar = (bx: number, by: number, bw: number, bh: number) => {
@@ -62,59 +83,161 @@ function drawMark(ctx: CanvasRenderingContext2D, x: number, y: number, s: number
   ctx.restore();
 }
 
+function drawStar(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const rad = i % 2 === 0 ? r : r * 0.45;
+    const a = (Math.PI / 5) * i - Math.PI / 2;
+    const px = cx + Math.cos(a) * rad;
+    const py = cy + Math.sin(a) * rad;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+}
+
+/** Gold wax-style seal with concentric rings, a star and circular text. */
+function drawSeal(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, zh: boolean) {
+  ctx.save();
+  ctx.strokeStyle = GOLD;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.strokeStyle = GOLD_LT;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r - 9, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // circular text top + bottom
+  ctx.fillStyle = GOLD;
+  const top = 'AI ENGINEERING FROM SCRATCH';
+  const bottom = zh ? '· 已认证 · 已认证 ·' : '· VERIFIED · VERIFIED ·';
+  const ring = (text: string, baseAngle: number, flip: boolean) => {
+    ctx.font = '600 10px "JetBrains Mono", monospace';
+    const step = (Math.PI * 1.25) / text.length;
+    for (let i = 0; i < text.length; i++) {
+      const a = baseAngle + (i - (text.length - 1) / 2) * step * (flip ? -1 : 1);
+      ctx.save();
+      ctx.translate(cx + Math.cos(a) * (r - 20), cy + Math.sin(a) * (r - 20));
+      ctx.rotate(a + (flip ? -Math.PI / 2 : Math.PI / 2));
+      ctx.textAlign = 'center';
+      ctx.fillText(text[i], 0, 0);
+      ctx.restore();
+    }
+  };
+  ring(top, -Math.PI / 2, false);
+  ring(bottom, Math.PI / 2, true);
+
+  // center star + label
+  ctx.fillStyle = GOLD;
+  drawStar(ctx, cx, cy - 6, 16);
+  ctx.fill();
+  ctx.textAlign = 'center';
+  ctx.font = '600 11px "JetBrains Mono", monospace';
+  ctx.fillText(zh ? '结业认证' : 'CERTIFIED', cx, cy + 26);
+  ctx.restore();
+}
+
 export interface CertOpts {
   name: string;
-  achievement: string; // e.g. "完成「深度学习核心」阶段（13 课）"
+  achievement: string;
   date: string;
   zh: boolean;
 }
 
+/** Portrait certificate: gold seal, signature line, QR verification, cert id. */
 export async function generateCertificate(o: CertOpts): Promise<Blob> {
   await ready();
-  const W = 1200;
-  const H = 849;
+  const W = 880;
+  const H = 1240;
   const { canvas, ctx } = setup(W, H);
+  const id = certId(o.name, o.achievement, o.date);
 
+  // borders
   ctx.strokeStyle = INK;
   ctx.lineWidth = 2;
-  ctx.strokeRect(44, 44, W - 88, H - 88);
+  ctx.strokeRect(40, 40, W - 80, H - 80);
   ctx.strokeStyle = HAIRLINE;
   ctx.lineWidth = 1;
-  ctx.strokeRect(56, 56, W - 112, H - 112);
+  ctx.strokeRect(52, 52, W - 104, H - 104);
 
   ctx.fillStyle = FAINT;
   ctx.font = '600 15px "JetBrains Mono", monospace';
   ctx.fillText(o.zh ? '结业证书 · CERTIFICATE OF COMPLETION' : 'CERTIFICATE OF COMPLETION', W / 2, 150);
 
   ctx.fillStyle = INK;
-  ctx.font = '600 50px Newsreader, serif';
-  ctx.fillText(o.zh ? '从零开始的 AI 工程' : 'AI Engineering from Scratch', W / 2, 270);
+  ctx.font = '600 46px Newsreader, serif';
+  ctx.fillText(o.zh ? '从零开始的 AI 工程' : 'AI Engineering from Scratch', W / 2, 250);
 
   ctx.fillStyle = FAINT;
   ctx.font = '22px Newsreader, serif';
-  ctx.fillText(o.zh ? '兹证明' : 'This certifies that', W / 2, 360);
+  ctx.fillText(o.zh ? '兹证明' : 'This certifies that', W / 2, 340);
 
   ctx.fillStyle = BLUE;
-  ctx.font = '600 46px Newsreader, serif';
-  ctx.fillText(o.name, W / 2, 432);
+  ctx.font = '600 44px Newsreader, serif';
+  ctx.fillText(o.name, W / 2, 412);
 
   ctx.fillStyle = INK;
-  ctx.font = '24px Newsreader, serif';
-  ctx.fillText(o.achievement, W / 2, 510);
+  ctx.font = '23px Newsreader, serif';
+  ctx.fillText(o.achievement, W / 2, 488);
 
   ctx.fillStyle = FAINT;
   ctx.font = '15px "JetBrains Mono", monospace';
-  ctx.fillText(o.date, W / 2, 580);
+  ctx.fillText(o.date, W / 2, 552);
 
-  drawMark(ctx, W / 2 - 110, 660, 40);
+  // gold seal
+  drawSeal(ctx, W / 2, 700, 74, o.zh);
+
+  // signature line (left) + verification QR (right)
+  const sy = 920;
+  const sigX = 150;
+  const sigW = 250;
   ctx.fillStyle = INK;
-  ctx.font = '600 20px Newsreader, serif';
-  ctx.textAlign = 'left';
-  ctx.fillText('LaViRA', W / 2 - 58, 688);
+  ctx.font = 'italic 600 30px Newsreader, serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('LaViRA', sigX + sigW / 2, sy - 12);
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(sigX, sy);
+  ctx.lineTo(sigX + sigW, sy);
+  ctx.stroke();
+  ctx.fillStyle = FAINT;
+  ctx.font = '11px "JetBrains Mono", monospace';
+  ctx.fillText(o.zh ? '课程导师 · INSTRUCTOR' : 'COURSE INSTRUCTOR', sigX + sigW / 2, sy + 22);
+
+  // QR (right)
+  const qrDataUrl = await QRCode.toDataURL(`${VERIFY_BASE}?cert=${id}`, {
+    margin: 0,
+    width: 260,
+    color: { dark: INK, light: CANVAS_BG },
+  });
+  const qrImg = await loadImage(qrDataUrl);
+  const qx = W - 150 - 110;
+  const qy = sy - 110;
+  ctx.drawImage(qrImg, qx, qy, 110, 110);
+  ctx.fillStyle = FAINT;
+  ctx.font = '10px "JetBrains Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(o.zh ? '扫码验证' : 'SCAN TO VERIFY', qx + 55, qy + 128);
+
+  // cert id
   ctx.fillStyle = FAINT;
   ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText(`${o.zh ? '证书编号' : 'NO.'} ${id}`, W / 2, 1040);
+
+  // brand footer
+  drawMark(ctx, W / 2 - 100, 1090, 38);
+  ctx.fillStyle = INK;
+  ctx.font = '600 19px Newsreader, serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('LaViRA', W / 2 - 50, 1115);
+  ctx.fillStyle = FAINT;
+  ctx.font = '11px "JetBrains Mono", monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('Language-Vision-Robot Actions Translation · 独家冠名', W / 2, 740);
+  ctx.fillText('Language-Vision-Robot Actions Translation · 独家冠名', W / 2, 1165);
 
   return toBlob(canvas);
 }
@@ -161,7 +284,6 @@ export async function generateShareCard(o: ShareOpts): Promise<Blob> {
   stat(W / 2, `${o.streak}`, o.zh ? '连续天数' : 'day streak');
   stat(W / 2 + 230, `${o.badges}`, o.zh ? '解锁徽章' : 'badges');
 
-  // progress bar
   const pct = o.totalLessons ? o.doneCount / o.totalLessons : 0;
   const bx = 160;
   const bw = W - 320;
