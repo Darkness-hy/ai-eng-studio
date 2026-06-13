@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { fetchIndex } from '../lib/data';
 import { phaseTitle, useLang } from '../lib/i18n';
+import { markLessonsDone } from '../lib/progress';
 import {
   AREAS,
   QUESTIONS,
@@ -50,6 +51,17 @@ export function PlacementPage() {
     };
     savePlacement(res);
     if (profile) void pushPlacementCloud(profile.id);
+    // Pre-complete lessons in phases the learner has already mastered
+    // (placement marked them "skip", i.e. score ≥ 8/10 in that area).
+    if (index) {
+      const mastered: string[] = [];
+      for (const p of index.phases) {
+        if (phaseStatus(p.num, res.entry, areaScores) === 'skip') {
+          for (const l of p.lessons) mastered.push(`${p.slug}/${l.slug}`);
+        }
+      }
+      markLessonsDone(mastered);
+    }
   };
 
   if (result && index) return <ResultView result={result} index={index} onRetake={() => {

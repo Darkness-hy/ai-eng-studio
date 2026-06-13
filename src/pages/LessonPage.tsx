@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CodeTabs } from '../components/CodeTabs';
 import { INTERACTIVE } from '../components/interactive/registry';
@@ -91,17 +91,11 @@ export function LessonPage() {
             <h1 className="font-serif text-[34px] font-semibold leading-tight tracking-tight md:text-[40px]">
               {title}
             </h1>
-            <button
-              type="button"
-              onClick={() => setLessonDone(lesson.id, !isDone)}
-              className={`mt-2 shrink-0 rounded-md border px-3 py-1.5 text-[12.5px] transition-colors ${
-                isDone
-                  ? 'border-ink-green/30 bg-pale-green text-ink-green'
-                  : 'border-hairline bg-paper text-faint hover:bg-bone hover:text-ink'
-              }`}
-            >
-              {isDone ? `✓ ${t('done')}` : t('mark_done')}
-            </button>
+            {isDone && (
+              <span className="mt-2 shrink-0 rounded-md border border-ink-green/30 bg-pale-green px-3 py-1.5 text-[12.5px] text-ink-green">
+                ✓ {t('done')}
+              </span>
+            )}
           </div>
           {lang === 'zh' && lesson.titleZh && (
             <p className="mt-1 font-mono text-[11.5px] tracking-[0.08em] text-faint">{lesson.title}</p>
@@ -169,6 +163,10 @@ export function LessonPage() {
           <Quiz key={`${lesson.id}:post`} lessonId={lesson.id} stage="post" questions={postQuiz} />
         )}
 
+        {/* Reaching the end of the lesson auto-completes it (covers the ~220
+            lessons that have no post-quiz to trigger completion). */}
+        <CompletionSentinel lessonId={lesson.id} done={isDone} />
+
         {/* prev / next */}
         <nav className="mt-14 grid grid-cols-2 gap-3 border-t border-hairline pt-6">
           {prev ? (
@@ -222,6 +220,29 @@ export function LessonPage() {
       </aside>
     </div>
   );
+}
+
+/** A 1px marker just before the prev/next nav. When it scrolls into view the
+ *  reader has reached the end of the lesson, so mark it complete. */
+function CompletionSentinel({ lessonId, done }: { lessonId: string; done: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (done) return;
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setLessonDone(lessonId, true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: '0px 0px -5% 0px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [lessonId, done]);
+  return <div ref={ref} aria-hidden className="h-px w-full" />;
 }
 
 function useScrollSpy(ids: string[], resetKey: string): string | null {

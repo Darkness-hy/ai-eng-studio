@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLang } from '../lib/i18n';
-import { getProgress, saveQuizScore } from '../lib/progress';
+import { getProgress, saveQuizScore, setLessonDone } from '../lib/progress';
 import type { QuizQuestion } from '../lib/types';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -42,6 +42,7 @@ export function Quiz({ lessonId, stage, questions }: QuizProps) {
     // the first attempt (retakes don't overwrite).
     if (finished && questions.length > 0 && stage === 'post') {
       saveQuizScore(lessonId, stage, score, questions.length);
+      setLessonDone(lessonId, true); // finishing the post-lesson check completes the lesson
     }
   }, [finished, score, lessonId, stage, questions.length]);
 

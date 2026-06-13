@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { fetchIndex } from '../lib/data';
 import { lessonTitle, phaseTitle, useLang } from '../lib/i18n';
-import { setLessonDone, useProgress } from '../lib/progress';
+import { useProgress } from '../lib/progress';
 import type { CourseIndex } from '../lib/types';
 
 export function PhasePage() {
@@ -95,20 +95,18 @@ export function PhasePage() {
                     {lesson.time.replace('~', '').replace('minutes', 'min')}
                   </span>
                 )}
-                <button
-                  type="button"
-                  aria-label={t('mark_done')}
-                  onClick={() => setLessonDone(id, !isDone)}
-                  className={`flex h-5 w-5 items-center justify-center rounded border transition-colors ${
+                <span
+                  aria-label={isDone ? t('done') : undefined}
+                  className={`flex h-5 w-5 items-center justify-center rounded border ${
                     isDone
-                      ? 'border-ink bg-ink text-white'
-                      : 'border-hairline bg-paper text-transparent hover:border-faint'
+                      ? 'border-ink-green/40 bg-pale-green text-ink-green'
+                      : 'border-hairline bg-paper text-transparent'
                   }`}
                 >
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                     <path d="M1.5 5.5L4 8L8.5 2.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
                   </svg>
-                </button>
+                </span>
               </div>
             </li>
           );

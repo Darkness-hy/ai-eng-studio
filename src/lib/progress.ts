@@ -83,6 +83,21 @@ export function setLessonDone(id: string, done: boolean) {
   );
 }
 
+/** Mark many lessons done in a single commit (additive — never un-marks).
+ *  Used by placement to pre-complete already-mastered phases. */
+export function markLessonsDone(ids: string[]) {
+  const now = new Date().toISOString();
+  const lessons = { ...state.lessons };
+  const changed: string[] = [];
+  for (const id of ids) {
+    if (lessons[id]?.done) continue;
+    lessons[id] = { ...lessons[id], done: true, completedAt: now, updatedAt: now };
+    changed.push(id);
+  }
+  if (changed.length === 0) return;
+  commit({ ...state, lessons }, { source: 'local', lessonIds: changed });
+}
+
 /** Records the FIRST attempt only — retakes are practice and never overwrite. */
 export function saveQuizScore(id: string, stage: 'pre' | 'post', score: number, total: number) {
   const prev = state.lessons[id] ?? {};
