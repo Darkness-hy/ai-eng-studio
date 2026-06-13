@@ -55,6 +55,17 @@ function ChatMarkdown({ text }: { text: string }) {
   );
 }
 
+/** Three softly pulsing dots — shows the tutor is thinking before the first token. */
+function ThinkingDots() {
+  return (
+    <span className="inline-flex items-center gap-1 py-1" aria-label="thinking">
+      <span className="h-1.5 w-1.5 rounded-full bg-faint animate-pulse" style={{ animationDuration: '1.1s' }} />
+      <span className="h-1.5 w-1.5 rounded-full bg-faint animate-pulse" style={{ animationDuration: '1.1s', animationDelay: '0.18s' }} />
+      <span className="h-1.5 w-1.5 rounded-full bg-faint animate-pulse" style={{ animationDuration: '1.1s', animationDelay: '0.36s' }} />
+    </span>
+  );
+}
+
 export function TutorWidget() {
   const { lang } = useLang();
   const zh = lang === 'zh';
@@ -77,13 +88,21 @@ export function TutorWidget() {
   const doneRef = useRef(false); // network stream finished
   const drainRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pendingRef = useRef<{ q: string; lessonId: string | null } | null>(null);
+  const atBottomRef = useRef(true); // is the user pinned to the bottom (stick-to-bottom)?
 
   useEffect(() => () => { abortRef.current?.abort(); if (drainRef.current) clearInterval(drainRef.current); }, []);
   useEffect(() => { fetchIndex().then(setIndex).catch(() => {}); }, []);
 
+  // Stick to the bottom only while the user is already there — so they can scroll up
+  // to re-read while the tutor is still streaming without being yanked back down.
   const scrollDown = () => {
     const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (el && atBottomRef.current) el.scrollTop = el.scrollHeight;
+  };
+
+  const onScroll = () => {
+    const el = scrollRef.current;
+    if (el) atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
   };
 
   const stopDrain = () => {
@@ -142,6 +161,7 @@ export function TutorWidget() {
     pendingRef.current = { q, lessonId: ctx?.lessonId ?? null };
     setStreamShown('');
     setBusy(true);
+    atBottomRef.current = true; // a freshly sent question always scrolls into view
     startDrain();
     const ac = new AbortController();
     abortRef.current = ac;
@@ -238,7 +258,7 @@ export function TutorWidget() {
         </div>
       </header>
 
-      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+      <div ref={scrollRef} onScroll={onScroll} className="flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-4">
         {turns.length === 0 && !busy && (
           <div className="space-y-2">
             <p className="text-[13px] leading-relaxed text-faint">
@@ -268,7 +288,7 @@ export function TutorWidget() {
         {busy && (
           <div className="flex justify-start">
             <div className={asstBubble}>
-              {streamShown ? <ChatMarkdown text={streamShown} /> : <span className="text-faint">…</span>}
+              {streamShown ? <ChatMarkdown text={streamShown} /> : <ThinkingDots />}
             </div>
           </div>
         )}
