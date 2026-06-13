@@ -48,7 +48,18 @@ export interface RunResult {
   ms: number;
 }
 
-export async function runPython(code: string): Promise<RunResult> {
+// Pyodide is a single shared WASM instance and setStdout/setStderr are global,
+// so two concurrent runs would cross-wire each other's output. Serialize runs
+// through a promise chain so each gets the stdout handlers to itself.
+let runQueue: Promise<unknown> = Promise.resolve();
+
+export function runPython(code: string): Promise<RunResult> {
+  const next = runQueue.then(() => execPython(code));
+  runQueue = next.catch(() => undefined); // keep the chain alive after a failed run
+  return next;
+}
+
+async function execPython(code: string): Promise<RunResult> {
   const started = performance.now();
   const py = await getPyodide();
   let output = '';

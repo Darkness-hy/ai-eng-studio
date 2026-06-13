@@ -19,16 +19,23 @@ export function ChallengeWidget({ challenge, lessonId }: { challenge: Challenge;
   const run = async () => {
     setStatus('running');
     setOutput('');
-    const { runPython } = await import('../lib/pyodide');
-    const program = `${code}\n\n# ── hidden tests ──\n${challenge.tests}\nprint("ALL_TESTS_PASSED")`;
-    const res = await runPython(program);
-    if (res.error || !res.output.includes('ALL_TESTS_PASSED')) {
+    try {
+      const { runPython } = await import('../lib/pyodide');
+      const program = `${code}\n\n# ── hidden tests ──\n${challenge.tests}\nprint("ALL_TESTS_PASSED")`;
+      const res = await runPython(program);
+      if (res.error || !res.output.includes('ALL_TESTS_PASSED')) {
+        setStatus('fail');
+        setOutput((res.output + (res.error ?? '')).replace('ALL_TESTS_PASSED', '').trim());
+      } else {
+        setStatus('pass');
+        setOutput('');
+        markChallengePassed(lessonId);
+      }
+    } catch (err) {
+      // Pyodide CDN unreachable / runtime failed to load — surface it instead of
+      // leaving the button stuck on "running".
       setStatus('fail');
-      setOutput((res.output + (res.error ?? '')).replace('ALL_TESTS_PASSED', '').trim());
-    } else {
-      setStatus('pass');
-      setOutput('');
-      markChallengePassed(lessonId);
+      setOutput(err instanceof Error ? err.message : String(err));
     }
   };
 

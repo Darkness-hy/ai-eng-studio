@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import { cloudEnabled, getSupabase, type ProfileRow } from './supabase';
-import { initialSync, startSync, stopSync } from './sync';
+import { flushNow, initialSync, startSync, stopSync } from './sync';
 
 interface AuthCtx {
   enabled: boolean;
@@ -44,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const adopt = async (userId: string | undefined) => {
       if (!userId) {
+        await flushNow(); // push the tail before tearing down sync
         stopSync();
         if (live) {
           setProfile(null);
@@ -97,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    await flushNow(); // push the tail before tearing down sync
     stopSync();
     await getSupabase().auth.signOut();
     setProfile(null);

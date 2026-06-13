@@ -460,6 +460,15 @@ export function phaseStatus(phaseNum: number, entry: number, areaScores: Record<
   return partialArea ? 'review' : 'skip';
 }
 
+/** A phase may be auto-completed by placement ONLY if the quiz actually tested
+ *  its area AND the learner scored solidly (≥ SOLID_THRESHOLD). Phases with no
+ *  mapped area were never tested, so they must never be marked done. */
+export function phaseMastered(phaseNum: number, areaScores: Record<string, number>): boolean {
+  return AREAS.some(
+    (a) => a.reviewPhases.includes(phaseNum) && (areaScores[a.key] ?? 0) >= SOLID_THRESHOLD,
+  );
+}
+
 export interface PlacementResult {
   v: 1;
   answers: number[];
@@ -490,6 +499,16 @@ function commit(next: PlacementResult | null) {
   if (next) localStorage.setItem(KEY, JSON.stringify(next));
   else localStorage.removeItem(KEY);
   listeners.forEach((fn) => fn());
+}
+
+// Cross-tab sync: adopt another tab's placement write into this tab's snapshot.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === KEY) {
+      current = read();
+      listeners.forEach((fn) => fn());
+    }
+  });
 }
 
 export function savePlacement(result: PlacementResult) {

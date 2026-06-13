@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { RoadmapList, RoadmapSpine } from '../components/RoadmapSpine';
 import { fetchIndex } from '../lib/data';
 import { lessonTitle, phaseTitle, useLang } from '../lib/i18n';
-import { usePlacement } from '../lib/placement';
+import { AREAS, QUESTIONS_PER_AREA, usePlacement } from '../lib/placement';
 import { useProgress } from '../lib/progress';
 import type { CourseIndex } from '../lib/types';
 
@@ -160,7 +160,7 @@ function PlacementCard({ index }: { index: CourseIndex }) {
         <span className="text-[13px] text-faint">{zh ? '你的起点' : 'Your level'}</span>
         <span className="text-[13.5px] font-medium">
           {zh ? `阶段 ${entry.num} · ${entry.titleZh}` : `Phase ${entry.num} · ${entry.titleEn}`}
-          <span className="ml-2 font-mono text-[11px] text-faint">{placement.total}/10</span>
+          <span className="ml-2 font-mono text-[11px] text-faint">{placement.total}/{AREAS.length * QUESTIONS_PER_AREA}</span>
         </span>
       </Link>
     );

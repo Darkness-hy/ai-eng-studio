@@ -48,6 +48,16 @@ function commit(next: ReviewState) {
   listeners.forEach((fn) => fn());
 }
 
+// Cross-tab sync: adopt another tab's write into this tab's snapshot.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === KEY) {
+      state = load();
+      listeners.forEach((fn) => fn());
+    }
+  });
+}
+
 function today(): Date {
   const d = new Date();
   d.setHours(0, 0, 0, 0);

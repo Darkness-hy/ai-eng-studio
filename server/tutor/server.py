@@ -43,6 +43,7 @@ import asyncio
 import json
 import logging
 import os
+import signal
 import time
 from collections import defaultdict, deque
 from datetime import datetime, timezone
@@ -250,6 +251,7 @@ async def stream_claude(sys_prompt: str, prompt: str):
         stdin=asyncio.subprocess.PIPE,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
+        start_new_session=True,  # own process group → we can kill the whole tree
     )
     assert proc.stdin and proc.stdout
     proc.stdin.write(prompt.encode("utf-8"))
@@ -289,8 +291,9 @@ async def stream_claude(sys_prompt: str, prompt: str):
                             got_text = True
                             yield sse({"type": "delta", "text": text}), text
 
-        if err_msg is None and not got_text:
-            # process ended without text — surface stderr if it failed
+        if err_msg is None:
+            # EOF — check the exit code regardless of whether text was produced,
+            # so a mid-stream crash isn't reported to the client as a clean done.
             try:
                 await asyncio.wait_for(proc.wait(), timeout=5)
             except asyncio.TimeoutError:
@@ -305,19 +308,32 @@ async def stream_claude(sys_prompt: str, prompt: str):
                 detail = stderr.decode("utf-8", "replace").strip()
                 if detail:
                     logger.error("claude exited %s: %s", proc.returncode, detail[:1000])
-                err_msg = "助教暂时不可用,请稍后再试"  # 不把子进程 stderr 透传给客户端
+                if not got_text:
+                    err_msg = "助教暂时不可用,请稍后再试"  # 不把子进程 stderr 透传给客户端
 
-        yield (sse({"type": "error", "message": err_msg}) if err_msg else sse({"type": "done"})), ""
+        if err_msg is not None:
+            yield sse({"type": "error", "message": err_msg}), ""
+        elif got_text and proc.returncode not in (0, None):
+            # partial answer already streamed, then the process crashed — flag it as
+            # truncated instead of a clean done. (Not an error frame: that would make
+            # the client discard the text it already showed.)
+            yield sse({"type": "done", "truncated": True}), ""
+        else:
+            yield sse({"type": "done"}), ""
     finally:
         if proc.returncode is None:
+            # claude is a Node wrapper; SIGTERM to only the direct child can orphan
+            # the real worker. Kill the whole process group (start_new_session above).
             try:
-                proc.terminate()
+                os.killpg(proc.pid, signal.SIGTERM)
                 await asyncio.wait_for(proc.wait(), timeout=5)
-            except (asyncio.TimeoutError, ProcessLookupError):
+            except asyncio.TimeoutError:
                 try:
-                    proc.kill()
-                except ProcessLookupError:
+                    os.killpg(proc.pid, signal.SIGKILL)
+                except (ProcessLookupError, PermissionError):
                     pass
+            except (ProcessLookupError, PermissionError):
+                pass
 
 
 @app.post("/chat")

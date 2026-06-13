@@ -201,7 +201,7 @@ export async function askTutor(
       if (!dataLine) continue;
       const json = dataLine.slice(5).trim();
       if (!json) continue;
-      let ev: { type?: string; text?: string; message?: string };
+      let ev: { type?: string; text?: string; message?: string; truncated?: boolean };
       try {
         ev = JSON.parse(json);
       } catch {
@@ -209,6 +209,7 @@ export async function askTutor(
       }
       if (ev.type === 'delta' && typeof ev.text === 'string') opts.onDelta(ev.text);
       else if (ev.type === 'error') throw new Error(ev.message || '辅导服务出错');
+      else if (ev.type === 'done' && ev.truncated) opts.onDelta('\n\n_(回答可能被中断,请重试)_');
     }
   }
 }

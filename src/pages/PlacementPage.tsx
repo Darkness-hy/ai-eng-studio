@@ -11,6 +11,7 @@ import {
   clearPlacement,
   deletePlacementCloud,
   entryPhase,
+  phaseMastered,
   phaseStatus,
   pushPlacementCloud,
   savePlacement,
@@ -54,9 +55,12 @@ export function PlacementPage() {
     // Pre-complete lessons in phases the learner has already mastered
     // (placement marked them "skip", i.e. score ≥ 8/10 in that area).
     if (index) {
+      // Only auto-complete phases the quiz actually tested AND the learner
+      // mastered. Phases below entry with no placement area (e.g. advanced
+      // capstone phases) were never tested — do NOT fabricate completion.
       const mastered: string[] = [];
       for (const p of index.phases) {
-        if (phaseStatus(p.num, res.entry, areaScores) === 'skip') {
+        if (p.num < res.entry && phaseMastered(p.num, areaScores)) {
           for (const l of p.lessons) mastered.push(`${p.slug}/${l.slug}`);
         }
       }

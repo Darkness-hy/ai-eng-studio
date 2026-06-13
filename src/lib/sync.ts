@@ -19,6 +19,7 @@ let dirty = new Set<string>();
 let dirtyDays = new Set<string>();
 let timer: ReturnType<typeof setTimeout> | null = null;
 let activeUserId: string | null = null;
+let mergeDone = false; // true once initialSync merged remote → uploads are safe
 
 function rowToLocal(row: ProgressRow): LessonProgress {
   return {
@@ -47,7 +48,9 @@ function localToRow(userId: string, lessonId: string, p: LessonProgress): Progre
 }
 
 async function flush() {
-  if (!activeUserId || (dirty.size === 0 && dirtyDays.size === 0)) return;
+  // Gate uploads on a completed initial merge so a failed/partial initialSync
+  // can't push un-merged local state over newer remote data.
+  if (!activeUserId || !mergeDone || (dirty.size === 0 && dirtyDays.size === 0)) return;
   const supabase = getSupabase();
   const state = getProgress();
   const lessonIds = [...dirty];
@@ -98,6 +101,7 @@ export async function initialSync(userId: string): Promise<void> {
   const remote: Record<string, LessonProgress> = {};
   for (const row of (rows ?? []) as ProgressRow[]) remote[row.lesson_id] = rowToLocal(row);
   mergeRemote(remote, ((acts ?? []) as { day: string }[]).map((a) => a.day));
+  mergeDone = true; // remote merged into local — uploads are now safe
 
   // Placement result rides along with the same login sync.
   await syncPlacementCloud(userId).catch(() => undefined);
@@ -110,9 +114,30 @@ export async function initialSync(userId: string): Promise<void> {
   await flush();
 }
 
-/** Start watching local mutations for the logged-in user. */
+function teardownListeners(): void {
+  stopFns.forEach((fn) => fn());
+  stopFns = [];
+  if (timer) {
+    clearTimeout(timer);
+    timer = null;
+  }
+}
+
+/** Flush pending writes immediately and wait for them. Call before logout so the
+ *  2s-debounce window does not drop the tail. No-op if nothing is pending. */
+export async function flushNow(): Promise<void> {
+  if (timer) {
+    clearTimeout(timer);
+    timer = null;
+  }
+  await flush();
+}
+
+/** Start watching local mutations for the logged-in user. Tears down only the
+ *  listeners (not session state), so the mergeDone flag set by the preceding
+ *  initialSync survives. */
 export function startSync(userId: string): void {
-  stopSync();
+  teardownListeners();
   activeUserId = userId;
   const unsub = subscribeChanges((change) => {
     if (change.source !== 'local') return;
@@ -126,11 +151,9 @@ export function startSync(userId: string): void {
 }
 
 export function stopSync(): void {
-  stopFns.forEach((fn) => fn());
-  stopFns = [];
-  if (timer) clearTimeout(timer);
-  timer = null;
+  teardownListeners();
   activeUserId = null;
+  mergeDone = false;
   dirty = new Set();
   dirtyDays = new Set();
 }

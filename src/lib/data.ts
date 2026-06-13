@@ -5,13 +5,14 @@ const cache = new Map<string, Promise<unknown>>();
 
 function fetchJson<T>(path: string): Promise<T> {
   if (!cache.has(path)) {
-    cache.set(
-      path,
-      fetch(`${base}data/${path}`).then((res) => {
-        if (!res.ok) throw new Error(`加载失败: ${path} (${res.status})`);
-        return res.json();
-      }),
-    );
+    const p = fetch(`${base}data/${path}`).then((res) => {
+      if (!res.ok) throw new Error(`加载失败: ${path} (${res.status})`);
+      return res.json();
+    });
+    // Don't cache a failed fetch — a transient network hiccup must not wedge the
+    // page on a permanently-rejected promise; drop it so the next call retries.
+    p.catch(() => cache.delete(path));
+    cache.set(path, p);
   }
   return cache.get(path) as Promise<T>;
 }

@@ -41,6 +41,16 @@ function commit(next: FlashState) {
   listeners.forEach((fn) => fn());
 }
 
+// Cross-tab sync: adopt another tab's write into this tab's snapshot.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === KEY) {
+      state = load();
+      listeners.forEach((fn) => fn());
+    }
+  });
+}
+
 function dayKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }

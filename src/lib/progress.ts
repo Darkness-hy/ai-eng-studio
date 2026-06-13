@@ -49,6 +49,18 @@ function commit(next: ProgressState, change?: ProgressChange) {
   if (change) changeListeners.forEach((fn) => fn(change));
 }
 
+// Cross-tab sync: when another tab writes our key, reload and re-render. We do
+// NOT emit a change event here (no cloud re-push) — the other tab already
+// persisted/synced its own write.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === KEY) {
+      state = load();
+      renderListeners.forEach((fn) => fn());
+    }
+  });
+}
+
 function today(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -132,13 +144,28 @@ export function recordVisit(lessonId: string) {
  * visits are unioned. Emits a 'remote' change so the sync layer does not
  * push these rows back.
  */
+/** Merge two versions of one lesson field-by-field so a newer-but-sparser side
+ *  can't wipe the other's data. done/completedAt/updatedAt follow the newer write
+ *  (done can legitimately toggle off); first-attempt scores are write-once, so we
+ *  keep whichever side recorded them. */
+function mergeLesson(ours: LessonProgress, theirs: LessonProgress): LessonProgress {
+  const newer = (ours.updatedAt ?? '') >= (theirs.updatedAt ?? '') ? ours : theirs;
+  return {
+    done: newer.done,
+    completedAt: newer.completedAt,
+    updatedAt: newer.updatedAt,
+    preScore: ours.preScore ?? theirs.preScore,
+    preTotal: ours.preTotal ?? theirs.preTotal,
+    postScore: ours.postScore ?? theirs.postScore,
+    postTotal: ours.postTotal ?? theirs.postTotal,
+  };
+}
+
 export function mergeRemote(remote: Record<string, LessonProgress>, remoteVisits: string[]) {
   const lessons = { ...state.lessons };
   for (const [id, theirs] of Object.entries(remote)) {
     const ours = lessons[id];
-    if (!ours || (theirs.updatedAt ?? '') > (ours.updatedAt ?? '')) {
-      lessons[id] = theirs;
-    }
+    lessons[id] = ours ? mergeLesson(ours, theirs) : theirs;
   }
   const visits = [...new Set([...state.visits, ...remoteVisits])].sort();
   commit({ ...state, lessons, visits }, { source: 'remote', lessonIds: Object.keys(remote) });

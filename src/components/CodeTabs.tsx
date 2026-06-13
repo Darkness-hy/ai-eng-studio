@@ -30,10 +30,16 @@ export function CodeTabs({ files }: { files: CodeFile[] }) {
   const run = async () => {
     setRunState('running');
     setRunOutput(null);
-    const { runPython } = await import('../lib/pyodide');
-    const result = await runPython(file.content);
-    setRunOutput(result);
-    setRunState('done');
+    try {
+      const { runPython } = await import('../lib/pyodide');
+      const result = await runPython(file.content);
+      setRunOutput(result);
+    } catch (err) {
+      // Pyodide failed to load — show the error instead of hanging on "running".
+      setRunOutput({ output: '', error: err instanceof Error ? err.message : String(err), ms: 0 });
+    } finally {
+      setRunState('done');
+    }
   };
 
   return (
