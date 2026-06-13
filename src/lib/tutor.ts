@@ -141,11 +141,13 @@ export async function saveTutorMessages(
 ): Promise<void> {
   if (!cloudEnabled) return;
   try {
-    await getSupabase()
+    const { error } = await getSupabase()
       .from('tutor_messages')
       .insert(turns.map((t) => ({ user_id: userId, lesson_id: lessonId, role: t.role, content: t.content })));
-  } catch {
-    /* 存储是附带功能,失败静默 */
+    if (error) console.warn('[tutor] saveTutorMessages failed', error.message);
+  } catch (err) {
+    // best-effort: never disrupt the chat, but leave a breadcrumb for the dev.
+    console.warn('[tutor] saveTutorMessages threw', err);
   }
 }
 

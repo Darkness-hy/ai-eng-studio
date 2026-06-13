@@ -218,15 +218,21 @@ def prune_logs() -> None:
         pass
 
 
+_last_prune_day = ""
+
+
 def log_turn(rec: dict) -> None:
     if not LOG_DIR:
         return
+    global _last_prune_day
     try:
         Path(LOG_DIR).mkdir(parents=True, exist_ok=True)
         day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         with open(Path(LOG_DIR) / f"chat-{day}.jsonl", "a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-        prune_logs()
+        if day != _last_prune_day:  # prune at most once per day, not every request
+            _last_prune_day = day
+            prune_logs()
     except OSError:
         pass
 
@@ -254,15 +260,17 @@ async def stream_claude(sys_prompt: str, prompt: str):
         start_new_session=True,  # own process group → we can kill the whole tree
     )
     assert proc.stdin and proc.stdout
-    proc.stdin.write(prompt.encode("utf-8"))
-    await proc.stdin.drain()
-    proc.stdin.close()
-
     deadline = time.time() + TIMEOUT
     got_text = False
     err_msg: Optional[str] = None
     try:
-        while True:
+        try:
+            proc.stdin.write(prompt.encode("utf-8"))
+            await asyncio.wait_for(proc.stdin.drain(), timeout=TIMEOUT)
+            proc.stdin.close()
+        except (asyncio.TimeoutError, BrokenPipeError, ConnectionResetError):
+            err_msg = "响应超时,请重试"  # 子进程未及时读取输入,避免卡死占用并发槽
+        while err_msg is None:
             remaining = deadline - time.time()
             if remaining <= 0:
                 err_msg = "响应超时,请重试"
@@ -383,7 +391,7 @@ async def chat(
             if LOG_FULL:  # 默认只记元数据;设 TUTOR_LOG_FULL=1 才落完整问答(便于排障但含隐私)
                 rec["message"] = req.message
                 rec["reply"] = "".join(reply_parts)
-            log_turn(rec)
+            await asyncio.to_thread(log_turn, rec)  # disk IO off the event loop
 
     return StreamingResponse(
         gen(),

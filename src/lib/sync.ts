@@ -74,9 +74,12 @@ async function flush() {
       if (error) throw error;
     }
   } catch (err) {
-    // Network hiccup: requeue and retry on the next mutation or flush.
-    lessonIds.forEach((id) => dirty.add(id));
-    days.forEach((d) => dirtyDays.add(d));
+    // Network hiccup: requeue and retry on the next mutation/flush — unless we
+    // logged out meanwhile (don't resurrect a dead session's dirty set).
+    if (activeUserId) {
+      lessonIds.forEach((id) => dirty.add(id));
+      days.forEach((d) => dirtyDays.add(d));
+    }
     console.warn('[sync] flush failed, will retry', err);
   }
 }

@@ -52,21 +52,29 @@ export function ProgressPage() {
     (p) => p.lessons.length > 0 && p.lessons.every((l) => progress.lessons[`${p.slug}/${l.slug}`]?.done),
   );
   const dlCert = async (achievement: string, file: string) => {
-    downloadBlob(await generateCertificate({ name: certName, achievement, date: certDate, zh }), file);
+    try {
+      downloadBlob(await generateCertificate({ name: certName, achievement, date: certDate, zh }), file);
+    } catch {
+      alert(zh ? '证书生成失败,请重试或换个浏览器' : 'Certificate generation failed — try again or another browser');
+    }
   };
   const dlShare = async () => {
-    const badges = computeBadges(progress, index).filter((b) => b.unlocked).length;
-    downloadBlob(
-      await generateShareCard({
-        name: certName,
-        doneCount: doneTotal,
-        totalLessons: index.stats.lessons,
-        streak: streakDays(),
-        badges,
-        zh,
-      }),
-      'ai-eng-share.png',
-    );
+    try {
+      const badges = computeBadges(progress, index).filter((b) => b.unlocked).length;
+      downloadBlob(
+        await generateShareCard({
+          name: certName,
+          doneCount: doneTotal,
+          totalLessons: index.stats.lessons,
+          streak: streakDays(),
+          badges,
+          zh,
+        }),
+        'ai-eng-share.png',
+      );
+    } catch {
+      alert(zh ? '分享卡生成失败,请重试' : 'Share card generation failed — try again');
+    }
   };
 
   const download = () => {

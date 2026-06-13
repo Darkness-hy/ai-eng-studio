@@ -78,7 +78,7 @@ export function TutorWidget() {
   const drainRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pendingRef = useRef<{ q: string; lessonId: string | null } | null>(null);
 
-  useEffect(() => () => { if (drainRef.current) clearInterval(drainRef.current); }, []);
+  useEffect(() => () => { abortRef.current?.abort(); if (drainRef.current) clearInterval(drainRef.current); }, []);
   useEffect(() => { fetchIndex().then(setIndex).catch(() => {}); }, []);
 
   const scrollDown = () => {
@@ -159,11 +159,15 @@ export function TutorWidget() {
       if (ac.signal.aborted) {
         commit(); // keep whatever streamed so far
       } else {
-        stopDrain();
-        setStreamShown('');
-        setBusy(false);
+        if (fullRef.current) {
+          commit(); // keep the partial answer that already streamed, then show the error
+        } else {
+          stopDrain();
+          setStreamShown('');
+          setBusy(false);
+          pendingRef.current = null;
+        }
         setError(err instanceof Error ? err.message : String(err));
-        pendingRef.current = null;
       }
     }
     abortRef.current = null;
@@ -225,7 +229,7 @@ export function TutorWidget() {
           )}
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={() => { abortRef.current?.abort(); setOpen(false); }}
             aria-label={zh ? '收起' : 'Close'}
             className="rounded p-1 text-faint hover:text-ink"
           >

@@ -40,7 +40,9 @@ function setup(w: number, h: number): { canvas: HTMLCanvasElement; ctx: CanvasRe
 }
 
 function toBlob(canvas: HTMLCanvasElement): Promise<Blob> {
-  return new Promise((res) => canvas.toBlob((b) => res(b!), 'image/png'));
+  return new Promise((res, rej) =>
+    canvas.toBlob((b) => (b ? res(b) : rej(new Error('生成图片失败'))), 'image/png'),
+  );
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
