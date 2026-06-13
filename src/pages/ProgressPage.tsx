@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { BadgeWall } from '../components/BadgeWall';
+import { Heatmap } from '../components/Heatmap';
+import { computeBadges, dailyCompletions } from '../lib/achievements';
 import { fetchIndex } from '../lib/data';
 import { phaseTitle, useLang } from '../lib/i18n';
 import { exportProgress, importProgress, streakDays, useProgress } from '../lib/progress';
@@ -87,7 +90,23 @@ export function ProgressPage() {
         </div>
       </header>
 
-      <ol className="mt-2">
+      {/* activity heatmap */}
+      <section className="mt-10">
+        <div className="mb-4 font-mono text-[10.5px] uppercase tracking-[0.16em] text-faint">
+          {lang === 'zh' ? '学习日历 · 近半年' : 'Activity · last 26 weeks'}
+        </div>
+        <Heatmap counts={dailyCompletions(progress)} lang={lang} />
+      </section>
+
+      {/* achievement badges */}
+      <section className="mt-12">
+        <BadgeWall badges={computeBadges(progress, index)} lang={lang} />
+      </section>
+
+      <div className="mt-12 mb-4 font-mono text-[10.5px] uppercase tracking-[0.16em] text-faint">
+        {lang === 'zh' ? '各阶段进度' : 'Per-phase progress'}
+      </div>
+      <ol>
         {index.phases.map((phase) => {
           const done = phase.lessons.filter(
             (l) => progress.lessons[`${phase.slug}/${l.slug}`]?.done,
