@@ -37,7 +37,12 @@ export function Quiz({ lessonId, stage, questions }: QuizProps) {
   const finished = answered === questions.length;
 
   useEffect(() => {
-    if (finished && questions.length > 0) saveQuizScore(lessonId, stage, score, questions.length);
+    // Warm-up (pre) is practice only and is never recorded. Only the
+    // post-lesson check counts toward grades, and saveQuizScore itself keeps
+    // the first attempt (retakes don't overwrite).
+    if (finished && questions.length > 0 && stage === 'post') {
+      saveQuizScore(lessonId, stage, score, questions.length);
+    }
   }, [finished, score, lessonId, stage, questions.length]);
 
   if (questions.length === 0) return null;
