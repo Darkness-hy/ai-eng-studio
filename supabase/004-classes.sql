@@ -59,8 +59,10 @@ drop policy if exists classes_select on public.classes;
 create policy classes_select on public.classes for select
   using (owner_id = auth.uid() or public.is_member_of(id) or public.is_admin());
 
+-- Only admins (teachers) may create classes.
 drop policy if exists classes_insert on public.classes;
-create policy classes_insert on public.classes for insert with check (owner_id = auth.uid());
+create policy classes_insert on public.classes for insert
+  with check (owner_id = auth.uid() and public.is_admin());
 
 drop policy if exists classes_delete on public.classes;
 create policy classes_delete on public.classes for delete using (owner_id = auth.uid());
