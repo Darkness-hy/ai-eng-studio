@@ -12,6 +12,7 @@ import { PlacementPage } from './pages/PlacementPage';
 import { ProgressPage } from './pages/ProgressPage';
 import { ClassDetailPage } from './pages/ClassDetailPage';
 import { ClassesPage } from './pages/ClassesPage';
+import { FlashcardsPage } from './pages/FlashcardsPage';
 import { ReviewPage } from './pages/ReviewPage';
 
 const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
@@ -46,6 +47,7 @@ export default function App() {
                 <Route path="/progress" element={<ProgressPage />} />
                 <Route path="/find-your-level" element={<PlacementPage />} />
               <Route path="/review" element={<ReviewPage />} />
+              <Route path="/flashcards" element={<FlashcardsPage />} />
               <Route path="/classes" element={<ClassesPage />} />
               <Route path="/class/:classId" element={<ClassDetailPage />} />
                 <Route path="/login" element={<LoginPage />} />

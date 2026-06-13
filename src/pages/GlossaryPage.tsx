@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { fetchGlossary } from '../lib/data';
 import { useLang } from '../lib/i18n';
 import { slugify } from '../lib/md';
@@ -37,7 +37,15 @@ export function GlossaryPage() {
   return (
     <div className="mx-auto max-w-4xl px-5 py-14">
       <header className="border-b border-hairline pb-8">
-        <h1 className="font-serif text-[38px] font-semibold tracking-tight">{t('glossary_title')}</h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="font-serif text-[38px] font-semibold tracking-tight">{t('glossary_title')}</h1>
+          <Link
+            to="/flashcards"
+            className="mt-2 shrink-0 rounded-md border border-hairline bg-paper px-3 py-1.5 text-[13px] text-faint transition-colors hover:bg-bone hover:text-ink"
+          >
+            {lang === 'zh' ? '术语闪卡 →' : 'Flashcards →'}
+          </Link>
+        </div>
         <p className="mt-2 text-[15px] text-faint">{t('glossary_sub')}</p>
         <input
           value={query}
