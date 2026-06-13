@@ -25,7 +25,8 @@ export function PlacementPage() {
   const zh = lang === 'zh';
   const { profile } = useAuth();
   const [index, setIndex] = useState<CourseIndex | null>(null);
-  const [round, setRound] = useState(0); // 0..4
+  const [current, setCurrent] = useState(0); // 0..49
+  const [confirming, setConfirming] = useState(false);
   const [answers, setAnswers] = useState<(number | null)[]>(() => QUESTIONS.map(() => null));
   const result = usePlacement();
 
@@ -54,15 +55,20 @@ export function PlacementPage() {
   if (result && index) return <ResultView result={result} index={index} onRetake={() => {
     clearPlacement();
     if (profile) void deletePlacementCloud(profile.id);
-    setRound(0);
+    setCurrent(0);
+    setConfirming(false);
     setAnswers(QUESTIONS.map(() => null));
   }} />;
 
-  const qa = round * QUESTIONS_PER_AREA;
-  const roundQuestions = Array.from({ length: QUESTIONS_PER_AREA }, (_, k) => qa + k);
-  const roundDone = roundQuestions.every((i) => answers[i] != null);
-  const roundScore = roundQuestions.filter((i) => answers[i] === QUESTIONS[i].correct).length;
-  const area = AREAS[round];
+  const total = QUESTIONS.length;
+  const answeredCount = answers.filter((a) => a != null).length;
+  const q = QUESTIONS[current];
+  const chosen = answers[current];
+  const curArea = AREAS[Math.floor(current / QUESTIONS_PER_AREA)];
+  const go = (i: number) => setCurrent(Math.max(0, Math.min(total - 1, i)));
+  const setAnswer = (oi: number | null) =>
+    setAnswers((prev) => prev.map((a, i) => (i === current ? oi : a)));
+  const submit = () => (answeredCount === total ? finish(answers) : setConfirming(true));
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-14">
@@ -72,76 +78,141 @@ export function PlacementPage() {
       </h1>
       <p className="mt-2 text-[14.5px] leading-relaxed text-faint">
         {zh
-          ? '50 道题、5 个知识领域，每领域 10 题。根据得分把你映射到合适的起始阶段，并生成带工时估算的个性化学习路径。答完才揭晓对错。'
-          : 'Fifty questions across five areas (ten each). Your score maps to a starting phase and a personalized path with hour estimates.'}
+          ? '50 道题、5 个知识领域。逐题作答，可随时跳过或在答题卡上跳转，最后点「提交交卷」。未作答的题计为错误。'
+          : 'Fifty questions across five areas. Answer one at a time, skip freely or jump via the answer sheet, then submit. Unanswered questions count as wrong.'}
       </p>
 
-      {/* round progress */}
-      <div className="mt-8 flex items-center gap-2">
-        {AREAS.map((a, i) => (
-          <div key={a.key} className="flex items-center gap-2">
-            <span
-              className={`rounded-full px-2.5 py-0.5 text-[11px] ${
-                i < round
-                  ? 'bg-pale-green text-ink-green'
-                  : i === round
-                    ? 'bg-ink text-white'
-                    : 'border border-hairline bg-paper text-faint'
+      {/* answer sheet */}
+      <div className="mt-8 rounded-lg border border-hairline bg-paper px-5 py-4">
+        <div className="mb-3 flex items-baseline justify-between">
+          <span className="font-mono text-[10.5px] tracking-[0.14em] text-faint">
+            {zh ? '答题卡' : 'ANSWER SHEET'}
+          </span>
+          <span className="font-mono text-[11.5px] text-faint">
+            {zh ? `已答 ${answeredCount} / ${total}` : `${answeredCount} / ${total} answered`}
+          </span>
+        </div>
+        <div className="space-y-2">
+          {AREAS.map((a, ai) => (
+            <div key={a.key} className="flex items-center gap-3">
+              <span className="w-28 shrink-0 text-[11.5px] text-faint">{zh ? a.zh : a.en}</span>
+              <div className="flex flex-wrap gap-1">
+                {Array.from({ length: QUESTIONS_PER_AREA }, (_, k) => {
+                  const idx = ai * QUESTIONS_PER_AREA + k;
+                  const answered = answers[idx] != null;
+                  const isCur = idx === current;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => go(idx)}
+                      className={`h-6 w-6 rounded font-mono text-[10px] transition-colors ${
+                        isCur
+                          ? 'bg-ink text-white'
+                          : answered
+                            ? 'bg-pale-green text-ink-green hover:bg-pale-green/70'
+                            : 'border border-hairline bg-paper text-faint hover:bg-bone'
+                      }`}
+                    >
+                      {idx + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* current question */}
+      <section className="mt-6 rounded-lg border border-hairline bg-paper px-6 py-5">
+        <div className="flex items-baseline justify-between">
+          <span className="font-mono text-[12px] text-faint">
+            Q{current + 1} / {total} · {zh ? curArea.zh : curArea.en}
+          </span>
+          {chosen != null && (
+            <button
+              type="button"
+              onClick={() => setAnswer(null)}
+              className="font-mono text-[11px] text-faint underline decoration-hairline underline-offset-2 hover:text-ink"
+            >
+              {zh ? '清除本题' : 'Clear'}
+            </button>
+          )}
+        </div>
+        <p className="mt-2 font-medium leading-relaxed">{zh ? q.zh : q.en}</p>
+        <div className="mt-3 space-y-1.5">
+          {(zh ? q.optionsZh : q.optionsEn).map((opt, oi) => (
+            <button
+              key={oi}
+              type="button"
+              onClick={() => setAnswer(oi)}
+              className={`flex w-full items-start gap-3 rounded-md border px-4 py-2.5 text-left text-[14.5px] leading-relaxed transition-colors ${
+                chosen === oi ? 'border-ink bg-bone' : 'border-hairline bg-paper hover:bg-bone'
               }`}
             >
-              {zh ? a.zh : a.en}
-            </span>
-            {i < AREAS.length - 1 && <span className="h-px w-3 bg-hairline" />}
-          </div>
-        ))}
-      </div>
+              <span className="mt-0.5 font-mono text-[12px] text-faint">{LETTERS[oi]}</span>
+              <span className="flex-1">{opt}</span>
+            </button>
+          ))}
+        </div>
+      </section>
 
-      <div className="mt-6 space-y-6">
-        {roundQuestions.map((qi) => {
-          const q = QUESTIONS[qi];
-          const chosen = answers[qi];
-          return (
-            <section key={qi} className="rounded-lg border border-hairline bg-paper px-6 py-5">
-              <p className="font-medium leading-relaxed">
-                <span className="mr-2 font-mono text-[12px] text-faint">Q{qi + 1}.</span>
-                {zh ? q.zh : q.en}
-              </p>
-              <div className="mt-3 space-y-1.5">
-                {(zh ? q.optionsZh : q.optionsEn).map((opt, oi) => (
-                  <button
-                    key={oi}
-                    type="button"
-                    onClick={() => setAnswers((prev) => prev.map((a, i) => (i === qi ? oi : a)))}
-                    className={`flex w-full items-start gap-3 rounded-md border px-4 py-2.5 text-left text-[14.5px] leading-relaxed transition-colors ${
-                      chosen === oi
-                        ? 'border-ink bg-bone'
-                        : 'border-hairline bg-paper hover:bg-bone'
-                    }`}
-                  >
-                    <span className="mt-0.5 font-mono text-[12px] text-faint">{LETTERS[oi]}</span>
-                    <span className="flex-1">{opt}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-          );
-        })}
-      </div>
-
-      <div className="mt-6 flex items-center justify-between">
-        <span className="font-mono text-[12px] text-faint">
-          {zh ? `第 ${round + 1} / 5 轮` : `Round ${round + 1} / 5`}
-          {` · ${roundQuestions.filter((i) => answers[i] != null).length}/${QUESTIONS_PER_AREA}`}
-          {roundDone && ` · ${zh ? area.zh : area.en}: ${roundScore}/${QUESTIONS_PER_AREA}`}
-        </span>
+      {/* navigation */}
+      <div className="mt-4 flex items-center justify-between">
         <button
           type="button"
-          disabled={!roundDone}
-          onClick={() => (round < 4 ? setRound(round + 1) : finish(answers))}
-          className="rounded-md bg-ink px-5 py-2 text-[14px] text-white transition-colors hover:bg-ink/85 disabled:opacity-40"
+          disabled={current === 0}
+          onClick={() => go(current - 1)}
+          className="rounded-md border border-hairline px-4 py-2 text-[13px] text-faint transition-colors hover:bg-bone hover:text-ink disabled:opacity-40"
         >
-          {round < 4 ? (zh ? '下一轮' : 'Next round') : zh ? '查看结果' : 'See results'}
+          ← {zh ? '上一题' : 'Prev'}
         </button>
+        <button
+          type="button"
+          disabled={current === total - 1}
+          onClick={() => go(current + 1)}
+          className="rounded-md border border-hairline px-4 py-2 text-[13px] text-faint transition-colors hover:bg-bone hover:text-ink disabled:opacity-40"
+        >
+          {chosen != null ? (zh ? '下一题' : 'Next') : zh ? '跳过' : 'Skip'} →
+        </button>
+      </div>
+
+      {/* submit */}
+      <div className="mt-6 border-t border-hairline pt-6">
+        {confirming ? (
+          <div className="rounded-lg border border-ink-yellow/30 bg-pale-yellow px-5 py-4">
+            <p className="text-[14px] leading-relaxed text-ink-yellow">
+              {zh
+                ? `还有 ${total - answeredCount} 题未作答，未作答将计为错误。确认提交？`
+                : `${total - answeredCount} question(s) unanswered will be marked wrong. Submit anyway?`}
+            </p>
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={() => finish(answers)}
+                className="rounded-md bg-ink px-4 py-2 text-[13px] text-white transition-colors hover:bg-ink/85"
+              >
+                {zh ? '确认提交' : 'Submit anyway'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirming(false)}
+                className="rounded-md border border-hairline px-4 py-2 text-[13px] text-faint transition-colors hover:bg-bone hover:text-ink"
+              >
+                {zh ? '继续作答' : 'Keep going'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={submit}
+            className="w-full rounded-md bg-ink px-5 py-3 text-[15px] text-white transition-colors hover:bg-ink/85"
+          >
+            {zh ? `提交交卷（已答 ${answeredCount} / ${total}）` : `Submit (${answeredCount} / ${total} answered)`}
+          </button>
+        )}
       </div>
     </div>
   );
