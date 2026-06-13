@@ -125,8 +125,23 @@ export function Layout() {
               </div>
             </div>
             <div className="ml-auto flex items-center justify-end gap-3 text-[13.5px]">
-              <span className="hidden text-[12.5px] text-faint sm:inline">
-                {lang === 'zh' ? '觉得有用的话，给我们点个 Star 吧 👉' : 'Find it useful? Give us a Star 👉'}
+              <span className="hidden items-center gap-2 sm:flex">
+                <span className="text-right text-[12.5px] leading-tight text-faint">
+                  {lang === 'zh' ? (
+                    <>
+                      觉得有用的话，
+                      <br />
+                      给我们点个 Star 吧
+                    </>
+                  ) : (
+                    <>
+                      Find it useful?
+                      <br />
+                      Give us a Star
+                    </>
+                  )}
+                </span>
+                <span className="text-[22px] leading-none">👉</span>
               </span>
               <a
                 href="https://github.com/NJU-R-L-Group-Embodied-Lab/lavira-code"
