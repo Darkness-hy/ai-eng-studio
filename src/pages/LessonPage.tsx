@@ -163,9 +163,10 @@ export function LessonPage() {
           <Quiz key={`${lesson.id}:post`} lessonId={lesson.id} stage="post" questions={postQuiz} />
         )}
 
-        {/* Reaching the end of the lesson auto-completes it (covers the ~220
-            lessons that have no post-quiz to trigger completion). */}
-        <CompletionSentinel lessonId={lesson.id} done={isDone} />
+        {/* Completion rule: a lesson WITH a post-quiz completes only by
+            finishing that quiz. Lessons with NO post-quiz have no such signal,
+            so they complete when the reader reaches the bottom. */}
+        {postQuiz.length === 0 && <CompletionSentinel lessonId={lesson.id} done={isDone} />}
 
         {/* prev / next */}
         <nav className="mt-14 grid grid-cols-2 gap-3 border-t border-hairline pt-6">
