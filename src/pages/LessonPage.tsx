@@ -9,6 +9,7 @@ import { fetchIndex, fetchLesson } from '../lib/data';
 import { lessonTitle, phaseTitle, useLang } from '../lib/i18n';
 import { extractToc, stripLessonHeader } from '../lib/md';
 import { recordVisit, setLessonDone, useProgress } from '../lib/progress';
+import { lessonContext, setTutorContext } from '../lib/tutor';
 import type { CourseIndex, Lesson } from '../lib/types';
 
 export function LessonPage() {
@@ -45,6 +46,12 @@ export function LessonPage() {
       live = false;
     };
   }, [phaseSlug, lessonSlug]);
+
+  // Register this lesson as the AI tutor's RAG context while it's on screen.
+  useEffect(() => {
+    if (lesson) setTutorContext(lessonContext(lesson, lang));
+    return () => setTutorContext(null);
+  }, [lesson, lang]);
 
   const phase = index?.phases.find((p) => p.slug === phaseSlug);
   const lessonIdx = phase?.lessons.findIndex((l) => l.slug === lessonSlug) ?? -1;

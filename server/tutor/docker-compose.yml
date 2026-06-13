@@ -1,0 +1,14 @@
+services:
+  tutor:
+    build: .
+    ports:
+      - "8787:8787"
+    environment:
+      # subscription token from `claude setup-token` — put it in .env (gitignored)
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:?set CLAUDE_CODE_OAUTH_TOKEN in .env}
+      TUTOR_MODEL: ${TUTOR_MODEL:-claude-sonnet-4-6}
+      TUTOR_EFFORT: ${TUTOR_EFFORT:-medium}
+      TUTOR_ALLOWED_ORIGINS: ${TUTOR_ALLOWED_ORIGINS:-https://darkness-hy.github.io,http://localhost:5180}
+      TUTOR_BEARER: ${TUTOR_BEARER:-}
+      TUTOR_RATE_PER_MIN: ${TUTOR_RATE_PER_MIN:-20}
+    restart: unless-stopped

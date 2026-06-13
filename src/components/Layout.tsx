@@ -3,7 +3,9 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { useLang } from '../lib/i18n';
 import { dueCount, useReview } from '../lib/review';
+import { tutorEnabled } from '../lib/tutor';
 import { CommandPalette } from './CommandPalette';
+import { TutorWidget } from './TutorWidget';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -122,6 +124,8 @@ export function Layout() {
       <main>
         <Outlet />
       </main>
+
+      {tutorEnabled && <TutorWidget />}
 
       <footer className="mt-24 border-t border-hairline">
         <div className="bg-bone/40">
