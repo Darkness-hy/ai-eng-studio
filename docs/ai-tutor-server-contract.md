@@ -126,12 +126,48 @@ data: {"type":"done"}
 
 ## 5. 模型与推理强度
 
-- 默认模型 **`claude-sonnet-4-6`**,推理强度 **medium**(用户要求)。
-- headless 调用:`claude -p "<prompt>" --model claude-sonnet-4-6 --effort medium --tools "" --output-format stream-json`
+- 默认模型 **`claude-sonnet-4-6`**,推理强度 **medium**。
+- headless 调用(prompt 经 **stdin** 传入,避免参数长度限制):
+  `claude -p --model claude-sonnet-4-6 --effort medium --tools "" --system-prompt "<完整系统提示>" --output-format stream-json --verbose --include-partial-messages`
   - `--tools ""` 禁用所有工具(纯文本问答,不读写文件、不执行命令);
-  - `--effort medium` 设中等推理强度;
-  - `--output-format stream-json` 输出逐行 JSON,服务端解析其中的 `text_delta` 转成 SSE。
-- 也可用 **Claude Agent SDK**(Python/TS)替代 shell 调用,参考实现用的就是 Python SDK。
+  - `--effort medium` 中等推理强度;
+  - **`--system-prompt`(整段替换)而非 `--append-system-prompt`(追加)**:claude CLI 是 Bun 编译的二进制,默认会带上 Claude Code 自己的系统提示(实测 ≈7870 token)。整段替换后只剩 ≈2065 token 的强制底座,每次请求省 ≈5800 token(详见 §5b);
+  - `--output-format stream-json --verbose --include-partial-messages` 输出逐行 JSON(stream-json 要求 `--verbose`),服务端解析 `text_delta` 转成 SSE。
+- 参考实现走的是 **CLI 子进程**(`asyncio.create_subprocess_exec`),不是 SDK;也可换用 Claude Agent SDK(Python/TS)。
+- 中国大陆服务器要让 claude 出网,设**小写** `https_proxy`(Bun 只认小写,大写 `HTTPS_PROXY` 无效)。
+
+---
+
+## 5b. 助教的完整输入与 token 预算
+
+每次 `/chat`,模型实际收到的输入由这几块拼成。Token 数为在 claude CLI 上**实测**(中文+代码内容约 0.58 token/字):
+
+| 部分 | 内容 | Token |
+| --- | --- | --- |
+| Claude Code 强制底座 | 用 `--system-prompt` 后无法再去掉的部分 | ≈2065 |
+| 助教人设 | 角色 + 回答语言指令 | ≈137 |
+| 平台背景 | 课程定位 + 平台功能 + 20 阶段课程地图(由 `index.json` 动态生成) | ≈430 |
+| `<learner>` 用户画像 | 昵称/定级/进度/测验/活跃/薄弱领域/低分课/徽章(前端 `buildUserProfile` 汇总) | ≈55–100 |
+| `<course>` 当前课文 | 整篇课文 + 本课测验要点(前端 `lessonContext`,封顶 12000 字) | ≈2160(典型课;长课最多 ≈7000) |
+| 用户消息 | 近 8 轮历史 + 本次提问 | ≈100–600/轮 |
+
+- **典型单次请求 ≈ 5,200 token 输入**(本课 + 进阶画像 + 1 轮历史)。
+- 历史:早期用 `--append-system-prompt` 时,仅 Claude Code 默认框架就占 ≈7870 token;切到 `--system-prompt` 后系统底座降到 ≈2065,整条请求从 ≈10,600 腰斩到 ≈5,200。
+- **缓存**:底座、人设、平台背景、当前课文在多轮对话间稳定 → 命中 Anthropic prompt 缓存,按 ~10% 计费;用户画像与提问每轮变化,不缓存。
+- 拼装位置:系统提示见 `server.py` 的 `system_prompt()` 与 `load_project_background()`;前端两块上下文见 `src/lib/tutor.ts` 的 `lessonContext()`(课文)与 `buildUserProfile()`(画像)。
+
+系统提示结构(`--system-prompt` 整段传入):
+
+```
+[人设]      你是《从零开始的 AI 工程》的助教… 用简体中文回答。
+[平台背景]   【关于本平台】…20 阶段课程地图…
+<learner>   昵称/定级/进度/测验/活跃/薄弱领域/低分课/徽章
+</learner>
+<course>    # 课标题 + 整篇课文 + 本课测验要点
+</course>
+```
+
+用户消息(经 stdin):近 8 轮 `学习者:…/助教:…` 历史 + 本次提问。
 
 ---
 
