@@ -40,6 +40,25 @@ echo 'VITE_AI_TUTOR_ENDPOINT=https://<你的域名或IP>/chat' >> .env.local   #
 > `https://your-host/chat`,并确认 `TUTOR_ALLOWED_ORIGINS` 含
 > `https://darkness-hy.github.io`。
 
+## 多用户并发与隔离
+
+设计为**多人同时使用、彼此信息隔离**:
+
+- **隔离是结构性的**:服务端**不保存任何用户的对话**。每个请求自带 `history`,每个 `/chat`
+  各 fork 一个 `claude` 子进程、各自的 prompt 与流。两个用户即便同时用同一个订阅,也**不可能**
+  看到对方的内容——靠"服务端无记忆"实现,比加锁更可靠。
+- **并发上限**:`TUTOR_MAX_CONCURRENCY`(默认 3)限制同时在跑的 `claude` 调用,避免一个班的
+  突发把订阅瞬间打到限速。超出的请求排队,排队超过 `TUTOR_MAX_QUEUE`(默认 15)就返回
+  `429 服务繁忙`,前端显示「助教正忙,请稍后再试」。
+- **超时保护**:单个请求超过 `TUTOR_TIMEOUT`(默认 120s)即终止子进程、释放并发槽。
+- **对话留存**:每完成一轮,向 `TUTOR_LOG_DIR/chat-YYYY-MM-DD.jsonl` 追加一行
+  `{ts, ip, lesson_id, message, reply, status, ms}`,便于排查。docker compose 已把
+  `./logs` 挂出容器,在宿主机直接看。
+- **硬天花板**:所有人共享你**一个** Claude 订阅的速率额度。一个班(几十人偶发提问)单订阅
+  够;真要几百人同时,需调高并发并准备多 token 轮换或改用 API key。
+
+`/health` 返回里有 `inflight`(当前在跑数)和 `max_concurrency`,可用来观察负载。
+
 ## 配置项(环境变量)
 
 | 变量 | 默认 | 说明 |
@@ -47,9 +66,13 @@ echo 'VITE_AI_TUTOR_ENDPOINT=https://<你的域名或IP>/chat' >> .env.local   #
 | `CLAUDE_CODE_OAUTH_TOKEN` | (必填) | `claude setup-token` 生成的订阅 token,**只在服务端** |
 | `TUTOR_MODEL` | `claude-sonnet-4-6` | 模型 |
 | `TUTOR_EFFORT` | `medium` | 推理强度 low/medium/high |
+| `TUTOR_MAX_CONCURRENCY` | `3` | 同时在跑的 claude 调用上限 |
+| `TUTOR_MAX_QUEUE` | `15` | 排队等待上限,超出回 429 |
+| `TUTOR_TIMEOUT` | `120` | 每请求秒数上限,超时终止并释放槽 |
+| `TUTOR_LOG_DIR` | `logs` | 对话 JSONL 目录,设为空字符串可关闭留存 |
 | `TUTOR_ALLOWED_ORIGINS` | Pages + localhost | CORS allowlist,逗号分隔 |
 | `TUTOR_BEARER` | 空 | 设了就要求前端带 `Authorization: Bearer`(前端值公开,仅作弱校验) |
-| `TUTOR_RATE_PER_MIN` | `20` | 每 IP 每分钟请求上限 |
+| `TUTOR_RATE_PER_MIN` | `0`(关闭) | >0 时启用每 IP 每分钟上限(代理后需正确透传 X-Forwarded-For) |
 
 ## 先验证前端(可选,不接 Claude)
 

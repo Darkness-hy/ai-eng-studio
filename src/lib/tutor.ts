@@ -74,6 +74,7 @@ export async function askTutor(
       stream: true,
     }),
   });
+  if (res.status === 429 || res.status === 503) throw new Error('助教正忙(同时提问的人较多),请稍后再试');
   if (!res.ok || !res.body) throw new Error(`辅导服务返回错误 (${res.status})`);
 
   const reader = res.body.getReader();
