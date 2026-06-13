@@ -2,14 +2,18 @@ import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } fro
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAuth } from '../lib/auth';
+import { fetchIndex } from '../lib/data';
 import { useLang } from '../lib/i18n';
+import { useProgress } from '../lib/progress';
 import {
   askTutor,
+  buildUserProfile,
   saveTutorMessages,
   subscribeTutorContext,
   tutorContextSnapshot,
   type ChatMessage,
 } from '../lib/tutor';
+import type { CourseIndex } from '../lib/types';
 
 interface Turn {
   role: 'user' | 'assistant';
@@ -55,8 +59,10 @@ export function TutorWidget() {
   const { lang } = useLang();
   const zh = lang === 'zh';
   const { profile } = useAuth();
+  const progress = useProgress();
   const ctx = useSyncExternalStore(subscribeTutorContext, tutorContextSnapshot, tutorContextSnapshot);
 
+  const [index, setIndex] = useState<CourseIndex | null>(null);
   const [open, setOpen] = useState(false);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [streamShown, setStreamShown] = useState('');
@@ -73,6 +79,7 @@ export function TutorWidget() {
   const pendingRef = useRef<{ q: string; lessonId: string | null } | null>(null);
 
   useEffect(() => () => { if (drainRef.current) clearInterval(drainRef.current); }, []);
+  useEffect(() => { fetchIndex().then(setIndex).catch(() => {}); }, []);
 
   const scrollDown = () => {
     const el = scrollRef.current;
@@ -138,8 +145,9 @@ export function TutorWidget() {
     startDrain();
     const ac = new AbortController();
     abortRef.current = ac;
+    const userProfile = profile && index ? buildUserProfile(profile, progress, index, lang) : null;
     try {
-      await askTutor(q, history, ctx, lang, {
+      await askTutor(q, history, ctx, userProfile, lang, {
         signal: ac.signal,
         onDelta: (delta) => {
           fullRef.current += delta;

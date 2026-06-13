@@ -103,17 +103,23 @@ class ChatRequest(BaseModel):
     history: List[Turn] = []
     lesson_id: Optional[str] = None
     context: Optional[str] = None
+    user_profile: Optional[str] = None  # 学习者的个人学习档案(前端汇总)
     lang: str = "zh"
     stream: bool = True
 
 
-def system_prompt(lang: str, context: Optional[str]) -> str:
+def system_prompt(lang: str, context: Optional[str], user_profile: Optional[str]) -> str:
     speak = "用简体中文回答" if lang == "zh" else "Answer in English"
     lines = [
         "你是开源课程《从零开始的 AI 工程》(ai-engineering-from-scratch) 的助教。",
         "基于课程内容回答学习者的问题:讲不清就举例、拆步骤;",
         "不要编造课程里不存在的 API 或结论。" + speak + "。",
     ]
+    if user_profile:
+        lines.append(
+            "\n这位学习者的个人学习档案如下,请据此个性化你的回答(称呼、难度、进度与下一步建议);"
+            "不要生硬复述这些数字,自然地用就好:\n<learner>\n" + user_profile + "\n</learner>"
+        )
     if context:
         lines.append("\n以下是学习者当前所在课程的内容,作为回答依据:\n<course>\n" + context + "\n</course>")
     return "\n".join(lines)
@@ -255,7 +261,7 @@ async def chat(
         raise HTTPException(status_code=429, detail="服务繁忙,请稍后再试")
     _inflight += 1
 
-    sys_prompt = system_prompt(req.lang, req.context)
+    sys_prompt = system_prompt(req.lang, req.context, req.user_profile)
     prompt = user_prompt(req.message, req.history)
 
     async def gen():

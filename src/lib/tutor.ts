@@ -1,5 +1,9 @@
-import { cloudEnabled, getSupabase } from './supabase';
-import type { Lang, Lesson } from './types';
+import { computeBadges } from './achievements';
+import { lessonTitle } from './i18n';
+import { AREAS, loadPlacement } from './placement';
+import { streakDays, type ProgressState } from './progress';
+import { cloudEnabled, getSupabase, type ProfileRow } from './supabase';
+import type { CourseIndex, Lang, Lesson } from './types';
 
 const endpoint = import.meta.env.VITE_AI_TUTOR_ENDPOINT as string | undefined;
 const token = import.meta.env.VITE_AI_TUTOR_TOKEN as string | undefined;
@@ -55,6 +59,80 @@ export function lessonContext(lesson: Lesson, lang: Lang): TutorContext {
   return { lessonId: lesson.id, title, text: parts.join('\n').slice(0, 12000) };
 }
 
+const SOLID_AREA = 8; // placement area mastery threshold (0–10)
+
+function lessonTitleById(id: string, index: CourseIndex, lang: Lang): string | null {
+  const [ps, ls] = id.split('/');
+  const le = index.phases.find((p) => p.slug === ps)?.lessons.find((l) => l.slug === ls);
+  return le ? lessonTitle(le, lang) : null;
+}
+
+/**
+ * 「学习者画像」:把这位用户的整体学习信息汇总成精简文本,随每次提问注入,
+ * 让助教个性化(称呼、难度、进度建议)。刻意排除 PII(不含完整邮箱/ID/角色/逐题作答)。
+ */
+export function buildUserProfile(
+  profile: ProfileRow | null,
+  progress: ProgressState,
+  index: CourseIndex,
+  lang: Lang,
+): string {
+  const zh = lang === 'zh';
+  const none = zh ? '暂无' : 'none';
+  const nick = profile?.display_name || profile?.email?.split('@')[0] || (zh ? '同学' : 'learner');
+
+  // 进度:按 catalog 迭代(避免被移除的 capstone 残留 key 虚高总数)
+  const totalLessons = index.stats.lessons;
+  let doneCount = 0;
+  for (const p of index.phases)
+    doneCount += p.lessons.filter((l) => progress.lessons[`${p.slug}/${l.slug}`]?.done).length;
+  const donePct = totalLessons > 0 ? Math.round((doneCount / totalLessons) * 100) : 0;
+
+  // 测验均分(仅首测 post 分)
+  const post = Object.values(progress.lessons).filter((l) => l.postTotal);
+  const quizAvg = post.length
+    ? `${Math.round((post.reduce((a, l) => a + (l.postScore ?? 0) / (l.postTotal ?? 1), 0) / post.length) * 100)}`
+    : none;
+
+  // 当前课
+  const current = (progress.lastLesson && lessonTitleById(progress.lastLesson, index, lang)) || none;
+
+  // 薄弱领域 + 入学等级(定级)
+  const pl = loadPlacement();
+  const entry = pl ? (zh ? `第 ${pl.entry} 阶段(定级 ${pl.total}/50)` : `phase ${pl.entry} (placed ${pl.total}/50)`) : (zh ? '未定级' : 'not placed');
+  let weakAreas = zh ? '未定级' : 'not placed';
+  if (pl) {
+    const weak = AREAS.filter((a) => (pl.areaScores[a.key] ?? 0) < SOLID_AREA).map(
+      (a) => `${zh ? a.zh : a.en}(${pl.areaScores[a.key] ?? 0}/10)`,
+    );
+    weakAreas = weak.length ? weak.join('、') : (zh ? '无明显薄弱' : 'none');
+  }
+
+  // 近期低分课程(post < 60%,取前 3)
+  const weakLessons: string[] = [];
+  for (const [id, l] of Object.entries(progress.lessons)) {
+    if (weakLessons.length >= 3) break;
+    if (l.postTotal && (l.postScore ?? 0) / l.postTotal < 0.6) {
+      const t = lessonTitleById(id, index, lang);
+      if (t) weakLessons.push(t);
+    }
+  }
+
+  // 徽章
+  const got = computeBadges(progress, index).filter((b) => b.unlocked).map((b) => (zh ? b.zh : b.en));
+  const badges = got.length ? got.slice(0, 5).join('、') + (got.length > 5 ? (zh ? ' 等' : ' …') : '') : none;
+
+  return [
+    `${zh ? '昵称' : 'name'}:${nick}｜${zh ? '入学等级' : 'level'}:${entry}`,
+    `${zh ? '进度' : 'progress'}:${doneCount}/${totalLessons}(${donePct}%)｜${zh ? '测验平均' : 'quiz avg'}:${quizAvg}`,
+    `${zh ? '当前学习' : 'current'}:${current}`,
+    `${zh ? '连续学习' : 'streak'} ${streakDays()} ${zh ? '天｜累计活跃' : 'd｜active'} ${progress.visits.length} ${zh ? '天' : 'd'}`,
+    `${zh ? '薄弱领域' : 'weak areas'}:${weakAreas}`,
+    `${zh ? '近期低分课程' : 'low-scoring'}:${weakLessons.length ? weakLessons.join('、') : none}`,
+    `${zh ? '已获徽章' : 'badges'}:${badges}`,
+  ].join('\n');
+}
+
 /** 把一轮问答(用户问 + 助教答)存到 Supabase,按用户隔离。best-effort,失败不打扰用户。 */
 export async function saveTutorMessages(
   userId: string,
@@ -84,6 +162,7 @@ export async function askTutor(
   message: string,
   history: ChatMessage[],
   ctx: TutorContext | null,
+  userProfile: string | null,
   lang: Lang,
   opts: AskOptions,
 ): Promise<void> {
@@ -100,6 +179,7 @@ export async function askTutor(
       history,
       lesson_id: ctx?.lessonId ?? null,
       context: ctx?.text ?? null,
+      user_profile: userProfile,
       lang,
       stream: true,
     }),
