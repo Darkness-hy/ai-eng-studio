@@ -269,7 +269,7 @@ export function AgentLoopSim() {
 
         {/* right: transcript */}
         <div>
-          <div ref={logRef} className="flex max-h-[340px] flex-col gap-2 overflow-y-auto px-6 py-4">
+          <div ref={logRef} className="flex flex-col gap-2 px-6 py-4">
             <p className="font-mono text-[11px] text-faint">
               {zh
                 ? 'task: 查询北京今天的天气，换算成华氏度后写入 report.txt'

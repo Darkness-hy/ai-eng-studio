@@ -77,7 +77,10 @@ export function CodeTabs({ files }: { files: CodeFile[] }) {
             <CopyButton text={file.content} />
           </div>
         </div>
-        <div className="max-h-[480px] overflow-auto">
+        {/* No vertical max-height: a fixed-height inner scroller hijacks the
+            page wheel (you get stuck scrolling up over long code). Code flows
+            with the page like the prose code blocks; only x overflows. */}
+        <div className="overflow-x-auto">
           {html ? (
             <div dangerouslySetInnerHTML={{ __html: html }} />
           ) : (
@@ -94,7 +97,7 @@ export function CodeTabs({ files }: { files: CodeFile[] }) {
                 <span className="font-mono text-[11px] text-faint">{Math.round(runOutput.ms)} ms</span>
               )}
             </div>
-            <pre className="max-h-64 overflow-auto px-4 pb-4 font-mono text-[12.5px] leading-relaxed whitespace-pre-wrap">
+            <pre className="overflow-x-auto px-4 pb-4 font-mono text-[12.5px] leading-relaxed whitespace-pre-wrap">
               {runState === 'running' && !runOutput ? '加载 Python 运行时（首次约 10 MB）…' : null}
               {runOutput?.output}
               {runOutput?.error && <span className="text-ink-red">{runOutput.error}</span>}
