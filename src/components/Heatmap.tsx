@@ -14,11 +14,11 @@ function dayKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-/** GitHub-style contribution calendar: the last ~month of lessons completed. */
+/** GitHub-style contribution calendar: last ~26 weeks of lessons completed. */
 export function Heatmap({ counts, lang }: { counts: Map<string, number>; lang: Lang }) {
   const today = new Date();
   const start = new Date(today);
-  start.setDate(start.getDate() - (4 * 7 + today.getDay())); // Sunday-aligned, ~1 month (5 weeks)
+  start.setDate(start.getDate() - (25 * 7 + today.getDay())); // Sunday-aligned, 26 weeks
 
   const cells: { key: string; count: number }[] = [];
   const cursor = new Date(start);
