@@ -7,7 +7,7 @@ Read the lessons, run the Python in your browser, take the quizzes, and ask an A
 
 ### → **[Open the live site](https://darkness-hy.github.io/ai-eng-studio/)** ←
 
-![preview](public/og.png)
+![AI Engineering from Scratch](public/og-en.png)
 
 </div>
 
@@ -60,6 +60,8 @@ If this helped you learn, a ⭐ helps others find it.
 把开源课程 [`ai-engineering-from-scratch`](https://github.com/rohitg00/ai-engineering-from-scratch)（503 课 / 20 阶段 / 338 套测验,MIT)做成**中英双语、可交互**的学习站:课文中英双语、一键切换语言、**浏览器内一键跑 Python**、课前课后测验即时判分、定级测试 + 个性化路线、间隔重复复习 + 术语闪卡、若干微型交互实验(向量游乐场 / 梯度下降实验台 / 注意力热力图 / BPE 分词器 / Agent 循环)、教师班级管理、结业证书、⌘K 搜索、多设备同步,以及一个**懂你当前这一课**的 AI 助教浮窗。纯静态 SPA、免费部署在 GitHub Pages;账号/同步/后台是可选的 Supabase 层。
 
 **在线体验:https://darkness-hy.github.io/ai-eng-studio/**
+
+![从零开始的 AI 工程](public/og.png)
 
 ### 翻译
 
