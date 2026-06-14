@@ -311,6 +311,83 @@ export async function generateShareCard(o: ShareOpts): Promise<Blob> {
   return toBlob(canvas);
 }
 
+export interface PlacementCardOpts {
+  entryNum: number;
+  entryTitle: string;
+  total: number;
+  maxTotal: number;
+  areas: { label: string; score: number; max: number }[];
+  zh: boolean;
+}
+
+/** Square share card for a placement result — the big phase number is the hook,
+ *  the URL is the call-to-action that drives friends to test their own level. */
+export async function generatePlacementCard(o: PlacementCardOpts): Promise<Blob> {
+  await ready();
+  const W = 800;
+  const H = 800;
+  const { canvas, ctx } = setup(W, H);
+
+  ctx.strokeStyle = HAIRLINE;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(40, 40, W - 80, H - 80);
+
+  ctx.fillStyle = FAINT;
+  ctx.font = '600 14px "JetBrains Mono", monospace';
+  ctx.fillText('AI ENGINEERING · FROM SCRATCH', W / 2, 110);
+
+  ctx.fillStyle = INK;
+  ctx.font = '22px Newsreader, serif';
+  ctx.fillText(o.zh ? '我的 AI 工程定级' : 'My AI Engineering Level', W / 2, 158);
+
+  ctx.fillStyle = BLUE;
+  ctx.font = '600 92px Newsreader, serif';
+  ctx.fillText(o.zh ? `第 ${o.entryNum} 阶段` : `Phase ${o.entryNum}`, W / 2, 268);
+
+  ctx.fillStyle = INK;
+  ctx.font = '24px Newsreader, serif';
+  ctx.fillText(o.entryTitle, W / 2, 310);
+
+  ctx.fillStyle = FAINT;
+  ctx.font = '16px "JetBrains Mono", monospace';
+  ctx.fillText(`${o.zh ? '总分' : 'Score'} ${o.total} / ${o.maxTotal}`, W / 2, 348);
+
+  // area mini-bars (colour by mastery — same thresholds as the result page)
+  const bx0 = 312;
+  const bw = 218;
+  let by = 410;
+  for (const a of o.areas) {
+    const pct = a.max ? a.score / a.max : 0;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = INK;
+    ctx.font = '15px Newsreader, serif';
+    ctx.fillText(a.label, 120, by + 4);
+    ctx.fillStyle = '#eceae6';
+    ctx.beginPath();
+    ctx.roundRect(bx0, by - 6, bw, 8, 4);
+    ctx.fill();
+    ctx.fillStyle = a.score >= 8 ? '#346538' : a.score >= 4 ? GOLD : '#c0563f';
+    ctx.beginPath();
+    ctx.roundRect(bx0, by - 6, Math.max(bw * pct, 6), 8, 4);
+    ctx.fill();
+    ctx.textAlign = 'right';
+    ctx.fillStyle = FAINT;
+    ctx.font = '13px "JetBrains Mono", monospace';
+    ctx.fillText(`${a.score}/${a.max}`, 660, by + 4);
+    by += 42;
+  }
+  ctx.textAlign = 'center';
+
+  ctx.fillStyle = INK;
+  ctx.font = '600 18px Newsreader, serif';
+  ctx.fillText(o.zh ? '测测你的起点 →' : 'Find your level →', W / 2, 706);
+  ctx.fillStyle = FAINT;
+  ctx.font = '13px "JetBrains Mono", monospace';
+  ctx.fillText('darkness-hy.github.io/ai-eng-studio', W / 2, 732);
+
+  return toBlob(canvas);
+}
+
 export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

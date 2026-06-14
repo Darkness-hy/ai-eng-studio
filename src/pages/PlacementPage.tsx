@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
+import { downloadBlob, generatePlacementCard } from '../lib/certificate';
 import { fetchIndex } from '../lib/data';
 import { phaseTitle, useLang } from '../lib/i18n';
 import { markLessonsDone } from '../lib/progress';
@@ -264,6 +265,22 @@ function ResultView({
     do: 'bg-pale-green text-ink-green',
   };
 
+  const dlPlacement = async () => {
+    try {
+      const card = await generatePlacementCard({
+        entryNum: result.entry,
+        entryTitle: entry ? (zh ? entry.titleZh : entry.titleEn) : '',
+        total: result.total,
+        maxTotal: AREAS.length * QUESTIONS_PER_AREA,
+        areas: AREAS.map((a) => ({ label: zh ? a.zh : a.en, score: result.areaScores[a.key] ?? 0, max: QUESTIONS_PER_AREA })),
+        zh,
+      });
+      downloadBlob(card, 'ai-eng-placement.png');
+    } catch {
+      alert(zh ? '分享图生成失败,请重试' : 'Share image generation failed — try again');
+    }
+  };
+
   return (
     <div className="mx-auto max-w-2xl px-5 py-14">
       <p className="font-mono text-[11px] tracking-[0.18em] text-faint">FIND YOUR LEVEL</p>
@@ -362,7 +379,14 @@ function ResultView({
         </table>
       </section>
 
-      <div className="mt-6 text-center">
+      <div className="mt-6 flex items-center justify-center gap-5">
+        <button
+          type="button"
+          onClick={() => void dlPlacement()}
+          className="rounded-lg bg-ink px-4 py-2 text-[13px] text-white transition-colors hover:bg-ink/85"
+        >
+          {zh ? '生成分享图' : 'Share my level'}
+        </button>
         <button
           type="button"
           onClick={onRetake}
