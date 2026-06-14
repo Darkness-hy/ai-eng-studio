@@ -1,0 +1,4 @@
+var e=`https://cdn.jsdelivr.net/pyodide/v0.26.4/full/`,t=null;function n(){return t||(t=(async()=>(window.loadPyodide||await new Promise((t,n)=>{let r=document.createElement(`script`);r.src=`${e}pyodide.js`,r.onload=()=>t(),r.onerror=()=>n(Error(`Pyodide 加载失败`)),document.head.appendChild(r)}),window.loadPyodide({indexURL:e})))(),t.catch(()=>{t=null})),t}var r=Promise.resolve();function i(e){let t=r.then(()=>a(e));return r=t.catch(()=>void 0),t}async function a(e){let t=performance.now(),r=await n(),i=``;r.setStdout({batched:e=>i+=e+`
+`}),r.setStderr({batched:e=>i+=e+`
+`});try{await r.loadPackagesFromImports(e);let n=await r.runPythonAsync(e);return n!=null&&(i+=String(n)+`
+`),{output:i,error:null,ms:performance.now()-t}}catch(e){return{output:i,error:e instanceof Error?e.message:String(e),ms:performance.now()-t}}}export{i as runPython};
