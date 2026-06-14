@@ -159,7 +159,7 @@ export function ProgressPage() {
           {doneTotal === index.stats.lessons && (
             <button
               type="button"
-              onClick={() => dlCert(zh ? '完成全部 499 节课程' : 'completed all 499 lessons', 'certificate-full.png')}
+              onClick={() => dlCert(zh ? `完成全部 ${index.stats.lessons} 节课程` : `completed all ${index.stats.lessons} lessons`, 'certificate-full.png')}
               className="rounded-md border border-ink-green/30 bg-pale-green px-3 py-1.5 text-[13px] text-ink-green transition-colors hover:bg-pale-green/70"
             >
               {zh ? '结业证书' : 'Full certificate'}

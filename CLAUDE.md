@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `ai-eng-studio` is a Chinese-first, interactive learning frontend for the open-source
 [`ai-engineering-from-scratch`](https://github.com/rohitg00/ai-engineering-from-scratch)
-curriculum (499 lessons after exclusions, 20 phases). Pure static SPA (Vite + React 19 + TS +
+curriculum (503 lessons, 20 phases). Pure static SPA (Vite + React 19 + TS +
 Tailwind 4), deployed to GitHub Pages at `https://darkness-hy.github.io/ai-eng-studio/`.
 Optional Supabase backend adds accounts, cross-device sync, and an admin dashboard.
 

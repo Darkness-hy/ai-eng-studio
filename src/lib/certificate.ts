@@ -263,24 +263,44 @@ export async function generateShareCard(o: ShareOpts): Promise<Blob> {
   ctx.lineWidth = 1;
   ctx.strokeRect(40, 40, W - 80, H - 80);
 
+  // course branding — kept in sync with the OG social card
   ctx.fillStyle = FAINT;
   ctx.font = '600 14px "JetBrains Mono", monospace';
-  ctx.fillText('AI ENGINEERING · FROM SCRATCH', W / 2, 120);
+  ctx.fillText('AI ENGINEERING · FROM SCRATCH · 中文交互版', W / 2, 96);
 
   ctx.fillStyle = INK;
-  ctx.font = '600 40px Newsreader, serif';
-  ctx.fillText(o.name, W / 2, 200);
+  ctx.font = '600 34px Newsreader, serif';
+  ctx.fillText(o.zh ? '从零开始的 AI 工程' : 'AI Engineering from Scratch', W / 2, 142);
+
   ctx.fillStyle = FAINT;
-  ctx.font = '18px Newsreader, serif';
-  ctx.fillText(o.zh ? '的学习成就' : "'s learning so far", W / 2, 238);
+  ctx.font = '13px "JetBrains Mono", monospace';
+  ctx.fillText(
+    o.zh ? '从数学基础到可上线 · 20 阶段 · 503 课' : 'Math foundations → production · 20 phases · 503 lessons',
+    W / 2,
+    172,
+  );
+
+  ctx.strokeStyle = HAIRLINE;
+  ctx.beginPath();
+  ctx.moveTo(150, 204);
+  ctx.lineTo(W - 150, 204);
+  ctx.stroke();
+
+  // personal achievement
+  ctx.fillStyle = BLUE;
+  ctx.font = '600 38px Newsreader, serif';
+  ctx.fillText(o.name, W / 2, 268);
+  ctx.fillStyle = FAINT;
+  ctx.font = '17px Newsreader, serif';
+  ctx.fillText(o.zh ? '的学习成就' : "'s learning so far", W / 2, 300);
 
   const stat = (x: number, big: string, label: string) => {
-    ctx.fillStyle = BLUE;
-    ctx.font = '600 52px Newsreader, serif';
-    ctx.fillText(big, x, 380);
+    ctx.fillStyle = INK;
+    ctx.font = '600 50px Newsreader, serif';
+    ctx.fillText(big, x, 408);
     ctx.fillStyle = FAINT;
     ctx.font = '15px "JetBrains Mono", monospace';
-    ctx.fillText(label, x, 415);
+    ctx.fillText(label, x, 442);
   };
   stat(W / 2 - 230, `${o.doneCount}`, o.zh ? '完成课程' : 'lessons');
   stat(W / 2, `${o.streak}`, o.zh ? '连续天数' : 'day streak');
@@ -291,22 +311,23 @@ export async function generateShareCard(o: ShareOpts): Promise<Blob> {
   const bw = W - 320;
   ctx.fillStyle = '#eceae6';
   ctx.beginPath();
-  ctx.roundRect(bx, 500, bw, 10, 5);
+  ctx.roundRect(bx, 520, bw, 10, 5);
   ctx.fill();
   ctx.fillStyle = '#346538';
   ctx.beginPath();
-  ctx.roundRect(bx, 500, Math.max(bw * pct, 6), 10, 5);
+  ctx.roundRect(bx, 520, Math.max(bw * pct, 6), 10, 5);
   ctx.fill();
   ctx.fillStyle = FAINT;
   ctx.font = '14px "JetBrains Mono", monospace';
-  ctx.fillText(`${o.doneCount} / ${o.totalLessons} · ${Math.round(pct * 100)}%`, W / 2, 545);
+  ctx.fillText(`${o.doneCount} / ${o.totalLessons} · ${Math.round(pct * 100)}%`, W / 2, 565);
 
-  drawMark(ctx, W / 2 - 100, 650, 36);
+  // CTA — drives traffic, matches the OG / placement cards
   ctx.fillStyle = INK;
   ctx.font = '600 18px Newsreader, serif';
-  ctx.textAlign = 'left';
-  ctx.fillText('LaViRA', W / 2 - 52, 674);
-  ctx.textAlign = 'center';
+  ctx.fillText(o.zh ? '一起从零做 AI →' : 'Build AI from scratch →', W / 2, 668);
+  ctx.fillStyle = FAINT;
+  ctx.font = '13px "JetBrains Mono", monospace';
+  ctx.fillText('darkness-hy.github.io/ai-eng-studio', W / 2, 694);
 
   return toBlob(canvas);
 }
