@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { BarChart } from '../components/charts/BarChart';
 import { Histogram } from '../components/charts/Histogram';
 import { LineChart } from '../components/charts/LineChart';
@@ -71,6 +71,16 @@ function gradeAnswer(answers: number[] | undefined, i: number): 'correct' | 'wro
 const pad2 = (n: number): string => String(n).padStart(2, '0');
 
 const fmtPct = (v: number): string => `${Math.round(v * 10) / 10}%`;
+
+/** Mask a learner's email for the admin table (first ~5 chars + domain) so a
+ *  screenshot of this page doesn't expose their address. */
+function maskEmail(email: string): string {
+  const at = email.indexOf('@');
+  if (at < 1) return email;
+  const local = email.slice(0, at);
+  const head = local.slice(0, Math.min(5, Math.max(1, local.length - 1)));
+  return `${head}*****${email.slice(at)}`;
+}
 
 function dayKey(d: Date): string {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -242,43 +252,68 @@ export function AdminPage() {
   const { lang } = useLang();
   const [data, setData] = useState<AdminData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const isAdmin = enabled && profile?.role === 'admin';
 
+  // Only setState after the await, so this is safe to call from an effect.
+  const load = useCallback(async () => {
+    if (!isAdmin) return;
+    try {
+      const supabase = getSupabase();
+      const [profilesRes, progressRes, activityRes, placementRes, index] = await Promise.all([
+        supabase.from('profiles').select('*'),
+        supabase.from('progress').select('*'),
+        supabase.from('activity').select('*'),
+        supabase.from('placement').select('*'),
+        fetchIndex(),
+      ]);
+      const failed =
+        profilesRes.error ?? progressRes.error ?? activityRes.error ?? placementRes.error;
+      if (failed) {
+        setError(failed.message);
+        return;
+      }
+      setError(null);
+      setData({
+        profiles: (profilesRes.data ?? []) as ProfileRow[],
+        progress: (progressRes.data ?? []) as ProgressRow[],
+        activity: (activityRes.data ?? []) as ActivityRow[],
+        placement: (placementRes.data ?? []) as PlacementRow[],
+        index,
+      });
+      setUpdatedAt(new Date());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }, [isAdmin]);
+
+  // Manual refresh shows a spinner — called from a click, not an effect.
+  const refresh = useCallback(() => {
+    setRefreshing(true);
+    void load().finally(() => setRefreshing(false));
+  }, [load]);
+
+  // Keep the dashboard fresh: load on mount, silently refetch when the tab
+  // regains focus, and on a slow poll while visible — so the numbers track the
+  // live database without needing a page reload.
   useEffect(() => {
     if (!isAdmin) return;
-    let live = true;
-    const supabase = getSupabase();
-    Promise.all([
-      supabase.from('profiles').select('*'),
-      supabase.from('progress').select('*'),
-      supabase.from('activity').select('*'),
-      supabase.from('placement').select('*'),
-      fetchIndex(),
-    ])
-      .then(([profilesRes, progressRes, activityRes, placementRes, index]) => {
-        if (!live) return;
-        const failed =
-          profilesRes.error ?? progressRes.error ?? activityRes.error ?? placementRes.error;
-        if (failed) {
-          setError(failed.message);
-          return;
-        }
-        setData({
-          profiles: (profilesRes.data ?? []) as ProfileRow[],
-          progress: (progressRes.data ?? []) as ProgressRow[],
-          activity: (activityRes.data ?? []) as ActivityRow[],
-          placement: (placementRes.data ?? []) as PlacementRow[],
-          index,
-        });
-      })
-      .catch((err: unknown) => {
-        if (live) setError(err instanceof Error ? err.message : String(err));
-      });
-    return () => {
-      live = false;
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void load();
     };
-  }, [isAdmin]);
+    const initial = setTimeout(onVisible, 0); // first load, off the effect body
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    const timer = setInterval(onVisible, 30000);
+    return () => {
+      clearTimeout(initial);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+      clearInterval(timer);
+    };
+  }, [isAdmin, load]);
 
   if (!enabled) {
     return <Notice text={lang === 'zh' ? '云同步未配置' : 'Cloud sync not configured'} />;
@@ -287,34 +322,76 @@ export function AdminPage() {
   if (profile?.role !== 'admin') {
     return <Notice text={lang === 'zh' ? '无权访问，仅管理员可见' : 'Admins only'} />;
   }
-  if (error) {
+  if (error && !data) {
     return <Notice text={`${lang === 'zh' ? '加载失败' : 'Failed to load'}: ${error}`} />;
   }
   if (!data) return <Notice text={lang === 'zh' ? '加载中…' : 'Loading…'} />;
 
-  return <AdminDashboard data={data} lang={lang} />;
+  return (
+    <AdminDashboard
+      data={data}
+      lang={lang}
+      onRefresh={refresh}
+      refreshing={refreshing}
+      updatedAt={updatedAt}
+    />
+  );
 }
 
 function Notice({ text }: { text: string }) {
   return <div className="py-32 text-center text-[14px] text-faint">{text}</div>;
 }
 
-function AdminDashboard({ data, lang }: { data: AdminData; lang: Lang }) {
+function AdminDashboard({
+  data,
+  lang,
+  onRefresh,
+  refreshing,
+  updatedAt,
+}: {
+  data: AdminData;
+  lang: Lang;
+  onRefresh: () => void;
+  refreshing: boolean;
+  updatedAt: Date | null;
+}) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const zh = lang === 'zh';
   const m = useMemo(() => buildMetrics(data), [data]);
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-14">
-      <header className="border-b border-hairline pb-8">
-        <h1 className="font-serif text-[38px] font-semibold tracking-tight">
-          {zh ? '管理后台' : 'Admin Console'}
-        </h1>
-        <p className="mt-2 font-mono text-[12px] uppercase tracking-[0.14em] text-faint">
-          {zh
-            ? `学生 ${m.students.length} · 总课程数 ${m.totalLessons}`
-            : `${m.students.length} students · ${m.totalLessons} lessons total`}
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-hairline pb-8">
+        <div>
+          <h1 className="font-serif text-[38px] font-semibold tracking-tight">
+            {zh ? '管理后台' : 'Admin Console'}
+          </h1>
+          <p className="mt-2 font-mono text-[12px] uppercase tracking-[0.14em] text-faint">
+            {zh
+              ? `学生 ${m.students.length} · 总课程数 ${m.totalLessons}`
+              : `${m.students.length} students · ${m.totalLessons} lessons total`}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {updatedAt && (
+            <span className="font-mono text-[11px] text-faint">
+              {zh ? '更新于 ' : 'updated '}
+              {updatedAt.toLocaleTimeString(zh ? 'zh-CN' : 'en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+              })}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={refreshing}
+            className="rounded-md border border-hairline px-3 py-1.5 font-mono text-[11.5px] text-faint transition-colors hover:bg-bone hover:text-ink disabled:opacity-50"
+          >
+            {refreshing ? (zh ? '刷新中…' : 'Refreshing…') : zh ? '↻ 刷新' : '↻ Refresh'}
+          </button>
+        </div>
       </header>
 
       <section className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -449,7 +526,7 @@ function StudentRow({
       >
         <td className="px-6 py-3.5">
           <div className="font-medium">{p.display_name ?? p.email.split('@')[0]}</div>
-          <div className="text-[12px] text-faint">{p.email}</div>
+          <div className="text-[12px] text-faint">{maskEmail(p.email)}</div>
         </td>
         <td className="px-4 py-3.5">
           <div className="flex items-center gap-3">
