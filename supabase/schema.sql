@@ -56,7 +56,8 @@ begin
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data ->> 'display_name', split_part(new.email, '@', 1)),
-    case when new.email in ('admin@example.com', 'admin@example.com', 'admin@example.com') then 'admin' else 'student' end
+    -- 替换为你自己的管理员邮箱(可多个);生产环境建议保持邮箱验证开启
+    case when new.email in ('admin@example.com') then 'admin' else 'student' end
   );
   return new;
 end;

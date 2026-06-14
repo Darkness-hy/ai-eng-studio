@@ -5,12 +5,6 @@
 **The Chinese-first, fully interactive companion to [`ai-engineering-from-scratch`](https://github.com/rohitg00/ai-engineering-from-scratch).**
 Read the lessons, run the Python in your browser, take the quizzes, and ask an AI tutor that *knows the lesson you're on* — 503 lessons across 20 phases, from backprop to agent loops.
 
-[![Live demo](https://img.shields.io/badge/▶_live_demo-darkness--hy.github.io-2F3437?style=flat-square&labelColor=FAFAF5)](https://darkness-hy.github.io/ai-eng-studio/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-1a1a1a?style=flat-square&labelColor=FAFAF5)](LICENSE)
-![React](https://img.shields.io/badge/React_19-_-2F3437?style=flat-square&labelColor=FAFAF5)
-![Vite](https://img.shields.io/badge/Vite-_-2F3437?style=flat-square&labelColor=FAFAF5)
-![No backend](https://img.shields.io/badge/static_SPA-no_backend-2F3437?style=flat-square&labelColor=FAFAF5)
-
 ### → **[Open the live site](https://darkness-hy.github.io/ai-eng-studio/)** ←
 
 ![preview](public/og.png)

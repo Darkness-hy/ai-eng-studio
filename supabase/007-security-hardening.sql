@@ -73,8 +73,7 @@ revoke insert on public.class_members from anon, authenticated;
 -- [需确认] schema.sql 注释要求关闭邮箱验证(免验证注册),而 handle_new_user() 按硬编码邮箱
 --   自动授予 admin。若三个 admin 邮箱中任一尚未被本人注册占用,攻击者可用该邮箱免验证注册
 --   即得 admin。请确认:
---     a) 三个 admin 邮箱(admin@example.com / admin@example.com / admin@example.com)
---        均已被本人注册并锁定;且
+--     a) handle_new_user 白名单里你自己的管理员邮箱均已被本人注册并锁定;且
 --     b) 在 Authentication → Providers → Email 重新开启 "Confirm email",或将 admin 引导
 --        改为手动 update / 独立 admins 表(见下)。
 --
