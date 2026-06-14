@@ -133,7 +133,7 @@ export function ProgressPage() {
       {/* activity heatmap */}
       <section className="mt-10">
         <div className="mb-4 font-mono text-[10.5px] uppercase tracking-[0.16em] text-faint">
-          {lang === 'zh' ? '学习日历 · 近半年' : 'Activity · last 26 weeks'}
+          {lang === 'zh' ? '学习日历 · 近一个月' : 'Activity · last month'}
         </div>
         <Heatmap counts={dailyCompletions(progress)} lang={lang} />
       </section>
