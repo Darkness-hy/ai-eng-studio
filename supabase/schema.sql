@@ -1,6 +1,7 @@
 -- ai-eng-studio cloud sync schema
 -- 在 Supabase Dashboard → SQL Editor 里整段执行一次即可。
--- 另外请在 Authentication → Sign In / Providers → Email 中关闭 "Confirm email"（免验证注册）。
+-- 生产环境请在 Authentication → Providers → Email 保持 "Confirm email" 开启;
+-- 关闭它(免验证注册)虽方便,但配合按邮箱授权 admin 有账号接管风险(见 007-security-hardening.sql)。
 
 -- ── 用户档案 ─────────────────────────────────────────────────────────
 create table if not exists public.profiles (
