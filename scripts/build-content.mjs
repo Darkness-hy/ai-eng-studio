@@ -33,12 +33,11 @@ const MAX_CODE_BYTES = 60_000;
 // faster-whisper/CTranslate2 has no aarch64 CUDA wheels, Flash-Attention 3
 // is Hopper-only, TensorFlow GPU on ARM is container-only, and FP8/Marlin
 // kernels for sm_121 are not reliably packaged yet.
-const EXCLUDED_LESSONS = new Set([
-  '19-capstone-projects/03-realtime-voice-assistant',
-  '19-capstone-projects/07-end-to-end-fine-tuning-pipeline',
-  '19-capstone-projects/12-video-understanding-pipeline',
-  '19-capstone-projects/14-speculative-decoding-server',
-]);
+// Re-included on request: the hardware caveats above only affect *running* the
+// code on DGX Spark; as read-through lessons these capstones are complete
+// (translated + quizzed), and the site only runs whitelisted stdlib/numpy
+// in-browser, so they never executed here anyway.
+const EXCLUDED_LESSONS = new Set([]);
 
 // Phase metadata: zh titles/descriptions plus the dependency DAG from README.md.
 const PHASE_META = {
