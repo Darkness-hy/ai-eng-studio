@@ -14,6 +14,7 @@ import {
   type ChatMessage,
 } from '../lib/tutor';
 import type { CourseIndex } from '../lib/types';
+import { TutorAvatar, type AvatarMode } from './TutorAvatar';
 
 interface Turn {
   role: 'user' | 'assistant';
@@ -80,8 +81,11 @@ export function TutorWidget() {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [inputFocused, setInputFocused] = useState(false);
+  const [justAnswered, setJustAnswered] = useState(false); // transient "happy" pulse after a reply
 
   const abortRef = useRef<AbortController | null>(null);
+  const happyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const fullRef = useRef(''); // all text received from the network so far
   const shownLenRef = useRef(0); // chars currently revealed (typewriter cursor)
@@ -89,8 +93,13 @@ export function TutorWidget() {
   const drainRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pendingRef = useRef<{ q: string; lessonId: string | null } | null>(null);
   const atBottomRef = useRef(true); // is the user pinned to the bottom (stick-to-bottom)?
+  const okRef = useRef(false); // did the last request complete without error/abort?
 
-  useEffect(() => () => { abortRef.current?.abort(); if (drainRef.current) clearInterval(drainRef.current); }, []);
+  useEffect(() => () => {
+    abortRef.current?.abort();
+    if (drainRef.current) clearInterval(drainRef.current);
+    if (happyTimerRef.current) clearTimeout(happyTimerRef.current);
+  }, []);
   useEffect(() => { fetchIndex().then(setIndex).catch(() => {}); }, []);
 
   // Stick to the bottom only while the user is already there — so they can scroll up
@@ -127,6 +136,12 @@ export function TutorWidget() {
           { role: 'assistant', content: full },
         ]);
       }
+      if (okRef.current) {
+        // brief "happy" celebration after a complete answer
+        setJustAnswered(true);
+        if (happyTimerRef.current) clearTimeout(happyTimerRef.current);
+        happyTimerRef.current = setTimeout(() => setJustAnswered(false), 1500);
+      }
     }
     pendingRef.current = null;
     scrollDown();
@@ -161,6 +176,8 @@ export function TutorWidget() {
     pendingRef.current = { q, lessonId: ctx?.lessonId ?? null };
     setStreamShown('');
     setBusy(true);
+    setJustAnswered(false);
+    okRef.current = false;
     atBottomRef.current = true; // a freshly sent question always scrolls into view
     startDrain();
     const ac = new AbortController();
@@ -173,6 +190,7 @@ export function TutorWidget() {
           fullRef.current += delta;
         },
       });
+      okRef.current = true;
       doneRef.current = true; // drain finishes revealing, then commits
     } catch (err) {
       doneRef.current = true;
@@ -213,17 +231,32 @@ export function TutorWidget() {
   const asstBubble =
     'max-w-[90%] rounded-2xl rounded-bl-sm bg-paper px-3.5 py-2 text-[13.5px] leading-relaxed text-ink';
 
+  // Avatar mood derived purely from the widget's live state (no extra source of truth).
+  const mode: AvatarMode = !open
+    ? 'sleeping'
+    : error
+      ? 'confused'
+      : busy && streamShown
+        ? 'talking'
+        : busy
+          ? 'thinking'
+          : justAnswered
+            ? 'happy'
+            : inputFocused || input.trim()
+              ? 'listening'
+              : turns.length === 0
+                ? 'greeting'
+                : 'idle';
+
   if (!open) {
     return (
       <button
         type="button"
         onClick={() => setOpen(true)}
         aria-label={zh ? '打开 AI 辅导' : 'Open AI tutor'}
-        className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-ink text-white shadow-lg transition-transform hover:scale-105"
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-canvas shadow-lg ring-1 ring-hairline transition-transform hover:scale-105"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
+        <TutorAvatar mode="sleeping" size={52} />
       </button>
     );
   }
@@ -231,10 +264,13 @@ export function TutorWidget() {
   return (
     <div className="fixed bottom-6 right-6 z-50 flex h-[540px] w-[min(92vw,400px)] flex-col overflow-hidden rounded-2xl border border-hairline bg-canvas shadow-xl">
       <header className="flex items-center justify-between border-b border-hairline bg-paper px-4 py-3">
-        <div className="min-w-0">
-          <div className="font-serif text-[15px] font-semibold">{zh ? 'AI 辅导' : 'AI Tutor'}</div>
-          <div className="truncate font-mono text-[10.5px] text-faint">
-            {ctx ? `${zh ? '正在讨论' : 'on'} · ${ctx.title}` : zh ? '课程助教' : 'course assistant'}
+        <div className="flex min-w-0 items-center gap-2.5">
+          <TutorAvatar mode={mode} size={38} />
+          <div className="min-w-0">
+            <div className="font-serif text-[15px] font-semibold">{zh ? 'AI 辅导' : 'AI Tutor'}</div>
+            <div className="truncate font-mono text-[10.5px] text-faint">
+              {ctx ? `${zh ? '正在讨论' : 'on'} · ${ctx.title}` : zh ? '课程助教' : 'course assistant'}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -300,6 +336,8 @@ export function TutorWidget() {
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();

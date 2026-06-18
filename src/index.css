@@ -268,3 +268,71 @@ kbd {
   max-width: 100%;
   height: auto;
 }
+
+/* ── AI tutor avatar (state-driven motion) ──────────────────── */
+/* Whole-image transforms only; per-mode facial expression comes from
+   swapping the texture (see TutorAvatar.tsx). Keep motion gentle and on-brand. */
+@keyframes tav-breathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-1.5%) scale(1.025); }
+}
+@keyframes tav-doze {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50%      { transform: translateY(2.5%) rotate(-1.5deg); }
+}
+@keyframes tav-pop {
+  0%   { transform: translateY(8%) scale(0.86); }
+  60%  { transform: translateY(-3%) scale(1.04); }
+  100% { transform: translateY(0) scale(1); }
+}
+@keyframes tav-nod {
+  0%, 100% { transform: rotate(-2deg) translateY(0); }
+  50%      { transform: rotate(2deg) translateY(-2%); }
+}
+@keyframes tav-tilt {
+  0%, 100% { transform: rotate(-5deg) translateY(0); }
+  50%      { transform: rotate(-7deg) translateY(-1.5%); }
+}
+@keyframes tav-bounce {
+  0%   { transform: translateY(0) scale(1); }
+  30%  { transform: translateY(-12%) scale(1.06); }
+  55%  { transform: translateY(0) scale(0.98); }
+  75%  { transform: translateY(-5%) scale(1.02); }
+  100% { transform: translateY(0) scale(1); }
+}
+@keyframes tav-shake {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  20%      { transform: translateX(-4%) rotate(-3deg); }
+  40%      { transform: translateX(3%) rotate(2deg); }
+  60%      { transform: translateX(-2%) rotate(-2deg); }
+  80%      { transform: translateX(2%) rotate(1deg); }
+}
+@keyframes tav-zzz {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.7); }
+  30%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(60%, -120%) scale(1.1); }
+}
+@keyframes tav-particle {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.4); }
+  25%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--px, 0), -160%) scale(1); }
+}
+@keyframes tav-ring {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50%      { opacity: 0.9; transform: scale(1.05); }
+}
+
+.tav-img { transform-origin: 50% 85%; will-change: transform; }
+.tav-sleeping  { animation: tav-doze 4.2s ease-in-out infinite; }
+.tav-idle      { animation: tav-breathe 4.5s ease-in-out infinite; }
+.tav-greeting  { animation: tav-pop 700ms var(--ease-out-quiet) both, tav-breathe 4.5s ease-in-out 700ms infinite; }
+.tav-listening { animation: tav-breathe 3s ease-in-out infinite; }
+.tav-thinking  { animation: tav-tilt 2.4s ease-in-out infinite; }
+.tav-talking   { animation: tav-nod 620ms ease-in-out infinite; }
+.tav-happy     { animation: tav-bounce 900ms var(--ease-out-quiet) both; }
+.tav-confused  { animation: tav-shake 700ms ease-in-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tav-sleeping, .tav-idle, .tav-greeting, .tav-listening,
+  .tav-thinking, .tav-talking, .tav-happy, .tav-confused { animation: none; }
+}

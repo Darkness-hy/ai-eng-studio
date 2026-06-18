@@ -32,8 +32,6 @@ export function ClassesPage() {
   }
   if (loading || !profile) return <Notice text={zh ? '加载中…' : 'Loading…'} />;
 
-  const isAdmin = profile.role === 'admin';
-
   const create = async (e: FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
@@ -78,35 +76,29 @@ export function ClassesPage() {
     <div className="mx-auto max-w-3xl px-5 py-14">
       <h1 className="font-serif text-[38px] font-semibold tracking-tight">{zh ? '班级' : 'Classes'}</h1>
       <p className="mt-2 text-[14px] text-faint">
-        {isAdmin
-          ? zh
-            ? '创建班级,把邀请码发给学生;学生加入后,在班级详情页查看全班学习进度与答题情况。'
-            : 'Create a class, share its invite code, and track the whole class on the class page.'
-          : zh
-            ? '用老师给你的邀请码加入班级。'
-            : 'Join a class with the invite code your teacher gives you.'}
+        {zh
+          ? '创建你自己的班级,把邀请码发给同学;或用别人给你的邀请码加入班级。在班级详情页查看全班学习进度与答题情况。'
+          : 'Create your own class and share its invite code, or join one with a code. Track the whole class on the class page.'}
       </p>
 
-      <div className={`mt-8 grid gap-3 ${isAdmin ? 'sm:grid-cols-2' : ''}`}>
-        {isAdmin && (
-          <form onSubmit={create} className="rounded-lg border border-hairline bg-paper p-5">
-            <div className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-faint">
-              {zh ? '创建班级' : 'Create a class'}
-            </div>
-            <div className="mt-3 flex gap-2">
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={zh ? '班级名称' : 'Class name'}
-                className={`${field} flex-1`}
-                maxLength={40}
-              />
-              <button type="submit" disabled={busy} className="rounded-md bg-ink px-4 text-[13px] text-white hover:bg-ink/85 disabled:opacity-50">
-                {zh ? '创建' : 'Create'}
-              </button>
-            </div>
-          </form>
-        )}
+      <div className="mt-8 grid gap-3 sm:grid-cols-2">
+        <form onSubmit={create} className="rounded-lg border border-hairline bg-paper p-5">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-faint">
+            {zh ? '创建班级' : 'Create a class'}
+          </div>
+          <div className="mt-3 flex gap-2">
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={zh ? '班级名称' : 'Class name'}
+              className={`${field} flex-1`}
+              maxLength={40}
+            />
+            <button type="submit" disabled={busy} className="rounded-md bg-ink px-4 text-[13px] text-white hover:bg-ink/85 disabled:opacity-50">
+              {zh ? '创建' : 'Create'}
+            </button>
+          </div>
+        </form>
         <form onSubmit={join} className="rounded-lg border border-hairline bg-paper p-5">
           <div className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-faint">
             {zh ? '加入班级' : 'Join a class'}

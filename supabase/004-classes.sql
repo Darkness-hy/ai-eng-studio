@@ -59,10 +59,11 @@ drop policy if exists classes_select on public.classes;
 create policy classes_select on public.classes for select
   using (owner_id = auth.uid() or public.is_member_of(id) or public.is_admin());
 
--- Only admins (teachers) may create classes.
+-- Any authenticated user may create their own class (they become its owner/teacher).
+-- (For DBs that already ran the admin-only version, see 008-open-class-creation.sql.)
 drop policy if exists classes_insert on public.classes;
 create policy classes_insert on public.classes for insert
-  with check (owner_id = auth.uid() and public.is_admin());
+  with check (owner_id = auth.uid());
 
 drop policy if exists classes_delete on public.classes;
 create policy classes_delete on public.classes for delete using (owner_id = auth.uid());
