@@ -165,7 +165,8 @@ function buildMetrics(data: AdminData): Metrics {
         placement: placementByUser.get(p.id) ?? null,
       };
     });
-  students.sort((a, b) => b.doneCount - a.doneCount);
+  // 学生明细按注册时间降序(最新注册在前)。
+  students.sort((a, b) => b.profile.created_at.localeCompare(a.profile.created_at));
 
   // Class-wide per-question correct rate: among students who attempted each
   // question (i.e. answered it), the share who got it right.
