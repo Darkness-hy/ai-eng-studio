@@ -242,7 +242,7 @@ export function TutorWidget() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label={zh ? '打开 AI 辅导' : 'Open AI tutor'}
+        aria-label={zh ? '打开茜茜' : 'Open Cici'}
         className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-canvas shadow-lg ring-1 ring-hairline transition-transform hover:scale-105"
       >
         <TutorAvatar mode="sleeping" size={52} />
@@ -256,9 +256,9 @@ export function TutorWidget() {
         <div className="flex min-w-0 items-center gap-2.5">
           <TutorAvatar mode={mode} size={38} />
           <div className="min-w-0">
-            <div className="font-serif text-[15px] font-semibold">{zh ? 'AI 辅导' : 'AI Tutor'}</div>
+            <div className="font-serif text-[15px] font-semibold">{zh ? '茜茜' : 'Cici'}</div>
             <div className="truncate font-mono text-[10.5px] text-faint">
-              {ctx ? `${zh ? '正在讨论' : 'on'} · ${ctx.title}` : zh ? '课程助教' : 'course assistant'}
+              {ctx ? `${zh ? '正在讨论' : 'on'} · ${ctx.title}` : zh ? '你的 AI 学习助教' : 'your AI study tutor'}
             </div>
           </div>
         </div>
@@ -288,8 +288,8 @@ export function TutorWidget() {
           <div className="space-y-2">
             <p className="text-[13px] leading-relaxed text-faint">
               {zh
-                ? '我是这门课的助教,可以解释概念、举例、帮你规划学习。试试:'
-                : "I'm the course assistant — I can explain concepts, give examples, and plan your study. Try:"}
+                ? '我是茜茜呀~这门课有什么不懂的都可以问我:讲概念、举例子、帮你规划学习都行。试试看:'
+                : "Hi, I'm Cici! Ask me anything about this course — concepts, examples, or planning your study. Try:"}
             </p>
             {suggestions.map((s) => (
               <button
