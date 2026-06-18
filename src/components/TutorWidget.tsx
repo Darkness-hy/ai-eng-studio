@@ -56,17 +56,6 @@ function ChatMarkdown({ text }: { text: string }) {
   );
 }
 
-/** Three softly pulsing dots — shows the tutor is thinking before the first token. */
-function ThinkingDots() {
-  return (
-    <span className="inline-flex items-center gap-1 py-1" aria-label="thinking">
-      <span className="h-1.5 w-1.5 rounded-full bg-faint animate-pulse" style={{ animationDuration: '1.1s' }} />
-      <span className="h-1.5 w-1.5 rounded-full bg-faint animate-pulse" style={{ animationDuration: '1.1s', animationDelay: '0.18s' }} />
-      <span className="h-1.5 w-1.5 rounded-full bg-faint animate-pulse" style={{ animationDuration: '1.1s', animationDelay: '0.36s' }} />
-    </span>
-  );
-}
-
 export function TutorWidget() {
   const { lang } = useLang();
   const zh = lang === 'zh';
@@ -324,7 +313,7 @@ export function TutorWidget() {
         {busy && (
           <div className="flex justify-start">
             <div className={asstBubble}>
-              {streamShown ? <ChatMarkdown text={streamShown} /> : <ThinkingDots />}
+              {streamShown ? <ChatMarkdown text={streamShown} /> : <span className="text-faint">…</span>}
             </div>
           </div>
         )}
