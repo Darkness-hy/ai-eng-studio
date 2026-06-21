@@ -272,14 +272,12 @@ kbd {
 /* ── inline lesson math (pseudo-LaTeX in code spans → sup/sub) ── */
 .lesson-math {
   font-family: var(--font-serif);
-  font-style: italic;
   white-space: normal;
 }
 .lesson-math sup,
 .lesson-math sub {
   font-size: 0.72em;
   line-height: 0;
-  font-style: normal;
 }
 /* display formula block: keep monospace alignment, drop the code-block chrome */
 .lesson-math-block {
