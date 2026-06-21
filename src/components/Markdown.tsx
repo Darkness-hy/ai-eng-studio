@@ -16,6 +16,30 @@ function flatten(node: ReactNode): string {
   return '';
 }
 
+// Lessons write math as inline `code` with ASCII/Unicode pseudo-notation
+// (e.g. `V^π(s) = (1/N) Σ_i G^{(i)}(s)`, `V_{n-1}(s)`), not LaTeX. Detect such
+// spans conservatively — real code like `max_steps` / `env.reset()` / `O(T)` is
+// left untouched — and render ^ / _ as proper super/sub-scripts in the prose font.
+const MATH_SYM = /[ΣπγαβθλμνρσφψωΔΩ∞≈≤≥≠∇∑√×∈∂±∝→·]/;
+function isMathCode(t: string): boolean {
+  return t.includes('^') || /_\{/.test(t) || MATH_SYM.test(t) || (t.includes('=') && t.includes('_'));
+}
+function renderMath(text: string): ReactNode[] {
+  const out: ReactNode[] = [];
+  const re = /([_^])(\{[^}]*\}|[^\s])/g;
+  let last = 0;
+  let key = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) out.push(text.slice(last, m.index));
+    const inner = m[2].startsWith('{') ? m[2].slice(1, -1) : m[2];
+    out.push(m[1] === '^' ? <sup key={key++}>{inner}</sup> : <sub key={key++}>{inner}</sub>);
+    last = re.lastIndex;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
+
 export function Markdown({ content }: { content: string }) {
   // Heading ids must match extractToc(): same slugify + same duplicate suffixing.
   // Render-local map: ReactMarkdown invokes the component overrides within this
@@ -65,7 +89,7 @@ export function Markdown({ content }: { content: string }) {
             const lang = /language-(\w+)/.exec(className ?? '')?.[1];
             const isBlock = lang != null || text.includes('\n');
             if (lang === 'figure') return <LessonFigure name={text.trim()} />;
-            if (!isBlock) return <code>{text}</code>;
+            if (!isBlock) return isMathCode(text) ? <span className="lesson-math">{renderMath(text)}</span> : <code>{text}</code>;
             if (lang === 'mermaid') return <MermaidDiagram chart={text} />;
             return <CodeBlock code={text} lang={lang ?? 'text'} />;
           },
