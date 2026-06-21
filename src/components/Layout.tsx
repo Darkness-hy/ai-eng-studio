@@ -16,6 +16,7 @@ function ScrollToTop() {
 }
 
 export function Layout() {
+  const { pathname } = useLocation();
   const { lang, setLang, t } = useLang();
   const { enabled: authEnabled, profile, signOut } = useAuth();
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -125,7 +126,8 @@ export function Layout() {
         <Outlet />
       </main>
 
-      {tutorEnabled && <TutorWidget />}
+      {/* Hide the AI tutor on the placement quiz so it can't be used to answer it. */}
+      {tutorEnabled && pathname !== '/find-your-level' && <TutorWidget />}
 
       <footer className="mt-24 border-t border-hairline">
         <div className="bg-bone/40">
