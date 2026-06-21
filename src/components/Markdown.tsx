@@ -44,6 +44,21 @@ export function Markdown({ content }: { content: string }) {
               {children}
             </a>
           ),
+          img: ({ src, alt }) => {
+            const s = String(src ?? '');
+            // Upstream lessons reference ../assets/*.svg figures that don't exist in
+            // this build (no source file, no interactive equivalent). Degrade to a
+            // caption from the alt text instead of showing a broken-image icon.
+            const missing = !s || s.startsWith('../assets/') || /\/\.\.\/assets\//.test(s);
+            if (missing) {
+              return alt ? (
+                <figure className="my-6 rounded-lg border border-hairline bg-bone px-4 py-3">
+                  <figcaption className="font-mono text-[12px] leading-relaxed text-faint">{alt}</figcaption>
+                </figure>
+              ) : null;
+            }
+            return <img src={s} alt={alt ?? ''} loading="lazy" className="mx-auto my-6 max-w-full rounded-lg" />;
+          },
           pre: ({ children }) => <>{children}</>,
           code: ({ className, children }) => {
             const text = flatten(children).replace(/\n$/, '');
