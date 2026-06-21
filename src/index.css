@@ -281,6 +281,25 @@ kbd {
   line-height: 0;
   font-style: normal;
 }
+/* display formula block: keep monospace alignment, drop the code-block chrome */
+.lesson-math-block {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 2.1;
+  white-space: pre;
+  overflow-x: auto;
+  margin: 1.25rem 0;
+  padding: 14px 18px;
+  background: var(--color-bone);
+  border: 1px solid var(--color-hairline);
+  border-radius: 8px;
+  color: var(--color-ink);
+}
+.lesson-math-block sup,
+.lesson-math-block sub {
+  font-size: 0.72em;
+  line-height: 0;
+}
 
 /* ── AI tutor avatar (state-driven motion) ──────────────────── */
 /* Whole-image transforms only; per-mode facial expression comes from

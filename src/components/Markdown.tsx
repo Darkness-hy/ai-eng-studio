@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Children, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { slugify } from '../lib/md';
@@ -24,9 +24,11 @@ const MATH_SYM = /[ΣπγαβθλμνρσφψωΔΩ∞≈≤≥≠∇∑√×∈
 function isMathCode(t: string): boolean {
   return t.includes('^') || /_\{/.test(t) || MATH_SYM.test(t) || (t.includes('=') && t.includes('_'));
 }
-function renderMath(text: string): ReactNode[] {
+function renderMath(text: string, bracedOnly = false): ReactNode[] {
   const out: ReactNode[] = [];
-  const re = /([_^])(\{[^}]*\}|[^\s])/g;
+  // bracedOnly (for prose) only lifts X^{..}/X_{..}; full mode also lifts single
+  // chars (X^2, V_n) — safe inside spans/blocks already known to be math.
+  const re = bracedOnly ? /([_^])(\{[^}]*\})/g : /([_^])(\{[^}]*\}|[^\s])/g;
   let last = 0;
   let key = 0;
   let m: RegExpExecArray | null;
@@ -38,6 +40,44 @@ function renderMath(text: string): ReactNode[] {
   }
   if (last < text.length) out.push(text.slice(last));
   return out;
+}
+
+// An unlabeled ``` fence whose content is a display formula (not real code or
+// ASCII art). Conservative: bail on code syntax, require an '=' plus a math cue.
+function isMathBlock(text: string): boolean {
+  // shell prompts, URLs, paths, CLI flags, arrows, box-drawing → not a formula
+  if (/(^|\n)\s*\$\s/.test(text)) return false;
+  if (/https?:\/\/|www\.|curl |wget |\.sh\b|\.py\b|\.json\b|\.ya?ml\b|\s--[a-zA-Z]|->|[│├└─┌┐┘┬┴┼╮╯╰╭]/.test(text)) return false;
+  // code syntax
+  if (/;|=>|\bdef\b|\bimport\b|\breturn\b|\bprint\s*\(|\bfunction\b|\bconst\b|\blet\b|\bvar\b|#include|<\/|::/.test(text)) {
+    return false;
+  }
+  if (!text.includes('=')) return false;
+  // require a real math cue (not just a bare underscore, which is common in code)
+  return /\^|_\{|\|\|[^|]|\bsqrt\(|\bsum\(|[ΣπγαβλμθρσφψωΔΩ∞≈≤≥≠∇∑√×∈∂±]/.test(text);
+}
+
+// Display math block: monospace `<pre>` (keeps multi-line alignment) with ^/_
+// raised/lowered, minus the code-block chrome.
+function MathBlock({ text }: { text: string }) {
+  const lines = text.split('\n');
+  return (
+    <pre className="lesson-math-block">
+      {lines.map((ln, i) => (
+        <span key={i}>
+          {renderMath(ln)}
+          {i < lines.length - 1 ? '\n' : ''}
+        </span>
+      ))}
+    </pre>
+  );
+}
+
+// Lift braced sub/superscripts that appear in plain prose (rare: x_{t-1}, s_{i+1}).
+function mathifyProse(children: ReactNode): ReactNode {
+  return Children.map(children, (c) =>
+    typeof c === 'string' && /[_^]\{/.test(c) ? <>{renderMath(c, true)}</> : c,
+  );
 }
 
 export function Markdown({ content }: { content: string }) {
@@ -68,6 +108,8 @@ export function Markdown({ content }: { content: string }) {
               {children}
             </a>
           ),
+          p: ({ children }) => <p>{mathifyProse(children)}</p>,
+          li: ({ children }) => <li>{mathifyProse(children)}</li>,
           img: ({ src, alt }) => {
             const s = String(src ?? '');
             // Upstream lessons reference ../assets/*.svg figures that don't exist in
@@ -91,6 +133,7 @@ export function Markdown({ content }: { content: string }) {
             if (lang === 'figure') return <LessonFigure name={text.trim()} />;
             if (!isBlock) return isMathCode(text) ? <span className="lesson-math">{renderMath(text)}</span> : <code>{text}</code>;
             if (lang === 'mermaid') return <MermaidDiagram chart={text} />;
+            if (lang == null && isMathBlock(text)) return <MathBlock text={text} />;
             return <CodeBlock code={text} lang={lang ?? 'text'} />;
           },
         }}
