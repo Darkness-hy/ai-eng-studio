@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type MermaidApi = typeof import('mermaid').default;
 
@@ -29,11 +29,34 @@ function getMermaid(): Promise<MermaidApi> {
 }
 
 export function MermaidDiagram({ chart }: { chart: string }) {
+  const hostRef = useRef<HTMLDivElement>(null);
   const [result, setResult] = useState<{ key: string; svg?: string; failed?: boolean } | null>(null);
-  const svg = result && result.key === chart ? result.svg : undefined;
-  const failed = result != null && result.key === chart && result.failed === true;
+  // Render only once the diagram is near the viewport. With several diagrams on a
+  // page, rendering them all on mount makes each one resize from the placeholder to
+  // its (often much taller) natural height at different times — content above the
+  // viewport grows late and the page scroll jumps. Deferring keeps the growth at or
+  // below the fold (diagrams you've already scrolled past are settled).
+  const [near, setNear] = useState(() => typeof IntersectionObserver === 'undefined');
 
   useEffect(() => {
+    if (near) return;
+    const el = hostRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setNear(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: '0px 0px 800px 0px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [near]);
+
+  useEffect(() => {
+    if (!near) return;
     let live = true;
     getMermaid()
       .then((mermaid) => mermaid.render(`aes-mmd-${++renderSeq}`, chart))
@@ -46,22 +69,27 @@ export function MermaidDiagram({ chart }: { chart: string }) {
     return () => {
       live = false;
     };
-  }, [chart]);
+  }, [chart, near]);
 
-  if (failed) {
-    return (
-      <pre className="overflow-x-auto rounded-lg border border-hairline bg-bone p-4 font-mono text-xs text-faint">
-        {chart}
-      </pre>
-    );
-  }
-  if (!svg) {
-    return <div className="my-6 h-40 animate-pulse rounded-lg border border-hairline bg-bone" />;
-  }
+  const svg = result && result.key === chart ? result.svg : undefined;
+  const failed = result != null && result.key === chart && result.failed === true;
+
+  // The outer host element is stable across loading → rendered so the browser keeps
+  // its scroll anchor; only the inner content swaps.
   return (
-    <div
-      className="mermaid-box my-6 overflow-x-auto rounded-lg border border-hairline bg-paper p-5"
-      dangerouslySetInnerHTML={{ __html: svg }}
-    />
+    <div ref={hostRef} className="my-6">
+      {failed ? (
+        <pre className="overflow-x-auto rounded-lg border border-hairline bg-bone p-4 font-mono text-xs text-faint">
+          {chart}
+        </pre>
+      ) : svg ? (
+        <div
+          className="mermaid-box overflow-x-auto rounded-lg border border-hairline bg-paper p-5"
+          dangerouslySetInnerHTML={{ __html: svg }}
+        />
+      ) : (
+        <div className="h-40 animate-pulse rounded-lg border border-hairline bg-bone" />
+      )}
+    </div>
   );
 }
