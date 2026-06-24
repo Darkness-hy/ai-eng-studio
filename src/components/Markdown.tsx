@@ -117,10 +117,12 @@ export function Markdown({ content }: { content: string }) {
             // caption from the alt text instead of showing a broken-image icon.
             const missing = !s || s.startsWith('../assets/') || /\/\.\.\/assets\//.test(s);
             if (missing) {
+              // markdown images sit inside a <p>, so use a phrasing element
+              // (block-styled <span>) — a <figure>/<div> here is invalid nesting.
               return alt ? (
-                <figure className="my-6 rounded-lg border border-hairline bg-bone px-4 py-3">
-                  <figcaption className="font-mono text-[12px] leading-relaxed text-faint">{alt}</figcaption>
-                </figure>
+                <span className="my-4 block rounded-lg border border-hairline bg-bone px-4 py-3 font-mono text-[12px] leading-relaxed text-faint">
+                  {alt}
+                </span>
               ) : null;
             }
             return <img src={s} alt={alt ?? ''} loading="lazy" className="mx-auto my-6 max-w-full rounded-lg" />;
