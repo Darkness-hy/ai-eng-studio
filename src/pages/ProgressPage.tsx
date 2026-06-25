@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { BadgeWall } from '../components/BadgeWall';
 import { Heatmap } from '../components/Heatmap';
 import { computeBadges, dailyCompletions } from '../lib/achievements';
+import { SparkAccountPanel } from '../components/SparkAccountPanel';
 import { useAuth } from '../lib/auth';
 import { generateCertificate, generateShareCard, downloadBlob } from '../lib/certificate';
 import { fetchIndex } from '../lib/data';
@@ -129,6 +130,11 @@ export function ProgressPage() {
           />
         </div>
       </header>
+
+      {/* capstone Spark account (self-gates: renders nothing unless signed in) */}
+      <div className="mt-8">
+        <SparkAccountPanel />
+      </div>
 
       {/* activity heatmap */}
       <section className="mt-10">

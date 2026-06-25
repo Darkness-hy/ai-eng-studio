@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { SparkApprovals } from '../components/SparkApprovals';
 import { BarChart } from '../components/charts/BarChart';
 import { Histogram } from '../components/charts/Histogram';
 import { LineChart } from '../components/charts/LineChart';
@@ -469,6 +470,8 @@ function AdminDashboard({
           </table>
         </div>
       </section>
+
+      <SparkApprovals />
     </div>
   );
 }

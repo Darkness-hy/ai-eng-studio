@@ -1,0 +1,17 @@
+[Unit]
+Description=ai-eng-studio Spark capstone account provisioner
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sparkagent
+WorkingDirectory=/opt/spark-agent
+EnvironmentFile=/opt/spark-agent/.env
+ExecStart=/usr/bin/python3 /opt/spark-agent/agent.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=false
+
+[Install]
+WantedBy=multi-user.target
