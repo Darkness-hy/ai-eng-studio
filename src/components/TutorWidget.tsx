@@ -15,7 +15,7 @@ import {
 } from '../lib/tutor';
 import type { CourseIndex } from '../lib/types';
 import { TutorAvatar, type AvatarMode } from './TutorAvatar';
-import { requestSparkAccount } from '../lib/sparkAccount';
+import { getMySparkAccount, requestSparkAccount, type SparkAccountRow } from '../lib/sparkAccount';
 
 /** The tutor emits [[spark-apply:<pinyin>]] once it has the learner's pinyin name. */
 const SPARK_MARKER = /\[\[spark-apply:([a-z][a-z0-9]{1,31})\]\]/i;
@@ -25,6 +25,22 @@ const stripSparkMarker = (t: string) =>
     .replace(/\[\[spark-apply:[^\]]*$/i, '') // incomplete trailing marker while streaming
     .replace(/\n{3,}/g, '\n\n')
     .trimEnd();
+
+const VPN_URL = 'https://itsc.nju.edu.cn/21601/listm.htm';
+
+/** Once the Spark agent has provisioned (or failed), build the tutor's follow-up
+ *  message. The temp password is read here from the authed session, never by the LLM. */
+function sparkResultMessage(r: SparkAccountRow, zh: boolean): string {
+  if (r.status === 'ready') {
+    const ssh = `ssh -p ${r.ssh_port ?? 22} ${r.ssh_username}@${r.host}`;
+    return zh
+      ? `你的 Spark 账户已开通啦 🎉 登录方式:\n\n1. 先登录**南大 VPN**:${VPN_URL}\n2. 再 SSH 登录:\`${ssh}\`\n3. 临时密码:\`${r.temp_password}\`\n\n首次登录会要求立即改密码,这串临时密码请妥善保管、勿外传~`
+      : `Your Spark account is ready 🎉\n\n1. Sign in to the **NJU VPN**: ${VPN_URL}\n2. SSH in: \`${ssh}\`\n3. Temp password: \`${r.temp_password}\`\n\nYou'll be asked to change it on first login — keep it private.`;
+  }
+  return zh
+    ? `账户开通失败:${r.error || '请联系管理员'}。你可以在「学习进度」页撤回并重试。`
+    : `Provisioning failed: ${r.error || 'please contact an admin'}. You can withdraw & retry on the Progress page.`;
+}
 
 interface Turn {
   role: 'user' | 'assistant';
@@ -93,11 +109,13 @@ export function TutorWidget() {
   const pendingRef = useRef<{ q: string; lessonId: string | null } | null>(null);
   const atBottomRef = useRef(true); // is the user pinned to the bottom (stick-to-bottom)?
   const okRef = useRef(false); // did the last request complete without error/abort?
+  const sparkPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => () => {
     abortRef.current?.abort();
     if (drainRef.current) clearInterval(drainRef.current);
     if (happyTimerRef.current) clearTimeout(happyTimerRef.current);
+    if (sparkPollRef.current) clearInterval(sparkPollRef.current);
   }, []);
   useEffect(() => { fetchIndex().then(setIndex).catch(() => {}); }, []);
 
@@ -120,6 +138,33 @@ export function TutorWidget() {
     }
   };
 
+  // After a spark request is created, poll until the agent provisions (or fails)
+  // and post the result — including the temp password (read here, not by the LLM).
+  const watchSpark = (userId: string) => {
+    if (sparkPollRef.current) clearInterval(sparkPollRef.current);
+    let tries = 0;
+    sparkPollRef.current = setInterval(() => {
+      tries += 1;
+      getMySparkAccount(userId)
+        .then((r) => {
+          if (!r) return;
+          if (r.status === 'ready' || r.status === 'failed') {
+            if (sparkPollRef.current) {
+              clearInterval(sparkPollRef.current);
+              sparkPollRef.current = null;
+            }
+            setTurns((prev) => [...prev, { role: 'assistant', content: sparkResultMessage(r, zh) }]);
+            scrollDown();
+          }
+        })
+        .catch(() => {});
+      if (tries > 40 && sparkPollRef.current) {
+        clearInterval(sparkPollRef.current);
+        sparkPollRef.current = null;
+      }
+    }, 6000);
+  };
+
   // Move the finished in-flight message into the committed list + persist it.
   const commit = () => {
     const full = fullRef.current;
@@ -132,7 +177,12 @@ export function TutorWidget() {
       // privileged write happens here (authed session); the agent gates on class
       // membership. Strip the marker before showing/persisting the message.
       const m = full.match(SPARK_MARKER);
-      if (m && profile) void requestSparkAccount(profile.id, m[1]).catch(() => {});
+      if (m && profile) {
+        const learner = profile.id;
+        void requestSparkAccount(learner, m[1])
+          .catch(() => {})
+          .finally(() => watchSpark(learner));
+      }
       const shown = stripSparkMarker(full);
       setTurns((prev) => [...prev, { role: 'assistant', content: shown }]);
       const p = pendingRef.current;
