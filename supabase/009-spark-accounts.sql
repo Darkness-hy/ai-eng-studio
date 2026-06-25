@@ -20,6 +20,8 @@ create table if not exists public.spark_accounts (
   password_seen  boolean not null default false,
   host           text,        -- SSH 主机/IP,如 114.212.174.38
   ssh_port       integer,     -- SSH 端口,如 10148
+  requested_username text     -- 学员自报的小写全拼用户名(如 dinghongyu);agent 用它做账户名
+                   check (requested_username is null or requested_username ~ '^[a-z][a-z0-9]{1,31}$'),
   note           text,        -- 学员可选备注
   error          text,        -- 开户失败原因(给学员看的通用文案,细节落 agent 日志)
   requested_at   timestamptz not null default now(),

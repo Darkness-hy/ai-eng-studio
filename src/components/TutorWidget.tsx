@@ -17,8 +17,14 @@ import type { CourseIndex } from '../lib/types';
 import { TutorAvatar, type AvatarMode } from './TutorAvatar';
 import { requestSparkAccount } from '../lib/sparkAccount';
 
-/** "申请spark账号" and similar variants → trigger a capstone account request. */
-const SPARK_INTENT = /spark.{0,4}(账号|账户|帐号|account)|(申请|开通|要个?).{0,6}spark/i;
+/** The tutor emits [[spark-apply:<pinyin>]] once it has the learner's pinyin name. */
+const SPARK_MARKER = /\[\[spark-apply:([a-z][a-z0-9]{1,31})\]\]/i;
+const stripSparkMarker = (t: string) =>
+  t
+    .replace(/\[\[spark-apply:[^\]]*\]\]/gi, '')
+    .replace(/\[\[spark-apply:[^\]]*$/i, '') // incomplete trailing marker while streaming
+    .replace(/\n{3,}/g, '\n\n')
+    .trimEnd();
 
 interface Turn {
   role: 'user' | 'assistant';
@@ -121,12 +127,19 @@ export function TutorWidget() {
     setStreamShown('');
     setBusy(false);
     if (full) {
-      setTurns((prev) => [...prev, { role: 'assistant', content: full }]);
+      // The tutor signals a capstone-account request with a hidden marker
+      // [[spark-apply:<pinyin>]] once it has collected the learner's name. The
+      // privileged write happens here (authed session); the agent gates on class
+      // membership. Strip the marker before showing/persisting the message.
+      const m = full.match(SPARK_MARKER);
+      if (m && profile) void requestSparkAccount(profile.id, m[1]).catch(() => {});
+      const shown = stripSparkMarker(full);
+      setTurns((prev) => [...prev, { role: 'assistant', content: shown }]);
       const p = pendingRef.current;
       if (profile && p) {
         void saveTutorMessages(profile.id, p.lessonId, [
           { role: 'user', content: p.q },
-          { role: 'assistant', content: full },
+          { role: 'assistant', content: shown },
         ]);
       }
       if (okRef.current) {
@@ -159,13 +172,6 @@ export function TutorWidget() {
   const send = async (text: string) => {
     const q = text.trim();
     if (!q || busy) return;
-    // Conversational trigger for the capstone Spark account. The privileged write
-    // is done here by the authenticated session (never by the LLM); the Spark
-    // agent gates on Spark-class membership. The tutor's reply (guided by its
-    // system prompt) explains where to see the credentials.
-    if (profile && SPARK_INTENT.test(q)) {
-      void requestSparkAccount(profile.id).catch(() => {});
-    }
     setError(null);
     setInput('');
     const history: ChatMessage[] = turns.map((t) => ({ role: t.role, content: t.content }));
@@ -324,7 +330,7 @@ export function TutorWidget() {
         {busy && (
           <div className="flex justify-start">
             <div className={asstBubble}>
-              {streamShown ? <ChatMarkdown text={streamShown} /> : <span className="text-faint">…</span>}
+              {streamShown ? <ChatMarkdown text={stripSparkMarker(streamShown)} /> : <span className="text-faint">…</span>}
             </div>
           </div>
         )}

@@ -101,10 +101,19 @@ def existing_usernames():
     return {r["ssh_username"] for r in rows if r.get("ssh_username")}
 
 
-def provision_one(user_id):
+def provision_one(user_id, requested=None):
     taken = existing_usernames()
-    p = profile(user_id)
-    base = sanitize_username(p.get("email"), p.get("display_name"))
+    # Prefer the learner-supplied pinyin name (e.g. dinghongyu) if it's a valid
+    # username; otherwise fall back to an email-derived one. Never trust it raw —
+    # re-sanitize and re-validate here (the LLM/student only relayed a string).
+    base = None
+    if requested:
+        cand = re.sub(r"[^a-z0-9]", "", str(requested).lower())[:30]
+        if USERNAME_RE.match(cand):
+            base = cand
+    if not base:
+        p = profile(user_id)
+        base = sanitize_username(p.get("email"), p.get("display_name"))
     # ensure uniqueness across the queue; provision.sh also refuses OS-existing names
     username = base
     for i in range(20):
@@ -121,7 +130,7 @@ def provision_one(user_id):
 
 
 def tick():
-    pending = _req("GET", "spark_accounts", "?status=eq.requested&select=user_id") or []
+    pending = _req("GET", "spark_accounts", "?status=eq.requested&select=user_id,requested_username") or []
     for row in pending:
         uid = row["user_id"]
         if not is_spark_member(uid):
@@ -131,7 +140,7 @@ def tick():
         if not claim(uid):
             continue  # another agent took it
         try:
-            username, password = provision_one(uid)
+            username, password = provision_one(uid, row.get("requested_username"))
             finalize(uid, {
                 "status": "ready",
                 "ssh_username": username,

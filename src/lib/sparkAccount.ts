@@ -9,6 +9,7 @@ export interface SparkAccountRow {
   temp_password: string | null;
   host: string | null;
   ssh_port: number | null;
+  requested_username: string | null;
   note: string | null;
   error: string | null;
   requested_at: string;
@@ -28,11 +29,17 @@ export async function getMySparkAccount(userId: string): Promise<SparkAccountRow
   return (data as SparkAccountRow) ?? null;
 }
 
-export async function requestSparkAccount(userId: string, note?: string): Promise<SparkAccountRow> {
+/** Normalize a learner-supplied pinyin name into a safe linux username, or null. */
+export function normalizeUsername(raw?: string): string | null {
+  const u = (raw ?? '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 32);
+  return /^[a-z][a-z0-9]{1,31}$/.test(u) ? u : null;
+}
+
+export async function requestSparkAccount(userId: string, username?: string): Promise<SparkAccountRow> {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('spark_accounts')
-    .insert({ user_id: userId, note: note?.trim() || null })
+    .insert({ user_id: userId, requested_username: normalizeUsername(username) })
     .select()
     .single();
   if (error) throw error;

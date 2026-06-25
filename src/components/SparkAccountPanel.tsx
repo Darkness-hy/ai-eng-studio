@@ -4,6 +4,7 @@ import { useLang } from '../lib/i18n';
 import {
   cancelSparkRequest,
   getMySparkAccount,
+  normalizeUsername,
   requestSparkAccount,
   type SparkAccountRow,
 } from '../lib/sparkAccount';
@@ -18,7 +19,7 @@ export function SparkAccountPanel() {
   const [row, setRow] = useState<SparkAccountRow | null | undefined>(undefined); // undefined = loading
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [note, setNote] = useState('');
+  const [username, setUsername] = useState('');
   const [copied, setCopied] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -51,7 +52,7 @@ export function SparkAccountPanel() {
     if (!uid) return;
     setBusy(true);
     setError(null);
-    requestSparkAccount(uid, note)
+    requestSparkAccount(uid, username)
       .then(setRow)
       .catch((e) => setError(e instanceof Error ? e.message : String(e)))
       .finally(() => setBusy(false));
@@ -93,17 +94,20 @@ export function SparkAccountPanel() {
               ? '毕业设计在校园网内的 Spark 机器上进行。请先加入「Spark 使用班级」,然后在下方申请(或直接对 AI 助教说「申请spark账号」),系统会自动为你开通 Linux 账户,凭据显示在这里。'
               : 'The capstone runs on the campus Spark machine. First join the Spark class, then request below (or just tell the AI tutor “申请spark账号”). A Linux account is provisioned automatically and the credentials appear here.'}
           </p>
+          <label className="block text-[12px] text-faint">
+            {zh ? '账户名 = 你名字的小写全拼' : 'Username = your name in lowercase pinyin'}
+          </label>
           <input
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder={zh ? '备注(可选,如学号/班级)' : 'Note (optional)'}
-            maxLength={120}
-            className="w-full rounded-md border border-hairline bg-canvas px-3 py-2 text-[13.5px] outline-none placeholder:text-faint focus:border-faint"
+            value={username}
+            onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
+            placeholder={zh ? '如 dinghongyu' : 'e.g. dinghongyu'}
+            maxLength={32}
+            className="w-full rounded-md border border-hairline bg-canvas px-3 py-2 font-mono text-[13.5px] outline-none placeholder:text-faint focus:border-faint"
           />
           <button
             type="button"
             onClick={submit}
-            disabled={busy}
+            disabled={busy || normalizeUsername(username) === null}
             className="rounded-md bg-ink px-4 py-2 text-[13px] text-white hover:bg-ink/85 disabled:opacity-50"
           >
             {zh ? '申请毕业设计账户' : 'Request capstone account'}
