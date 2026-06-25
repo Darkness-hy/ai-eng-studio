@@ -12,6 +12,15 @@ import {
 const PENDING: SparkAccountRow['status'][] = ['requested', 'approved', 'provisioning'];
 const VPN_URL = 'https://itsc.nju.edu.cn/21601/listm.htm';
 
+// Supabase PostgrestError is a plain object (not an Error), so String(e) would
+// render "[object Object]"; pull its message out instead.
+const errText = (e: unknown): string =>
+  e instanceof Error
+    ? e.message
+    : e && typeof e === 'object' && 'message' in e
+      ? String((e as { message: unknown }).message)
+      : String(e);
+
 export function SparkAccountPanel() {
   const { lang } = useLang();
   const zh = lang === 'zh';
@@ -54,7 +63,7 @@ export function SparkAccountPanel() {
     setError(null);
     requestSparkAccount(uid, username)
       .then(setRow)
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .catch((e) => setError(errText(e)))
       .finally(() => setBusy(false));
   };
   const cancel = () => {
@@ -62,7 +71,7 @@ export function SparkAccountPanel() {
     setBusy(true);
     cancelSparkRequest(uid)
       .then(() => setRow(null))
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .catch((e) => setError(errText(e)))
       .finally(() => setBusy(false));
   };
   const copy = (text: string) => {

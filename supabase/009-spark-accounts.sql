@@ -56,7 +56,10 @@ create policy spark_update_admin on public.spark_accounts for update
 -- 删:本人可撤回尚未批准的申请;管理员可删任意。
 drop policy if exists spark_delete on public.spark_accounts;
 create policy spark_delete on public.spark_accounts for delete
-  using ((user_id = auth.uid() and status = 'requested') or public.is_admin());
+  using (
+    (user_id = auth.uid() and status in ('requested', 'failed', 'revoked'))
+    or public.is_admin()
+  );
 
 -- 说明:学员没有任何 UPDATE 策略 → 改不了自己行的任何字段(无法自我审批/改用户名);
 -- 仅 is_admin() 可 UPDATE(审批);provisioning/ready/failed 由 agent 走 service-role 写。
