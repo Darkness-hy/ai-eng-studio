@@ -2,6 +2,23 @@ import { getSupabase } from './supabase';
 
 export type SparkStatus = 'requested' | 'approved' | 'provisioning' | 'ready' | 'failed' | 'revoked';
 
+// The "Spark 使用班级" id (invite code FRB2XC). Not secret; must match the agent's
+// SPARK_CLASS_ID. Used to tell the tutor whether the learner is eligible.
+export const SPARK_CLASS_ID =
+  (import.meta.env.VITE_SPARK_CLASS_ID as string | undefined) ?? '913b4815-41e9-40f2-8e9c-d8459c750a05';
+
+/** Is the signed-in learner a member of the Spark class? (RLS lets them read their own rows.) */
+export async function isInSparkClass(userId: string): Promise<boolean> {
+  const supabase = getSupabase();
+  const { data } = await supabase
+    .from('class_members')
+    .select('user_id')
+    .eq('class_id', SPARK_CLASS_ID)
+    .eq('user_id', userId)
+    .maybeSingle();
+  return !!data;
+}
+
 export interface SparkAccountRow {
   user_id: string;
   status: SparkStatus;

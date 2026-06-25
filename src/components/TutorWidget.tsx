@@ -15,7 +15,21 @@ import {
 } from '../lib/tutor';
 import type { CourseIndex } from '../lib/types';
 import { TutorAvatar, type AvatarMode } from './TutorAvatar';
-import { getMySparkAccount, requestSparkAccount, type SparkAccountRow } from '../lib/sparkAccount';
+import { getMySparkAccount, isInSparkClass, requestSparkAccount, type SparkAccountRow } from '../lib/sparkAccount';
+
+/** A short status line fed to the tutor so it knows whether to start, skip, or
+ *  block a Spark-account request. */
+function sparkContextLine(inClass: boolean, acc: SparkAccountRow | null): string {
+  const account =
+    !acc || acc.status === 'revoked'
+      ? '尚未申请'
+      : acc.status === 'ready'
+        ? `已开通(用户名 ${acc.ssh_username ?? acc.requested_username ?? ''})`
+        : acc.status === 'failed'
+          ? '上次开通失败'
+          : '申请处理中';
+  return `【Spark 账户信息(供你判断是否要发起"申请spark账号")】是否已加入「Spark 使用班级」:${inClass ? '是' : '否'};该用户的 Spark 账户:${account}。`;
+}
 
 /** The tutor emits [[spark-apply:<pinyin>]] once it has the learner's pinyin name. */
 const SPARK_MARKER = /\[\[spark-apply:([a-z][a-z0-9]{1,31})\]\]/i;
@@ -98,6 +112,7 @@ export function TutorWidget() {
   const [error, setError] = useState<string | null>(null);
   const [inputFocused, setInputFocused] = useState(false);
   const [justAnswered, setJustAnswered] = useState(false); // transient "happy" pulse after a reply
+  const [sparkLine, setSparkLine] = useState<string | null>(null); // spark status fed to the tutor
 
   const abortRef = useRef<AbortController | null>(null);
   const happyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -118,6 +133,21 @@ export function TutorWidget() {
     if (sparkPollRef.current) clearInterval(sparkPollRef.current);
   }, []);
   useEffect(() => { fetchIndex().then(setIndex).catch(() => {}); }, []);
+
+  // Tell the tutor whether the learner is in the Spark class and already has an
+  // account, so it can guide/skip/block "申请spark账号" correctly. Refreshed on open.
+  useEffect(() => {
+    if (!open || !profile) return;
+    let live = true;
+    Promise.all([isInSparkClass(profile.id), getMySparkAccount(profile.id).catch(() => null)])
+      .then(([inClass, acc]) => {
+        if (live) setSparkLine(sparkContextLine(inClass, acc));
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [open, profile]);
 
   // Stick to the bottom only while the user is already there — so they can scroll up
   // to re-read while the tutor is still streaming without being yanked back down.
@@ -154,6 +184,9 @@ export function TutorWidget() {
               sparkPollRef.current = null;
             }
             setTurns((prev) => [...prev, { role: 'assistant', content: sparkResultMessage(r, zh) }]);
+            isInSparkClass(userId)
+              .then((inClass) => setSparkLine(sparkContextLine(inClass, r)))
+              .catch(() => {});
             scrollDown();
           }
         })
@@ -238,7 +271,8 @@ export function TutorWidget() {
     startDrain();
     const ac = new AbortController();
     abortRef.current = ac;
-    const userProfile = profile && index ? buildUserProfile(profile, progress, index, lang) : null;
+    const base = profile && index ? buildUserProfile(profile, progress, index, lang) : null;
+    const userProfile = [base, sparkLine].filter(Boolean).join('\n') || null;
     try {
       await askTutor(q, history, ctx, userProfile, lang, {
         signal: ac.signal,
