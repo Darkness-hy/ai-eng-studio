@@ -8,6 +8,7 @@ export interface SparkAccountRow {
   ssh_username: string | null;
   temp_password: string | null;
   host: string | null;
+  ssh_port: number | null;
   note: string | null;
   error: string | null;
   requested_at: string;

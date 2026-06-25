@@ -15,6 +15,10 @@ import {
 } from '../lib/tutor';
 import type { CourseIndex } from '../lib/types';
 import { TutorAvatar, type AvatarMode } from './TutorAvatar';
+import { requestSparkAccount } from '../lib/sparkAccount';
+
+/** "申请spark账号" and similar variants → trigger a capstone account request. */
+const SPARK_INTENT = /spark.{0,4}(账号|账户|帐号|account)|(申请|开通|要个?).{0,6}spark/i;
 
 interface Turn {
   role: 'user' | 'assistant';
@@ -155,6 +159,13 @@ export function TutorWidget() {
   const send = async (text: string) => {
     const q = text.trim();
     if (!q || busy) return;
+    // Conversational trigger for the capstone Spark account. The privileged write
+    // is done here by the authenticated session (never by the LLM); the Spark
+    // agent gates on Spark-class membership. The tutor's reply (guided by its
+    // system prompt) explains where to see the credentials.
+    if (profile && SPARK_INTENT.test(q)) {
+      void requestSparkAccount(profile.id).catch(() => {});
+    }
     setError(null);
     setInput('');
     const history: ChatMessage[] = turns.map((t) => ({ role: t.role, content: t.content }));

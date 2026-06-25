@@ -27,6 +27,8 @@ import urllib.request
 URL = os.environ["SUPABASE_URL"].rstrip("/")
 KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
 HOST = os.environ.get("SPARK_HOST", "spark")
+SSH_PORT = int(os.environ.get("SPARK_SSH_PORT", "22"))
+CLASS_ID = os.environ.get("SPARK_CLASS_ID", "").strip()  # eligibility = membership of this class
 PROVISION = os.environ.get("PROVISION_CMD", "sudo /opt/spark-agent/provision.sh").split()
 POLL = int(os.environ.get("POLL_SECONDS", "20"))
 
@@ -66,14 +68,22 @@ def gen_password(n=16):
 
 
 def claim(user_id):
-    """Atomically move approved -> provisioning so two agents can't double-claim."""
+    """Atomically move requested -> provisioning so two agents can't double-claim."""
     rows = _req(
         "PATCH",
         "spark_accounts",
-        f"?user_id=eq.{user_id}&status=eq.approved",
+        f"?user_id=eq.{user_id}&status=eq.requested",
         body={"status": "provisioning"},
         prefer="return=representation",
     )
+    return bool(rows)
+
+
+def is_spark_member(user_id):
+    """Eligibility gate: the learner must be a member of the configured Spark class."""
+    if not CLASS_ID:
+        return True  # not configured — see README; do NOT run unconfigured in production
+    rows = _req("GET", "class_members", f"?class_id=eq.{CLASS_ID}&user_id=eq.{user_id}&select=user_id")
     return bool(rows)
 
 
@@ -111,9 +121,13 @@ def provision_one(user_id):
 
 
 def tick():
-    pending = _req("GET", "spark_accounts", "?status=eq.approved&select=user_id") or []
+    pending = _req("GET", "spark_accounts", "?status=eq.requested&select=user_id") or []
     for row in pending:
         uid = row["user_id"]
+        if not is_spark_member(uid):
+            finalize(uid, {"status": "failed", "error": "请先加入 Spark 使用班级再申请"})
+            print(f"[skip] {uid} not in spark class", flush=True)
+            continue
         if not claim(uid):
             continue  # another agent took it
         try:
@@ -123,6 +137,7 @@ def tick():
                 "ssh_username": username,
                 "temp_password": password,
                 "host": HOST,
+                "ssh_port": SSH_PORT,
                 "error": None,
                 "provisioned_at": "now()",
             })
