@@ -48,8 +48,8 @@ function sparkResultMessage(r: SparkAccountRow, zh: boolean): string {
   if (r.status === 'ready') {
     const ssh = `ssh -p ${r.ssh_port ?? 22} ${r.ssh_username}@${r.host}`;
     return zh
-      ? `你的 Spark 账户已开通啦 🎉 登录方式:\n\n1. 先登录**南大 VPN**:${VPN_URL}\n2. 再 SSH 登录:\`${ssh}\`\n3. 临时密码:\`${r.temp_password}\`\n\n首次登录会要求立即改密码,这串临时密码请妥善保管、勿外传~`
-      : `Your Spark account is ready 🎉\n\n1. Sign in to the **NJU VPN**: ${VPN_URL}\n2. SSH in: \`${ssh}\`\n3. Temp password: \`${r.temp_password}\`\n\nYou'll be asked to change it on first login — keep it private.`;
+      ? `你的 Spark 账户已开通啦 🎉 登录方式:\n\n1. 先登录**南大 VPN**:${VPN_URL}\n2. 再 SSH 登录:\`${ssh}\`\n3. 临时密码:\`${r.temp_password}\`\n\n首次登录会要求立即改密码,这串临时密码请妥善保管、勿外传~\n\n⚠️ Spark 是 **ARM 架构(aarch64)**,不是 x86——装依赖、编译、拉镜像时都请选 ARM/aarch64 版。`
+      : `Your Spark account is ready 🎉\n\n1. Sign in to the **NJU VPN**: ${VPN_URL}\n2. SSH in: \`${ssh}\`\n3. Temp password: \`${r.temp_password}\`\n\nYou'll be asked to change it on first login — keep it private.\n\n⚠️ Spark is **ARM (aarch64)**, not x86 — pick ARM/aarch64 builds for deps, compilation, and images.`;
   }
   return zh
     ? `账户开通失败:${r.error || '请联系管理员'}。你可以在「学习进度」页撤回并重试。`

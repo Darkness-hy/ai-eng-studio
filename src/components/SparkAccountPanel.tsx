@@ -154,6 +154,11 @@ export function SparkAccountPanel() {
                   ? '首次登录会要求立即修改密码。这串临时密码仅用于第一次登录,请妥善保管、勿外传。'
                   : 'You must change this password on first login. It is one-time — keep it private.'}
               </p>
+              <p className="rounded-md bg-pale-blue px-3 py-2 text-[12px] leading-relaxed text-ink-blue">
+                {zh
+                  ? '注意:Spark 是 ARM 架构(aarch64),不是 x86 —— 装依赖、编译、拉镜像时都请选 ARM/aarch64 版。'
+                  : 'Note: Spark is ARM (aarch64), not x86 — use ARM/aarch64 builds for deps, compilation, and images.'}
+              </p>
             </div>
           );
         })()
