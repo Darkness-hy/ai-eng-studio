@@ -62,9 +62,20 @@ def sanitize_username(email, display_name):
     return base
 
 
-def gen_password(n=16):
-    alphabet = string.ascii_letters + string.digits
-    return "".join(secrets.choice(alphabet) for _ in range(n))
+# Easy-to-type temp password. The student must re-type this exact string at the
+# SSH first-login "Current password:" prompt; a fiddly mixed-case password with
+# look-alike chars (O/0, l/1/I) gets mistyped and passwd then fails with the
+# misleading "Authentication token manipulation error". So: lowercase + digits
+# only, no look-alikes, grouped in dash-separated chunks for accurate entry.
+# chpasswd sets it directly (not subject to pwquality), so charset is free to
+# optimize for typing, not symbol variety. 4x4 chunks + dashes = 19 chars,
+# comfortably over provision.sh's 10-char minimum.
+_PW_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"  # no i, l, o, 0, 1
+
+
+def gen_password(groups=4, size=4):
+    chunk = lambda: "".join(secrets.choice(_PW_ALPHABET) for _ in range(size))
+    return "-".join(chunk() for _ in range(groups))
 
 
 def claim(user_id):

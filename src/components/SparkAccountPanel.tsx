@@ -151,8 +151,8 @@ export function SparkAccountPanel() {
               {copied && <p className="text-[11px] text-faint">{zh ? '已复制' : 'copied'}</p>}
               <p className="rounded-md bg-pale-yellow px-3 py-2 text-[12px] leading-relaxed text-ink-yellow">
                 {zh
-                  ? '首次登录会要求立即修改密码。这串临时密码仅用于第一次登录,请妥善保管、勿外传。'
-                  : 'You must change this password on first login. It is one-time — keep it private.'}
+                  ? '首次登录会要求改密:在「Current password」处把上面这串临时密码再原样输一遍(建议直接复制粘贴,别手敲),再设置你自己的新密码。这串临时密码仅用于第一次登录,勿外传。'
+                  : 'On first login you must change the password: at the “Current password” prompt re-enter the temp password above exactly (copy-paste it — don’t retype), then set your own. The temp password is one-time — keep it private.'}
               </p>
               <p className="rounded-md bg-pale-blue px-3 py-2 text-[12px] leading-relaxed text-ink-blue">
                 {zh
