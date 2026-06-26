@@ -22,7 +22,13 @@ fi
 
 useradd -m -s /bin/bash -c "ai-eng-studio capstone" "$USERNAME"
 printf '%s:%s\n' "$USERNAME" "$PASSWORD" | chpasswd
-chage -d 0 "$USERNAME"                 # force password change on first login
+# Force a password change on first login (-d 0), but ALSO clear the minimum
+# password age (-m 0). Otherwise, if the system's PASS_MIN_DAYS > 0, the account
+# is simultaneously "expired, must change" and "changed too recently, may not
+# change yet" — a catch-22 that makes the first-login passwd fail with
+# "Authentication token manipulation error" before it even prompts for the new
+# password. -M 99999 keeps the new password from expiring later.
+chage -m 0 -M 99999 -d 0 "$USERNAME"
 
 # Optional confinement: if a 'capstone' group exists (for disk quota / cgroup limits),
 # add the user to it. The account never gets sudo.
