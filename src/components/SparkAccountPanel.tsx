@@ -171,6 +171,15 @@ export function SparkAccountPanel() {
             {zh ? '撤回并重试' : 'Withdraw & retry'}
           </button>
         </div>
+      ) : row.status === 'revoked' ? (
+        <div className="mt-3 space-y-3">
+          <p className="rounded-md bg-pale-yellow px-3 py-2 text-[12.5px] text-ink-yellow">
+            {zh ? '你之前的 Spark 账户已被回收。需要的话可以重新申请。' : 'Your previous Spark account was revoked. You can request a new one.'}
+          </p>
+          <button type="button" onClick={cancel} disabled={busy} className="rounded-md bg-ink px-4 py-2 text-[13px] text-white hover:bg-ink/85 disabled:opacity-50">
+            {zh ? '重新申请' : 'Request again'}
+          </button>
+        </div>
       ) : (
         <div className="mt-3 space-y-3">
           <p className="text-[13px] leading-relaxed text-faint">
