@@ -31,6 +31,13 @@ function sparkContextLine(inClass: boolean, acc: SparkAccountRow | null): string
   return `【Spark 账户信息(供你判断是否要发起"申请spark账号")】是否已加入「Spark 使用班级」:${inClass ? '是' : '否'};该用户的 Spark 账户:${account}。`;
 }
 
+async function loadSparkContextLine(userId: string): Promise<string> {
+  const [inClass, acc] = await Promise.all([isInSparkClass(userId), getMySparkAccount(userId).catch(() => null)]);
+  return sparkContextLine(inClass, acc);
+}
+
+const mentionsSparkAccount = (text: string) => /spark|账号|账户|毕业设计|申请/i.test(text);
+
 /** The tutor emits [[spark-apply:<pinyin>]] once it has the learner's pinyin name. */
 const SPARK_MARKER = /\[\[spark-apply:([a-z][a-z0-9]{1,31})\]\]/i;
 const stripSparkMarker = (t: string) =>
@@ -139,9 +146,9 @@ export function TutorWidget() {
   useEffect(() => {
     if (!open || !profile) return;
     let live = true;
-    Promise.all([isInSparkClass(profile.id), getMySparkAccount(profile.id).catch(() => null)])
-      .then(([inClass, acc]) => {
-        if (live) setSparkLine(sparkContextLine(inClass, acc));
+    loadSparkContextLine(profile.id)
+      .then((line) => {
+        if (live) setSparkLine(line);
       })
       .catch(() => {});
     return () => {
@@ -272,7 +279,16 @@ export function TutorWidget() {
     const ac = new AbortController();
     abortRef.current = ac;
     const base = profile && index ? buildUserProfile(profile, progress, index, lang) : null;
-    const userProfile = [base, sparkLine].filter(Boolean).join('\n') || null;
+    let currentSparkLine = sparkLine;
+    if (profile && (!currentSparkLine || mentionsSparkAccount(q))) {
+      try {
+        currentSparkLine = await loadSparkContextLine(profile.id);
+        setSparkLine(currentSparkLine);
+      } catch {
+        currentSparkLine = sparkLine;
+      }
+    }
+    const userProfile = [base, currentSparkLine].filter(Boolean).join('\n') || null;
     try {
       await askTutor(q, history, ctx, userProfile, lang, {
         signal: ac.signal,
