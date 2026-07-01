@@ -578,7 +578,7 @@ export async function deletePlacementCloud(userId: string): Promise<void> {
   if (error) console.warn('[placement] delete failed', error);
 }
 
-/** Pull on login: the newer of local/remote wins on both sides. */
+/** Pull on login: cloud is authoritative, including the "no placement yet" case. */
 export async function syncPlacementCloud(userId: string): Promise<void> {
   if (!cloudEnabled) return;
   const { data, error } = await getSupabase()
@@ -591,7 +591,7 @@ export async function syncPlacementCloud(userId: string): Promise<void> {
     return;
   }
   const remote = data as PlacementRow | null;
-  if (remote && (!current || remote.taken_at > current.date)) {
+  if (remote) {
     commit({
       v: 1,
       answers: remote.answers,
@@ -600,7 +600,7 @@ export async function syncPlacementCloud(userId: string): Promise<void> {
       entry: remote.entry,
       date: remote.taken_at,
     });
-  } else if (current && (!remote || current.date > remote.taken_at)) {
-    await pushPlacementCloud(userId);
+  } else {
+    commit(null);
   }
 }

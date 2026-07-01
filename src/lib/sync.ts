@@ -1,7 +1,7 @@
 import { syncPlacementCloud } from './placement';
 import {
   getProgress,
-  mergeRemote,
+  replaceLocal,
   subscribeChanges,
   type LessonProgress,
 } from './progress';
@@ -11,8 +11,8 @@ import { cloudEnabled, getSupabase, type ProgressRow } from './supabase';
  * Local-first cloud sync.
  * - On login: auth switches progress/placement to a user-scoped localStorage key
  *   before this runs, so anonymous or previous-user browser data is not imported.
- * - Pull remote rows, merge (newest updatedAt wins), then push the scoped local
- *   state so this user's cached progress and cloud progress converge.
+ * - Pull remote rows and replace the scoped local cache with cloud state. Cloud
+ *   is authoritative on login, including admin resets to empty progress.
  * - Afterwards: local mutations are batched and upserted after a 2s debounce.
  */
 
@@ -91,7 +91,7 @@ function schedule() {
   timer = setTimeout(() => void flush(), 2000);
 }
 
-/** Pull remote state, merge into this user's scoped local cache, then push it. */
+/** Pull remote state into this user's scoped local cache. */
 export async function initialSync(userId: string): Promise<void> {
   if (!cloudEnabled) return;
   const supabase = getSupabase();
@@ -105,18 +105,13 @@ export async function initialSync(userId: string): Promise<void> {
 
   const remote: Record<string, LessonProgress> = {};
   for (const row of (rows ?? []) as ProgressRow[]) remote[row.lesson_id] = rowToLocal(row);
-  mergeRemote(remote, ((acts ?? []) as { day: string }[]).map((a) => a.day));
-  mergeDone = true; // remote merged into local — uploads are now safe
+  replaceLocal(remote, ((acts ?? []) as { day: string }[]).map((a) => a.day));
+  mergeDone = true; // remote loaded into local — future user edits may upload
 
   // Placement result rides along with the same login sync.
   await syncPlacementCloud(userId).catch(() => undefined);
 
-  // Push the merged state so this account has everything from this user's cache.
-  const state = getProgress();
-  Object.keys(state.lessons).forEach((id) => dirty.add(id));
-  state.visits.forEach((d) => dirtyDays.add(d));
   activeUserId = userId;
-  await flush();
 }
 
 function teardownListeners(): void {

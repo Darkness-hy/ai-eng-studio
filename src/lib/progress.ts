@@ -191,6 +191,15 @@ export function mergeRemote(remote: Record<string, LessonProgress>, remoteVisits
   commit({ ...state, lessons, visits }, { source: 'remote', lessonIds: Object.keys(remote) });
 }
 
+/** Replace the current scoped cache with cloud rows. Used on login so an admin
+ *  reset in Supabase cannot be undone by stale browser-local data. */
+export function replaceLocal(remote: Record<string, LessonProgress>, remoteVisits: string[]) {
+  commit(
+    { v: 1, lessons: remote, visits: [...new Set(remoteVisits)].sort() },
+    { source: 'remote', lessonIds: Object.keys(remote) },
+  );
+}
+
 export function exportProgress(): string {
   return JSON.stringify(state, null, 2);
 }
