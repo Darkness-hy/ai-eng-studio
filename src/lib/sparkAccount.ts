@@ -6,17 +6,41 @@ export type SparkStatus = 'requested' | 'approved' | 'provisioning' | 'ready' | 
 // SPARK_CLASS_ID. Used to tell the tutor whether the learner is eligible.
 export const SPARK_CLASS_ID =
   (import.meta.env.VITE_SPARK_CLASS_ID as string | undefined) ?? '913b4815-41e9-40f2-8e9c-d8459c750a05';
+export const SPARK_CLASS_INVITE_CODE =
+  (import.meta.env.VITE_SPARK_CLASS_INVITE_CODE as string | undefined) ?? 'FRB2XC';
+
+interface SparkClassRow {
+  id: string;
+  name: string | null;
+  invite_code: string | null;
+}
+
+const normalizeClassName = (name: string | null | undefined) => (name ?? '').replace(/\s+/g, '').toLowerCase();
+
+function isSparkClassRow(c: SparkClassRow): boolean {
+  return (
+    c.id === SPARK_CLASS_ID ||
+    c.invite_code?.toUpperCase() === SPARK_CLASS_INVITE_CODE.toUpperCase() ||
+    normalizeClassName(c.name) === 'spark使用班级'
+  );
+}
 
 /** Is the signed-in learner a member of the Spark class? (RLS lets them read their own rows.) */
 export async function isInSparkClass(userId: string): Promise<boolean> {
   const supabase = getSupabase();
-  const { data } = await supabase
+  const { data: memberships, error: membershipError } = await supabase
     .from('class_members')
-    .select('user_id')
-    .eq('class_id', SPARK_CLASS_ID)
-    .eq('user_id', userId)
-    .maybeSingle();
-  return !!data;
+    .select('class_id')
+    .eq('user_id', userId);
+  if (membershipError) throw membershipError;
+
+  const classIds = ((memberships ?? []) as { class_id: string }[]).map((m) => m.class_id);
+  if (classIds.includes(SPARK_CLASS_ID)) return true;
+  if (!classIds.length) return false;
+
+  const { data: classes, error: classesError } = await supabase.from('classes').select('id,name,invite_code').in('id', classIds);
+  if (classesError) throw classesError;
+  return ((classes ?? []) as SparkClassRow[]).some(isSparkClassRow);
 }
 
 export interface SparkAccountRow {
