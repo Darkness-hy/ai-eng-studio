@@ -9,8 +9,10 @@ import { cloudEnabled, getSupabase, type ProgressRow } from './supabase';
 
 /**
  * Local-first cloud sync.
- * - On login: pull remote rows, merge (newest updatedAt wins), then push the
- *   full local state so a fresh device adopts existing anonymous progress.
+ * - On login: auth switches progress/placement to a user-scoped localStorage key
+ *   before this runs, so anonymous or previous-user browser data is not imported.
+ * - Pull remote rows, merge (newest updatedAt wins), then push the scoped local
+ *   state so this user's cached progress and cloud progress converge.
  * - Afterwards: local mutations are batched and upserted after a 2s debounce.
  */
 
@@ -89,7 +91,7 @@ function schedule() {
   timer = setTimeout(() => void flush(), 2000);
 }
 
-/** Pull remote state, merge into local, then push everything local. */
+/** Pull remote state, merge into this user's scoped local cache, then push it. */
 export async function initialSync(userId: string): Promise<void> {
   if (!cloudEnabled) return;
   const supabase = getSupabase();
@@ -109,7 +111,7 @@ export async function initialSync(userId: string): Promise<void> {
   // Placement result rides along with the same login sync.
   await syncPlacementCloud(userId).catch(() => undefined);
 
-  // Push the merged state so this account has everything from this device.
+  // Push the merged state so this account has everything from this user's cache.
   const state = getProgress();
   Object.keys(state.lessons).forEach((id) => dirty.add(id));
   state.visits.forEach((d) => dirtyDays.add(d));

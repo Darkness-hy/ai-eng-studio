@@ -23,15 +23,24 @@ export interface ProgressChange {
   visitDay?: string;
 }
 
-const KEY = 'aes:progress:v1';
+const ANON_KEY = 'aes:progress:v1';
 const renderListeners = new Set<() => void>();
 const changeListeners = new Set<(change: ProgressChange) => void>();
 
+let storageKey = ANON_KEY;
 let state: ProgressState = load();
 
-function load(): ProgressState {
+function emptyState(): ProgressState {
+  return { v: 1, lessons: {}, visits: [] };
+}
+
+function keyForUser(userId: string | null): string {
+  return userId ? `${ANON_KEY}:user:${userId}` : ANON_KEY;
+}
+
+function load(key = storageKey): ProgressState {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(key);
     if (raw) {
       const parsed = JSON.parse(raw) as ProgressState;
       if (parsed && parsed.v === 1 && parsed.lessons) return parsed;
@@ -39,12 +48,12 @@ function load(): ProgressState {
   } catch {
     /* corrupted storage falls through to fresh state */
   }
-  return { v: 1, lessons: {}, visits: [] };
+  return emptyState();
 }
 
 function commit(next: ProgressState, change?: ProgressChange) {
   state = next;
-  localStorage.setItem(KEY, JSON.stringify(state));
+  localStorage.setItem(storageKey, JSON.stringify(state));
   renderListeners.forEach((fn) => fn());
   if (change) changeListeners.forEach((fn) => fn(change));
 }
@@ -54,7 +63,7 @@ function commit(next: ProgressState, change?: ProgressChange) {
 // persisted/synced its own write.
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e) => {
-    if (e.key === KEY) {
+    if (e.key === storageKey) {
       state = load();
       renderListeners.forEach((fn) => fn());
     }
@@ -68,6 +77,17 @@ function today(): string {
 
 export function getProgress(): ProgressState {
   return state;
+}
+
+/** Switch between anonymous progress and a signed-in user's isolated cache.
+ *  This is intentionally render-only: switching accounts must not upload the
+ *  previous browser-local state into the next user's cloud rows. */
+export function setProgressStorageUser(userId: string | null): void {
+  const nextKey = keyForUser(userId);
+  if (nextKey === storageKey) return;
+  storageKey = nextKey;
+  state = load();
+  renderListeners.forEach((fn) => fn());
 }
 
 /** Subscribe to data mutations (used by the cloud sync layer). */
