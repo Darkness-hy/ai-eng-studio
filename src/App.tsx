@@ -6,6 +6,7 @@ import { LangProvider } from './lib/i18n';
 import { Dashboard } from './pages/Dashboard';
 import { GlossaryPage } from './pages/GlossaryPage';
 import { LessonPage } from './pages/LessonPage';
+import { LeaderboardsPage } from './pages/LeaderboardsPage';
 import { LoginPage } from './pages/LoginPage';
 import { PhasePage } from './pages/PhasePage';
 import { PlacementPage } from './pages/PlacementPage';
@@ -45,11 +46,12 @@ export default function App() {
                 <Route path="/lesson/:phaseSlug/:lessonSlug" element={<LessonPage />} />
                 <Route path="/glossary" element={<GlossaryPage />} />
                 <Route path="/progress" element={<ProgressPage />} />
+                <Route path="/leaderboards" element={<LeaderboardsPage />} />
                 <Route path="/find-your-level" element={<PlacementPage />} />
-              <Route path="/review" element={<ReviewPage />} />
-              <Route path="/flashcards" element={<FlashcardsPage />} />
-              <Route path="/classes" element={<ClassesPage />} />
-              <Route path="/class/:classId" element={<ClassDetailPage />} />
+                <Route path="/review" element={<ReviewPage />} />
+                <Route path="/flashcards" element={<FlashcardsPage />} />
+                <Route path="/classes" element={<ClassesPage />} />
+                <Route path="/class/:classId" element={<ClassDetailPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route
                   path="/admin"
