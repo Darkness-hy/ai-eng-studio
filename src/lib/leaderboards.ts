@@ -98,12 +98,60 @@ function parseSummary(value: unknown): LeaderboardSummary {
   };
 }
 
+interface SupabaseErrorShape {
+  code: string | null;
+  message: string | null;
+  details: string | null;
+  hint: string | null;
+}
+
+function readSupabaseError(value: unknown): SupabaseErrorShape {
+  const row = asRecord(value);
+  return {
+    code: typeof row?.code === 'string' ? row.code : null,
+    message: typeof row?.message === 'string' ? row.message : null,
+    details: typeof row?.details === 'string' ? row.details : null,
+    hint: typeof row?.hint === 'string' ? row.hint : null,
+  };
+}
+
+export class LeaderboardLoadError extends Error {
+  code: string | null;
+  details: string | null;
+  hint: string | null;
+
+  constructor(error: unknown) {
+    const parsed = readSupabaseError(error);
+    super(parsed.message ?? (error instanceof Error ? error.message : 'Leaderboard request failed.'));
+    this.name = 'LeaderboardLoadError';
+    this.code = parsed.code;
+    this.details = parsed.details;
+    this.hint = parsed.hint;
+  }
+}
+
+export function formatLeaderboardError(error: unknown, lang: Lang): string {
+  const zh = lang === 'zh';
+  if (error instanceof LeaderboardLoadError) {
+    if (error.code === 'PGRST202') {
+      return zh
+        ? '排行榜数据库函数还未安装或 Supabase schema cache 尚未刷新。请先在 Supabase SQL Editor 执行 supabase/012-leaderboards.sql。'
+        : 'The leaderboard database function is not installed yet, or the Supabase schema cache has not refreshed. Run supabase/012-leaderboards.sql in the Supabase SQL Editor.';
+    }
+    return error.code ? `${error.message} (${error.code})` : error.message;
+  }
+  if (error instanceof Error) return error.message;
+  const parsed = readSupabaseError(error);
+  if (parsed.message) return parsed.code ? `${parsed.message} (${parsed.code})` : parsed.message;
+  return zh ? '未知错误' : 'Unknown error';
+}
+
 export async function fetchLeaderboardSummary(lessonIds: string[]): Promise<LeaderboardSummary> {
   if (!cloudEnabled) throw new Error('Cloud sync is not configured.');
   const { data, error } = await getSupabase().rpc('get_leaderboard_summary', {
     lesson_ids: lessonIds,
   });
-  if (error) throw error;
+  if (error) throw new LeaderboardLoadError(error);
   return parseSummary(data);
 }
 
