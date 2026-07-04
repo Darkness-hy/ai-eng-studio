@@ -60,6 +60,11 @@ export function Layout() {
             <NavLink to="/progress" className={navCls}>
               {t('nav_progress')}
             </NavLink>
+            {authEnabled && profile && (
+              <NavLink to="/leaderboards" className={navCls}>
+                {t('nav_leaderboards')}
+              </NavLink>
+            )}
             <NavLink to="/review" className={navCls}>
               <span className="inline-flex items-center gap-1.5">
                 {lang === 'zh' ? '复习' : 'Review'}
