@@ -28,7 +28,7 @@ function sparkContextLine(inClass: boolean, acc: SparkAccountRow | null): string
         : acc.status === 'failed'
           ? '上次开通失败'
           : '申请处理中';
-  return `【Spark 账户信息(供你判断是否要发起"申请spark账号")】是否已加入「Spark 使用班级」:${inClass ? '是' : '否'};该用户的 Spark 账户:${account}。`;
+  return `【Spark 账户信息(仅当用户当前问题明确涉及 Spark/账号/VPN/SSH/密码时使用;无关学习问题不要主动提 Spark)】是否已加入「Spark 使用班级」:${inClass ? '是' : '否'};该用户的 Spark 账户:${account}。`;
 }
 
 async function loadSparkContextLine(userId: string): Promise<string> {
@@ -36,7 +36,12 @@ async function loadSparkContextLine(userId: string): Promise<string> {
   return sparkContextLine(inClass, acc);
 }
 
-const mentionsSparkAccount = (text: string) => /spark|账号|账户|毕业设计|申请/i.test(text);
+const mentionsSparkAccount = (text: string) => /spark|账号|账户|毕业设计|密码|临时密码|ssh|vpn|登录|登陆|服务器|开通|开户/i.test(text);
+const isSparkGuidanceTurn = (turn: Turn) => {
+  const text = turn.content.toLowerCase();
+  return turn.role === 'assistant' && /spark|南大 vpn|vpn|ssh -p|临时密码|current password|aarch64|arm 架构|spark account|temp password/.test(text);
+};
+const isSparkHistoryTurn = (turn: Turn) => mentionsSparkAccount(turn.content) || isSparkGuidanceTurn(turn);
 
 /** The tutor emits [[spark-apply:<pinyin>]] once it has the learner's pinyin name. */
 const SPARK_MARKER = /\[\[spark-apply:([a-z][a-z0-9]{1,31})\]\]/i;
@@ -66,6 +71,7 @@ function sparkResultMessage(r: SparkAccountRow, zh: boolean): string {
 interface Turn {
   role: 'user' | 'assistant';
   content: string;
+  exposeToTutor?: boolean;
 }
 
 /** Compact markdown for chat bubbles — bold, lists, inline/blocks, links. */
@@ -190,7 +196,7 @@ export function TutorWidget() {
               clearInterval(sparkPollRef.current);
               sparkPollRef.current = null;
             }
-            setTurns((prev) => [...prev, { role: 'assistant', content: sparkResultMessage(r, zh) }]);
+            setTurns((prev) => [...prev, { role: 'assistant', content: sparkResultMessage(r, zh), exposeToTutor: false }]);
             isInSparkClass(userId)
               .then((inClass) => setSparkLine(sparkContextLine(inClass, r)))
               .catch(() => {});
@@ -262,9 +268,13 @@ export function TutorWidget() {
   const send = async (text: string) => {
     const q = text.trim();
     if (!q || busy) return;
+    const sparkRelated = mentionsSparkAccount(q);
     setError(null);
     setInput('');
-    const history: ChatMessage[] = turns.map((t) => ({ role: t.role, content: t.content }));
+    const history: ChatMessage[] = turns
+      .filter((t) => t.exposeToTutor !== false)
+      .filter((t) => sparkRelated || !isSparkHistoryTurn(t))
+      .map((t) => ({ role: t.role, content: t.content }));
     setTurns((prev) => [...prev, { role: 'user', content: q }]);
     fullRef.current = '';
     shownLenRef.current = 0;
@@ -279,8 +289,8 @@ export function TutorWidget() {
     const ac = new AbortController();
     abortRef.current = ac;
     const base = profile && index ? buildUserProfile(profile, progress, index, lang) : null;
-    let currentSparkLine = sparkLine;
-    if (profile && (!currentSparkLine || mentionsSparkAccount(q))) {
+    let currentSparkLine: string | null = null;
+    if (profile && sparkRelated) {
       try {
         currentSparkLine = await loadSparkContextLine(profile.id);
         setSparkLine(currentSparkLine);
