@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAuth } from '../lib/auth';
@@ -8,10 +8,12 @@ import { useProgress } from '../lib/progress';
 import {
   askTutor,
   buildUserProfile,
+  checkTutorHealth,
   saveTutorMessages,
   subscribeTutorContext,
   tutorContextSnapshot,
   type ChatMessage,
+  type TutorAvailability,
 } from '../lib/tutor';
 import type { CourseIndex } from '../lib/types';
 import { TutorAvatar, type AvatarMode } from './TutorAvatar';
@@ -126,8 +128,10 @@ export function TutorWidget() {
   const [inputFocused, setInputFocused] = useState(false);
   const [justAnswered, setJustAnswered] = useState(false); // transient "happy" pulse after a reply
   const [sparkLine, setSparkLine] = useState<string | null>(null); // spark status fed to the tutor
+  const [availability, setAvailability] = useState<TutorAvailability>('checking');
 
   const abortRef = useRef<AbortController | null>(null);
+  const healthRef = useRef<AbortController | null>(null);
   const happyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const fullRef = useRef(''); // all text received from the network so far
@@ -139,13 +143,57 @@ export function TutorWidget() {
   const okRef = useRef(false); // did the last request complete without error/abort?
   const sparkPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const refreshAvailability = useCallback((quiet = false) => {
+    healthRef.current?.abort();
+    const ac = new AbortController();
+    healthRef.current = ac;
+    if (!quiet) setAvailability('checking');
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      ac.abort();
+    }, 4500);
+    void checkTutorHealth(ac.signal)
+      .then((result) => {
+        if (!ac.signal.aborted) setAvailability(result.available ? 'online' : 'offline');
+      })
+      .catch((err) => {
+        if (!(err instanceof DOMException && err.name === 'AbortError' && !timedOut)) setAvailability('offline');
+      })
+      .finally(() => {
+        clearTimeout(timer);
+        if (healthRef.current === ac) healthRef.current = null;
+      });
+  }, []);
+
   useEffect(() => () => {
     abortRef.current?.abort();
+    healthRef.current?.abort();
     if (drainRef.current) clearInterval(drainRef.current);
     if (happyTimerRef.current) clearTimeout(happyTimerRef.current);
     if (sparkPollRef.current) clearInterval(sparkPollRef.current);
   }, []);
   useEffect(() => { fetchIndex().then(setIndex).catch(() => {}); }, []);
+  useEffect(() => {
+    const firstCheck = setTimeout(() => refreshAvailability(true), 0);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') refreshAvailability(true);
+    }, 60000);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refreshAvailability(true);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearTimeout(firstCheck);
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [refreshAvailability]);
+  useEffect(() => {
+    if (!open) return;
+    const check = setTimeout(() => refreshAvailability(true), 0);
+    return () => clearTimeout(check);
+  }, [open, refreshAvailability]);
 
   // Tell the tutor whether the learner is in the Spark class and already has an
   // account, so it can guide/skip/block "申请spark账号" correctly. Refreshed on open.
@@ -282,6 +330,7 @@ export function TutorWidget() {
     pendingRef.current = { q, lessonId: ctx?.lessonId ?? null };
     setStreamShown('');
     setBusy(true);
+    setAvailability('checking');
     setJustAnswered(false);
     okRef.current = false;
     atBottomRef.current = true; // a freshly sent question always scrolls into view
@@ -306,6 +355,7 @@ export function TutorWidget() {
           fullRef.current += delta;
         },
       });
+      setAvailability('online');
       okRef.current = true;
       doneRef.current = true; // drain finishes revealing, then commits
     } catch (err) {
@@ -313,6 +363,7 @@ export function TutorWidget() {
       if (ac.signal.aborted) {
         commit(); // keep whatever streamed so far
       } else {
+        setAvailability('offline');
         if (fullRef.current) {
           commit(); // keep the partial answer that already streamed, then show the error
         } else {
@@ -346,6 +397,18 @@ export function TutorWidget() {
     'max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-ink px-3.5 py-2 text-[13.5px] leading-relaxed text-white';
   const asstBubble =
     'max-w-[90%] rounded-2xl rounded-bl-sm bg-paper px-3.5 py-2 text-[13.5px] leading-relaxed text-ink';
+  const availabilityText = zh
+    ? availability === 'online'
+      ? 'AI 助教可用'
+      : availability === 'offline'
+        ? 'AI 助教暂不可用'
+        : '正在检测 AI 助教'
+    : availability === 'online'
+      ? 'AI tutor available'
+      : availability === 'offline'
+        ? 'AI tutor unavailable'
+        : 'Checking AI tutor';
+  const topicText = ctx ? `${zh ? '正在讨论' : 'on'} · ${ctx.title}` : zh ? '课程助教' : 'course assistant';
 
   // Avatar mood derived purely from the widget's live state (no extra source of truth).
   const mode: AvatarMode = !open
@@ -369,10 +432,11 @@ export function TutorWidget() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label={zh ? '打开 AI 辅导' : 'Open AI tutor'}
+        aria-label={`${zh ? '打开 AI 辅导' : 'Open AI tutor'} · ${availabilityText}`}
+        title={availabilityText}
         className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-canvas shadow-lg ring-1 ring-hairline transition-transform hover:scale-105"
       >
-        <TutorAvatar mode="sleeping" size={52} />
+        <TutorAvatar mode="sleeping" availability={availability} size={52} />
       </button>
     );
   }
@@ -381,11 +445,11 @@ export function TutorWidget() {
     <div className="fixed bottom-6 right-6 z-50 flex h-[540px] w-[min(92vw,400px)] flex-col overflow-hidden rounded-2xl border border-hairline bg-canvas shadow-xl">
       <header className="flex items-center justify-between border-b border-hairline bg-paper px-4 py-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <TutorAvatar mode={mode} size={38} />
+          <TutorAvatar mode={mode} availability={availability} size={38} />
           <div className="min-w-0">
             <div className="font-serif text-[15px] font-semibold">{zh ? 'AI 学习助教' : 'AI Tutor'}</div>
             <div className="truncate font-mono text-[10.5px] text-faint">
-              {ctx ? `${zh ? '正在讨论' : 'on'} · ${ctx.title}` : zh ? '课程助教' : 'course assistant'}
+              {topicText} · {availabilityText}
             </div>
           </div>
         </div>

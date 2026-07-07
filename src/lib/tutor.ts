@@ -6,10 +6,57 @@ import { cloudEnabled, getSupabase, type ProfileRow } from './supabase';
 import type { CourseIndex, Lang, Lesson } from './types';
 
 const endpoint = import.meta.env.VITE_AI_TUTOR_ENDPOINT as string | undefined;
+const healthEndpoint = import.meta.env.VITE_AI_TUTOR_HEALTH_ENDPOINT as string | undefined;
 const token = import.meta.env.VITE_AI_TUTOR_TOKEN as string | undefined;
 
 /** AI 辅导是可选的:没有配置端点时整块功能保持休眠(浮窗不出现)。 */
 export const tutorEnabled = Boolean(endpoint);
+
+export type TutorAvailability = 'unknown' | 'checking' | 'online' | 'offline';
+
+export interface TutorHealthResult {
+  available: boolean;
+  reason: string | null;
+}
+
+interface TutorHealthPayload {
+  ok?: boolean;
+  ready?: boolean;
+  reason?: string | null;
+}
+
+export function tutorHealthEndpoint(): string | null {
+  const configured = healthEndpoint?.trim();
+  if (configured) return configured;
+  if (!endpoint) return null;
+  try {
+    const base = typeof window !== 'undefined' ? window.location.href : undefined;
+    const url = new URL(endpoint, base);
+    if (!/\/chat\/?$/.test(url.pathname)) return null;
+    url.pathname = url.pathname.replace(/\/chat\/?$/, '/health');
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+export async function checkTutorHealth(signal?: AbortSignal): Promise<TutorHealthResult> {
+  const url = tutorHealthEndpoint();
+  if (!url) return { available: false, reason: 'missing_health_endpoint' };
+  try {
+    const res = await fetch(url, { cache: 'no-store', signal });
+    if (!res.ok) return { available: false, reason: `http_${res.status}` };
+    const data = await res.json() as TutorHealthPayload;
+    const ready = data.ready ?? data.ok;
+    return {
+      available: Boolean(data.ok && ready),
+      reason: data.reason ?? (data.ok && ready ? null : 'not_ready'),
+    };
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') throw err;
+    return { available: false, reason: 'network_error' };
+  }
+}
 
 export interface TutorContext {
   lessonId: string;

@@ -11,6 +11,8 @@ export type AvatarMode =
   | 'confused' // error
   | 'idle'; // open, conversation exists, nothing happening
 
+export type AvatarAvailability = 'unknown' | 'checking' | 'online' | 'offline';
+
 /**
  * Phase 2 switch: flip to true once same-character expression variants exist at
  * public/tutor/avatar-<name>.png (see the generation prompts in the handoff plan).
@@ -65,10 +67,12 @@ const PARTICLES = [
 
 export function TutorAvatar({
   mode,
+  availability,
   size = 36,
   reducedMotion: forced,
 }: {
   mode: AvatarMode;
+  availability?: AvatarAvailability;
   size?: number;
   reducedMotion?: boolean;
 }) {
@@ -116,6 +120,13 @@ export function TutorAvatar({
   const texName = blink && calm && baseTex === 'neutral' ? 'blink' : baseTex;
   const ring = mode === 'listening' || mode === 'talking';
   const ringColor = mode === 'listening' ? 'var(--color-pale-blue)' : 'var(--color-pale-green)';
+  const statusSize = Math.max(8, Math.round(size * 0.22));
+  const statusColor =
+    availability === 'online'
+      ? 'var(--color-ink-green)'
+      : availability === 'offline'
+        ? 'var(--color-ink-red)'
+        : 'var(--color-faint)';
 
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }} aria-hidden>
@@ -140,6 +151,19 @@ export function TutorAvatar({
           style={{ objectPosition: '50% 50%' }}
         />
       </div>
+
+      {availability && (
+        <span
+          className="absolute rounded-full border-2 border-canvas shadow-sm"
+          style={{
+            width: statusSize,
+            height: statusSize,
+            right: Math.max(0, Math.round(size * 0.02)),
+            bottom: Math.max(0, Math.round(size * 0.02)),
+            backgroundColor: statusColor,
+          }}
+        />
+      )}
 
       {/* ── overlay layer (glyphs above the frame) ───────────────── */}
       {/* thinking: orbiting dots */}

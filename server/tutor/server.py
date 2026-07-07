@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Reference AI-tutor server for ai-eng-studio (multi-user hardened).
 
-Implements docs/ai-tutor-server-contract.md. Runs headless Claude Code
-(`claude -p ... --output-format stream-json`) authenticated with your Claude
-SUBSCRIPTION via CLAUDE_CODE_OAUTH_TOKEN, and streams the answer back as SSE.
+Implements docs/ai-tutor-server-contract.md. The default backend is DeepSeek via
+an OpenAI-compatible streaming API. The previous headless Claude Code backend is
+kept behind TUTOR_PROVIDER=claude for emergency fallback.
 
 Multi-user design:
   * Isolation is structural — the server holds NO per-user conversation state.
@@ -18,9 +18,15 @@ Multi-user design:
     troubleshooting.
 
 Env:
-  CLAUDE_CODE_OAUTH_TOKEN   required — from `claude setup-token` (subscription)
-  TUTOR_MODEL               default claude-sonnet-4-6
-  TUTOR_EFFORT              default medium
+  TUTOR_PROVIDER            default deepseek; set claude for the legacy CLI path
+  DEEPSEEK_API_KEY          required for default provider (or TUTOR_API_KEY)
+  TUTOR_API_BASE            default https://api.deepseek.com
+  TUTOR_MODEL               default deepseek-v4-pro (claude-sonnet-4-6 for claude)
+  TUTOR_TEMPERATURE         default 0.3
+  TUTOR_THINKING            default enabled (DeepSeek thinking mode)
+  TUTOR_REASONING_EFFORT    default medium
+  TUTOR_MAX_TOKENS          optional generation cap
+  TUTOR_EFFORT              default medium (legacy claude only)
   TUTOR_MAX_CONCURRENCY     default 3   (simultaneous claude calls)
   TUTOR_MAX_QUEUE           default 15  (extra waiters before 429)
   TUTOR_TIMEOUT             default 120 (seconds per request)
@@ -43,6 +49,7 @@ import asyncio
 import json
 import logging
 import os
+import shutil
 import signal
 import time
 from collections import defaultdict, deque
@@ -50,13 +57,24 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 
+import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-MODEL = os.environ.get("TUTOR_MODEL", "claude-sonnet-4-6")
+PROVIDER = os.environ.get("TUTOR_PROVIDER", "deepseek").strip().lower()
+MODEL = os.environ.get(
+    "TUTOR_MODEL",
+    "claude-sonnet-4-6" if PROVIDER == "claude" else "deepseek-v4-pro",
+)
 EFFORT = os.environ.get("TUTOR_EFFORT", "medium")
+REASONING_EFFORT = os.environ.get("TUTOR_REASONING_EFFORT", EFFORT)
+THINKING = os.environ.get("TUTOR_THINKING", "enabled").strip().lower()
+TEMPERATURE = float(os.environ.get("TUTOR_TEMPERATURE", "0.3"))
+MAX_TOKENS = os.environ.get("TUTOR_MAX_TOKENS", "")
+API_BASE = os.environ.get("TUTOR_API_BASE", os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")).rstrip("/")
+API_KEY = os.environ.get("TUTOR_API_KEY") or os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("OPENAI_API_KEY", "")
 BEARER = os.environ.get("TUTOR_BEARER", "")
 RATE_PER_MIN = int(os.environ.get("TUTOR_RATE_PER_MIN", "20"))  # per-IP/min; 0 = disabled
 RATE_GLOBAL_PER_MIN = int(os.environ.get("TUTOR_RATE_GLOBAL_PER_MIN", "60"))  # all IPs/min; protects the single subscription; 0 = disabled
@@ -85,6 +103,12 @@ app.add_middleware(
     allow_methods=["POST", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
+
+
+def readiness() -> tuple[bool, Optional[str]]:
+    if PROVIDER == "claude":
+        return (True, None) if shutil.which(CLAUDE_BIN) else (False, "missing_claude_cli")
+    return (True, None) if API_KEY else (False, "missing_api_key")
 
 # Concurrency control. asyncio is single-threaded, so the in-flight counter
 # needs no lock as long as we never await between reading and updating it.
@@ -379,6 +403,100 @@ async def stream_claude(sys_prompt: str, prompt: str):
                 pass
 
 
+async def stream_openai_compatible(sys_prompt: str, prompt: str):
+    """Stream an OpenAI-compatible chat completion as tutor SSE frames."""
+    if not API_KEY:
+        logger.error("missing API key for provider=%s", PROVIDER)
+        yield sse({"type": "error", "message": "助教服务缺少模型 API Key,请联系管理员"}), ""
+        return
+
+    payload: dict = {
+        "model": MODEL,
+        "messages": [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": prompt},
+        ],
+        "stream": True,
+        "temperature": TEMPERATURE,
+    }
+    if "deepseek" in PROVIDER:
+        if THINKING not in ("0", "false", "no", "off", "disabled", ""):
+            payload["thinking"] = {"type": "enabled"}
+            payload["reasoning_effort"] = REASONING_EFFORT
+        else:
+            payload["thinking"] = {"type": "disabled"}
+    if MAX_TOKENS:
+        try:
+            payload["max_tokens"] = int(MAX_TOKENS)
+        except ValueError:
+            logger.warning("invalid TUTOR_MAX_TOKENS=%r, ignored", MAX_TOKENS)
+
+    url = f"{API_BASE}/chat/completions"
+    timeout = httpx.Timeout(connect=10.0, read=float(TIMEOUT), write=10.0, pool=10.0)
+    got_text = False
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            async with client.stream(
+                "POST",
+                url,
+                headers={
+                    "Authorization": f"Bearer {API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            ) as resp:
+                if resp.status_code >= 400:
+                    detail = (await resp.aread()).decode("utf-8", "replace")
+                    logger.error("%s chat error %s: %s", PROVIDER, resp.status_code, detail[:1000])
+                    yield sse({"type": "error", "message": "助教暂时不可用,请稍后再试"}), ""
+                    return
+
+                async for line in resp.aiter_lines():
+                    line = line.strip()
+                    if not line:
+                        continue
+                    if line.startswith(":"):
+                        continue
+                    if not line.startswith("data:"):
+                        continue
+                    data = line[5:].strip()
+                    if data == "[DONE]":
+                        break
+                    try:
+                        msg = json.loads(data)
+                    except json.JSONDecodeError:
+                        continue
+                    choices = msg.get("choices") or []
+                    if not choices:
+                        continue
+                    delta = choices[0].get("delta") or {}
+                    # Do not expose reasoning_content in the tutor UI; only final answer text.
+                    text = delta.get("content") or ""
+                    if text:
+                        got_text = True
+                        yield sse({"type": "delta", "text": text}), text
+
+        if got_text:
+            yield sse({"type": "done"}), ""
+        else:
+            yield sse({"type": "error", "message": "助教暂时没有返回内容,请重试"}), ""
+    except httpx.TimeoutException:
+        logger.warning("%s chat timeout after %ss", PROVIDER, TIMEOUT)
+        yield sse({"type": "error", "message": "响应超时,请重试"}), ""
+    except httpx.HTTPError as e:
+        logger.error("%s chat request failed: %s", PROVIDER, e)
+        yield sse({"type": "error", "message": "助教暂时不可用,请稍后再试"}), ""
+
+
+async def stream_model(sys_prompt: str, prompt: str):
+    if PROVIDER == "claude":
+        async for item in stream_claude(sys_prompt, prompt):
+            yield item
+    else:
+        async for item in stream_openai_compatible(sys_prompt, prompt):
+            yield item
+
+
 @app.post("/chat")
 async def chat(
     req: ChatRequest,
@@ -407,7 +525,7 @@ async def chat(
         status = "ok"
         try:
             async with _sem:  # waits here when MAX_CONCURRENCY are already running
-                async for frame, text in stream_claude(sys_prompt, prompt):
+                async for frame, text in stream_model(sys_prompt, prompt):
                     if text:
                         reply_parts.append(text)
                     elif '"type": "error"' in frame:
@@ -437,10 +555,14 @@ async def chat(
 
 @app.get("/health")
 async def health():
+    ready, reason = readiness()
     return {
         "ok": True,
+        "ready": ready,
+        "reason": reason,
+        "provider": PROVIDER,
         "model": MODEL,
-        "effort": EFFORT,
+        "effort": EFFORT if PROVIDER == "claude" else None,
         "max_concurrency": MAX_CONCURRENCY,
         "inflight": _inflight,
     }

@@ -6,20 +6,22 @@ cd "$(dirname "$0")"
 
 # 1) 运行时检查
 command -v python3 >/dev/null || { echo "✗ 需要 python3 (≥3.9)"; exit 1; }
-command -v node    >/dev/null || { echo "✗ 需要 node (≥18) 来跑 claude CLI,先装 Node"; exit 1; }
-command -v claude  >/dev/null || { echo "✗ 需要 claude CLI: npm i -g @anthropic-ai/claude-code"; exit 1; }
 
-# 2) venv + 依赖(只在首次)
+# 2) venv + 依赖
 if [ ! -d .venv ]; then
-  echo "→ 建 venv 并安装依赖…"
+  echo "→ 建 venv…"
   python3 -m venv .venv
-  .venv/bin/pip install -q -r requirements.txt
 fi
+echo "→ 安装/更新依赖…"
+.venv/bin/python -m pip install -q -r requirements.txt
 
-# 3) 从 .env 导入订阅 token(claude 子进程会继承这个环境变量)
-[ -f .env ] || { echo "✗ 缺少 .env(里面要有 CLAUDE_CODE_OAUTH_TOKEN=...)"; exit 1; }
+# 3) 从 .env 导入模型 API key
+[ -f .env ] || { echo "✗ 缺少 .env(里面要有 DEEPSEEK_API_KEY=...)"; exit 1; }
 set -a; . ./.env; set +a
-[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ] || { echo "✗ .env 里没有 CLAUDE_CODE_OAUTH_TOKEN"; exit 1; }
+if [ "${TUTOR_PROVIDER:-deepseek}" != "claude" ] && [ -z "${DEEPSEEK_API_KEY:-${TUTOR_API_KEY:-}}" ]; then
+  echo "✗ .env 里没有 DEEPSEEK_API_KEY 或 TUTOR_API_KEY"
+  exit 1
+fi
 
 # 4) 启动(exec 让信号直达 uvicorn,便于被 systemd/Ctrl-C 管理)
 echo "→ 启动 http://0.0.0.0:${PORT:-8787}  (Ctrl-C 停止)"
