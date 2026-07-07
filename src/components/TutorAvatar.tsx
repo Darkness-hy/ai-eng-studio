@@ -123,10 +123,10 @@ export function TutorAvatar({
   const statusSize = Math.max(8, Math.round(size * 0.22));
   const statusColor =
     availability === 'online'
-      ? 'var(--color-ink-green)'
+      ? '#00c853'
       : availability === 'offline'
-        ? 'var(--color-ink-red)'
-        : 'var(--color-faint)';
+        ? '#ff1744'
+        : '#ffbf00';
 
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }} aria-hidden>
