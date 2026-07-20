@@ -500,7 +500,7 @@ export function ResearchGame3DShell({
 
   return (
     <div
-      className="research-game-ui game3d-shell relative h-dvh min-h-[520px] overflow-hidden bg-[#b8dce2] text-ink"
+      className="research-game-ui game3d-shell relative h-dvh min-h-[520px] overflow-hidden bg-[#6f7d82] text-ink"
       data-renderer="three"
       data-current-scene={sceneId}
       data-camera-mode={cameraMode}
@@ -609,7 +609,7 @@ export function ResearchGame3DShell({
       />
 
       {!runtimeReady && playerProfile && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-[#b8dce2] text-[16px] text-[#29464d]">
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-[#6f7d82] text-[16px] text-[#29464d]">
           正在构建 3D 科研岛……
         </div>
       )}

@@ -323,7 +323,7 @@ export function ResearchGameShell() {
 
   return (
     <div
-      className="research-game-ui relative h-dvh min-h-[520px] overflow-hidden bg-[#dce8e4] text-ink"
+      className="research-game-ui relative h-dvh min-h-[520px] overflow-hidden bg-[#6f7d82] text-ink"
       data-current-scene={currentScene}
       data-player-moving={playerMoving ? 'true' : 'false'}
     >
