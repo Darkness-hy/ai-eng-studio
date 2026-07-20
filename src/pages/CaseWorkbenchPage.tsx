@@ -1,13 +1,19 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { caseChecklist } from '../game/case/checklist';
 import { buildL1Markdown } from '../game/case/L1Export';
 import {
   addEdge,
   canVisitPoi,
   canRunCaseExperiment,
+  caseStatusLabel,
   fillDemoScaffoldTexts,
   getDemoPois,
+  hasPassedReview,
   markClosed,
+  playDemoScript,
+  prepareBoardForReview,
+  previewReview,
   removeEdge,
   resetCase,
   runCaseExperiment,
@@ -39,6 +45,7 @@ export function CaseWorkbenchPage() {
   const [limText, setLimText] = useState('');
   const [expBusy, setExpBusy] = useState(false);
   const [expDetail, setExpDetail] = useState<string | null>(null);
+  const [scriptBusy, setScriptBusy] = useState(false);
 
   const flash = (msg: string) => {
     setToast(msg);
@@ -54,19 +61,44 @@ export function CaseWorkbenchPage() {
         </h1>
         <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-faint">
           {zh
-            ? 'W1 逻辑切片：不依赖 3D，走完「接案 → 取证 → 导师 → 实验 → 组板 → 审稿 → 导出 L1」。'
-            : 'W1 logic slice: no 3D required — brief → evidence → mentor → experiment → board → review → L1 export.'}
+            ? '探案主循环：接案 → 取证 → 导师 → 实验 → 组板 → 审稿 → 导出 L1 训练论文。也可先回岛上实地检视。'
+            : 'Detective loop: brief → evidence → mentor → experiment → board → review → L1 export.'}
         </p>
-        <button
-          type="button"
-          className="mt-8 rounded-md bg-ink px-5 py-2.5 text-[14px] text-paper hover:bg-ink/90"
-          onClick={() => {
-            startDemoCase();
-            flash(zh ? '案件已立案' : 'Case opened');
-          }}
-        >
-          {zh ? '开始示范案件：被夸大的准确率' : 'Start demo case: Inflated Accuracy'}
-        </button>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <button
+            type="button"
+            className="rounded-md bg-ink px-5 py-2.5 text-[14px] text-paper hover:bg-ink/90"
+            onClick={() => {
+              startDemoCase();
+              flash(zh ? '案件已立案' : 'Case opened');
+            }}
+          >
+            {zh ? '开始示范案件：被夸大的准确率' : 'Start demo case: Inflated Accuracy'}
+          </button>
+          <button
+            type="button"
+            className="rounded-md border border-hairline px-5 py-2.5 text-[14px] hover:bg-bone disabled:opacity-50"
+            disabled={scriptBusy}
+            onClick={() => {
+              setScriptBusy(true);
+              void playDemoScript({ submit: true, exportL1: true })
+                .then((r) => {
+                  flash(
+                    r.ok
+                      ? zh
+                        ? '剧本跑通：已结案'
+                        : 'Script OK: case closed'
+                      : zh
+                        ? `剧本未过审（${r.findingsCount ?? '?'}）`
+                        : `Script failed review (${r.findingsCount ?? '?'})`,
+                  );
+                })
+                .finally(() => setScriptBusy(false));
+            }}
+          >
+            {scriptBusy ? (zh ? '剧本执行中…' : 'Running…') : zh ? '一键跑通 30 分钟剧本' : 'Run 30‑min script'}
+          </button>
+        </div>
         <p className="mt-6 text-[13px] text-faint">
           <Link to="/research-game" className="underline decoration-hairline underline-offset-2">
             {zh ? '返回科研岛' : 'Back to island'}
@@ -77,6 +109,9 @@ export function CaseWorkbenchPage() {
   }
 
   const lastReview = c.reviewRounds[c.reviewRounds.length - 1];
+  const checklist = caseChecklist(c);
+  const preview = previewReview();
+  const passed = hasPassedReview(c);
   const loc = (x: { zh: string; en: string }) => (zh ? x.zh : x.en);
 
   return (
@@ -85,7 +120,7 @@ export function CaseWorkbenchPage() {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-4">
           <div className="min-w-0">
             <p className="font-mono text-[10.5px] tracking-[0.16em] text-faint">
-              CASE · {c.id} · {c.status}
+              CASE · {c.id} · {caseStatusLabel(c.status, zh)}
             </p>
             <h1 className="truncate font-serif text-[22px] font-semibold sm:text-[26px]">{loc(c.title)}</h1>
           </div>
@@ -93,12 +128,37 @@ export function CaseWorkbenchPage() {
             <CompletenessBar value={c.completeness} zh={zh} />
             <button
               type="button"
+              className="rounded-md border border-hairline px-3 py-1.5 text-[12.5px] text-faint hover:text-ink disabled:opacity-50"
+              disabled={scriptBusy}
+              onClick={() => {
+                setScriptBusy(true);
+                void playDemoScript({ submit: true, exportL1: false })
+                  .then((r) =>
+                    flash(
+                      r.ok
+                        ? zh
+                          ? '剧本已跑到可结案'
+                          : 'Script ready to export'
+                        : zh
+                          ? '剧本未过审'
+                          : 'Script failed review',
+                    ),
+                  )
+                  .finally(() => setScriptBusy(false));
+              }}
+            >
+              {zh ? '一键剧本' : 'Script'}
+            </button>
+            <button
+              type="button"
               className="rounded-md border border-hairline px-3 py-1.5 text-[12.5px] text-faint hover:text-ink"
               onClick={() => {
-                if (window.confirm(zh ? '重置案件？' : 'Reset case?')) {
+                if (window.confirm(zh ? '重置案件？本地卷宗将清空。' : 'Reset case? Local dossier will be cleared.')) {
                   resetCase();
                   setReport(null);
                   setMentorMsg(null);
+                  setExpDetail(null);
+                  setLimText('');
                 }
               }}
             >
@@ -108,7 +168,7 @@ export function CaseWorkbenchPage() {
               to="/research-game"
               className="rounded-md border border-hairline px-3 py-1.5 text-[12.5px] text-faint hover:text-ink"
             >
-              {zh ? '回岛' : 'Island'}
+              {zh ? '回岛探案' : 'Island'}
             </Link>
           </div>
         </div>
@@ -432,25 +492,53 @@ export function CaseWorkbenchPage() {
             </div>
           </Panel>
 
-          <Panel title={zh ? '审稿庭' : 'Review'}>
-            <button
-              type="button"
-              className="rounded-md bg-ink px-3 py-1.5 text-[13px] text-paper hover:bg-ink/90"
-              onClick={() => {
-                const r = submitReview();
-                flash(
-                  r.passed
-                    ? zh
-                      ? '审稿通过'
-                      : 'Review passed'
-                    : zh
-                      ? `未通过（${r.findingsCount} 项）`
-                      : `Failed (${r.findingsCount})`,
-                );
-              }}
-            >
-              {zh ? '送审' : 'Submit for review'}
-            </button>
+          <Panel title={zh ? '结案清单 / 审稿庭' : 'Checklist / Review'}>
+            <ul className="space-y-1.5">
+              {checklist.map((item) => (
+                <li
+                  key={item.id}
+                  className={`flex items-start gap-2 text-[12.5px] ${item.ok ? 'text-ink-green' : 'text-faint'}`}
+                >
+                  <span className="font-mono text-[11px]">{item.ok ? '✓' : '·'}</span>
+                  <span>{zh ? item.zh : item.en}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 font-mono text-[11px] text-faint">
+              {zh ? '预检洞' : 'Preview findings'}: {preview.length}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="rounded-md border border-hairline px-3 py-1.5 text-[12.5px] hover:bg-bone"
+                onClick={() => {
+                  prepareBoardForReview();
+                  setLimText('');
+                  flash(zh ? '已整理卷宗（含撤回过度主张）' : 'Board prepared (overclaim retracted)');
+                }}
+              >
+                {zh ? '一键整理卷宗' : 'Prepare board'}
+              </button>
+              <button
+                type="button"
+                className="rounded-md bg-ink px-3 py-1.5 text-[13px] text-paper hover:bg-ink/90 disabled:opacity-40"
+                disabled={c.status === 'closed'}
+                onClick={() => {
+                  const r = submitReview();
+                  flash(
+                    r.passed
+                      ? zh
+                        ? '审稿通过'
+                        : 'Review passed'
+                      : zh
+                        ? `未通过（${r.findingsCount} 项）`
+                        : `Failed (${r.findingsCount})`,
+                  );
+                }}
+              >
+                {zh ? '送审' : 'Submit for review'}
+              </button>
+            </div>
             {lastReview && (
               <div className="mt-3 space-y-2">
                 <p className="font-mono text-[11px] text-faint">
@@ -473,31 +561,52 @@ export function CaseWorkbenchPage() {
             <button
               type="button"
               className="rounded-md border border-hairline px-3 py-1.5 text-[13px] hover:bg-bone disabled:opacity-40"
-              disabled={!c.reviewRounds.some((r) => r.status === 'passed')}
+              disabled={!passed}
               onClick={() => {
                 const md = buildL1Markdown(c, zh ? 'zh' : 'en');
                 setReport(md);
                 markClosed();
-                flash(zh ? 'L1 已生成' : 'L1 generated');
+                flash(zh ? 'L1 已生成并结案' : 'L1 generated · case closed');
               }}
             >
-              {zh ? '生成训练论文' : 'Generate L1 report'}
+              {zh ? '生成训练论文并结案' : 'Generate L1 & close'}
             </button>
+            {c.status === 'closed' && (
+              <p className="mt-2 text-[12.5px] text-ink-green">{zh ? '本案已结案。' : 'Case closed.'}</p>
+            )}
             {report && (
               <div className="mt-3">
                 <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-md border border-hairline bg-bone p-3 text-[12px] leading-relaxed">
                   {report}
                 </pre>
-                <button
-                  type="button"
-                  className="mt-2 text-[12.5px] text-faint underline"
-                  onClick={() => {
-                    void navigator.clipboard.writeText(report);
-                    flash(zh ? '已复制' : 'Copied');
-                  }}
-                >
-                  {zh ? '复制全文' : 'Copy'}
-                </button>
+                <div className="mt-2 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    className="text-[12.5px] text-faint underline"
+                    onClick={() => {
+                      void navigator.clipboard.writeText(report);
+                      flash(zh ? '已复制' : 'Copied');
+                    }}
+                  >
+                    {zh ? '复制全文' : 'Copy'}
+                  </button>
+                  <button
+                    type="button"
+                    className="text-[12.5px] text-faint underline"
+                    onClick={() => {
+                      const blob = new Blob([report], { type: 'text/markdown;charset=utf-8' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `${c.id}-L1.md`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      flash(zh ? '已下载 .md' : 'Downloaded .md');
+                    }}
+                  >
+                    {zh ? '下载 Markdown' : 'Download .md'}
+                  </button>
+                </div>
               </div>
             )}
           </Panel>

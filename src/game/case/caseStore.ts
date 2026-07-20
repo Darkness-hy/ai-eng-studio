@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { computeCompleteness, isReadyForReview } from './completeness';
+import { computeCompleteness, hasExperiment, isReadyForReview } from './completeness';
 import { createDemoCaseShell, DEMO_CASE_ID, DEMO_EVIDENCE_CATALOG, DEMO_POIS } from './demoCase';
 import { evaluateReview } from './reviewRules';
 import type {
@@ -357,6 +357,15 @@ export function removeEdge(edgeId: string) {
   });
 }
 
+/** Dry-run review findings without writing a round. */
+export function previewReview(): ReturnType<typeof evaluateReview> {
+  return evaluateReview(requireCase());
+}
+
+export function hasPassedReview(c: ResearchCase = requireCase()): boolean {
+  return c.reviewRounds.some((r) => r.status === 'passed');
+}
+
 export function submitReview(): { passed: boolean; findingsCount: number } {
   const c = requireCase();
   const findings = evaluateReview(c);
@@ -380,8 +389,93 @@ export function submitReview(): { passed: boolean; findingsCount: number } {
 export function markClosed() {
   mutate((c) => {
     c.status = 'closed';
+    if (c.mentorStage === 'taught_controls') c.mentorStage = 'done';
     return c;
   });
+}
+
+export function caseStatusLabel(status: ResearchCase['status'], zh: boolean): string {
+  const map: Record<ResearchCase['status'], [string, string]> = {
+    briefed: ['已立案', 'Briefed'],
+    investigating: ['侦办中', 'Investigating'],
+    ready_for_review: ['可送审/可结案', 'Ready'],
+    revision: ['需补证', 'Revision'],
+    closed: ['已结案', 'Closed'],
+  };
+  return map[status][zh ? 0 : 1];
+}
+
+/** Auto-wire board edges + retract overclaim so a filled dossier can pass review. */
+export function prepareBoardForReview() {
+  fillDemoScaffoldTexts();
+  mutate((c) => {
+    const magic = c.claims.find((cl) => cl.id === 'cl_method_a_magic');
+    if (magic && hasExperiment(c) && c.edges.some((e) => e.type === 'supports' && e.to === 'cl_protocol_bias')) {
+      magic.state = 'retracted';
+    }
+    // Ensure protocol claim is supported when split or exp evidence exists.
+    if (c.evidence.some((e) => e.id === 'ev_split_leak' || e.id === 'ev_exp_01')) {
+      const from = c.evidence.some((e) => e.id === 'ev_exp_01') ? 'ev_exp_01' : 'ev_split_leak';
+      if (!c.edges.some((e) => e.type === 'supports' && e.to === 'cl_protocol_bias')) {
+        c.edges.push({
+          id: `edge_prep_${Date.now()}`,
+          from,
+          to: 'cl_protocol_bias',
+          type: 'supports',
+        });
+      }
+    }
+    return c;
+  });
+}
+
+/**
+ * QA / tutorial: walk the demo case from empty to review-ready (and optionally pass).
+ * Uses simulated experiment only (no network).
+ */
+export async function playDemoScript(opts?: {
+  submit?: boolean;
+  exportL1?: boolean;
+}): Promise<{ ok: boolean; steps: string[]; findingsCount?: number }> {
+  const steps: string[] = [];
+  resetCase();
+  startDemoCase();
+  steps.push('start');
+
+  for (const id of ['poi_poster_a', 'poi_repro_log'] as const) {
+    const r = visitPoi(id);
+    steps.push(`visit:${id}:${r.ok ? 'ok' : r.reason}`);
+  }
+  const m = talkToMentor(true);
+  steps.push(`mentor:${m.ok ? m.stage : 'blocked'}`);
+  const split = visitPoi('poi_split_doc');
+  steps.push(`visit:poi_split_doc:${split.ok ? 'ok' : split.reason}`);
+
+  runSimulatedExperiment();
+  steps.push('experiment:sim');
+
+  prepareBoardForReview();
+  steps.push('prepare_board');
+
+  const c = requireCase();
+  const preview = evaluateReview(c);
+  if (preview.length > 0 && !opts?.submit) {
+    steps.push(`preview_findings:${preview.length}`);
+    return { ok: false, steps, findingsCount: preview.length };
+  }
+
+  if (opts?.submit !== false) {
+    const rev = submitReview();
+    steps.push(`review:${rev.passed ? 'passed' : 'failed'}:${rev.findingsCount}`);
+    if (!rev.passed) return { ok: false, steps, findingsCount: rev.findingsCount };
+  }
+
+  if (opts?.exportL1) {
+    markClosed();
+    steps.push('closed');
+  }
+
+  return { ok: true, steps };
 }
 
 export function useCase(): ResearchCase | null {
@@ -417,7 +511,7 @@ export function fillDemoScaffoldTexts() {
         '未获取海报作者原始训练代码，协议还原可能不完整。',
       ];
     }
-    // helpful default edges if evidence present
+    // Historical poster supports the magic claim (for contradiction narrative).
     if (c.evidence.some((e) => e.id === 'ev_poster_a')) {
       if (!c.edges.some((e) => e.from === 'ev_poster_a' && e.to === 'cl_method_a_magic')) {
         c.edges.push({ id: `edge_auto_pa`, from: 'ev_poster_a', to: 'cl_method_a_magic', type: 'supports' });
@@ -432,6 +526,14 @@ export function fillDemoScaffoldTexts() {
       if (!c.edges.some((e) => e.from === 'ev_split_leak' && e.to === 'cl_protocol_bias')) {
         c.edges.push({ id: `edge_auto_sl`, from: 'ev_split_leak', to: 'cl_protocol_bias', type: 'supports' });
       }
+    }
+    // Once protocol bias is evidenced + experiment done, retract the overclaim.
+    if (
+      hasExperiment(c) &&
+      c.edges.some((e) => e.type === 'supports' && e.to === 'cl_protocol_bias')
+    ) {
+      const magic = c.claims.find((cl) => cl.id === 'cl_method_a_magic');
+      if (magic) magic.state = 'retracted';
     }
     return c;
   });

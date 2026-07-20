@@ -293,13 +293,13 @@ closed when review passed && export done
 
 ### 6.1 做（Must）
 
-- [ ] 1 个 demo case 全流程可打通（第二节剧本）  
-- [ ] ≥ 4 个可检视 POI + 1 实验挂钩  
-- [ ] 证据板 supports/contradicts  
-- [ ] 导师 1 段门控对话  
-- [ ] 审稿 ≥ 1 轮可失败可重来  
-- [ ] L1 导出  
-- [ ] 本地存档与 Reset Case  
+- [x] 1 个 demo case 全流程可打通（第二节剧本）  
+- [x] ≥ 4 个可检视 POI + 1 实验挂钩  
+- [x] 证据板 supports/contradicts  
+- [x] 导师 1 段门控对话  
+- [x] 审稿 ≥ 1 轮可失败可重来  
+- [x] L1 导出  
+- [x] 本地存档与 Reset Case  
 - [ ] 桌面可玩；移动端不崩（可简化拖拽）
 
 ### 6.2 不做（v0）
@@ -320,7 +320,7 @@ closed when review passed && export done
 | **W1** | 类型 + store + demo 数据 + 无 3D 的板 UI 可点通 | ✅ `/research-game/case` 已可立案→L1（2026-07-20, b6169eb） |
 | **W2** | 挂 3D/2D POI 检视 → 真发现证据 | ✅ 3D 注入 case landmarks + 导师门控 + CaseIslandHud；2D 显示 HUD（2026-07-20） |
 | **W3** | ResearchRun 链接 + 导师对话状态机 | ✅ mentorStage + runCaseExperiment(live|sim) + 机房实验 overlay（2026-07-20） |
-| **W4** | 审稿规则 + L1 导出 + Reset + 存档 | 剧本 0–30 分钟一次通过 |
+| **W4** | 审稿规则 + L1 导出 + Reset + 存档 | ✅ 清单/预检/一键剧本/下载 L1 + smoke `scripts/check-case-detective-v0.ts`（2026-07-20） |
 | **W5** | 打磨文案、完整度提示、移动端降级 | Playwright 冒烟可选 |
 
 ---
