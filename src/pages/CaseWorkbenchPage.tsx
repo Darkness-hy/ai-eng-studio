@@ -1,6 +1,12 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { caseChecklist } from '../game/case/checklist';
+import {
+  completenessLabel,
+  contradictionOpenLabel,
+  isContradictionOpen,
+  nextCaseHint,
+} from '../game/case/copy';
 import { buildL1Markdown } from '../game/case/L1Export';
 import {
   addEdge,
@@ -54,30 +60,35 @@ export function CaseWorkbenchPage() {
 
   if (!c) {
     return (
-      <div className="research-game-ui mx-auto max-w-3xl px-5 py-16">
-        <p className="font-mono text-[11px] tracking-[0.18em] text-faint">CASE DESK · V0</p>
-        <h1 className="mt-3 font-serif text-[32px] font-semibold">
+      <div className="research-game-ui mx-auto max-w-3xl px-4 py-10 sm:px-5 sm:py-16">
+        <p className="font-mono text-[11px] tracking-[0.14em] text-faint">
+          {zh ? '卷宗台 · 探案' : 'Case desk · detective'}
+        </p>
+        <h1 className="mt-3 font-serif text-[28px] font-semibold leading-tight sm:text-[32px]">
           {zh ? '案件工作台' : 'Case workbench'}
         </h1>
         <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-faint">
           {zh
-            ? '探案主循环：接案 → 取证 → 导师 → 实验 → 组板 → 审稿 → 导出 L1 训练论文。也可先回岛上实地检视。'
-            : 'Detective loop: brief → evidence → mentor → experiment → board → review → L1 export.'}
+            ? '查清岛上的异常：取证、问导师、跑对照、组卷宗、过审稿，导出 L1 训练论文。也可先回岛上实地检视。'
+            : 'Solve the island anomaly: evidence, mentor, control run, dossier, review, then L1 export. Or investigate on the island first.'}
         </p>
-        <div className="mt-8 flex flex-wrap gap-3">
+        <p className="mt-3 rounded-md border border-hairline bg-bone/70 px-3 py-2 text-[13px] leading-snug text-ink">
+          {nextCaseHint(null, zh)}
+        </p>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <button
             type="button"
-            className="rounded-md bg-ink px-5 py-2.5 text-[14px] text-paper hover:bg-ink/90"
+            className="min-h-11 rounded-md bg-ink px-5 py-2.5 text-[14px] text-paper hover:bg-ink/90"
             onClick={() => {
               startDemoCase();
-              flash(zh ? '案件已立案' : 'Case opened');
+              flash(zh ? '案件已立案——矛盾未解' : 'Case opened — contradiction open');
             }}
           >
-            {zh ? '开始示范案件：被夸大的准确率' : 'Start demo case: Inflated Accuracy'}
+            {zh ? '接下示范案：被夸大的准确率' : 'Accept demo: Inflated Accuracy'}
           </button>
           <button
             type="button"
-            className="rounded-md border border-hairline px-5 py-2.5 text-[14px] hover:bg-bone disabled:opacity-50"
+            className="min-h-11 rounded-md border border-hairline px-5 py-2.5 text-[14px] hover:bg-bone disabled:opacity-50"
             disabled={scriptBusy}
             onClick={() => {
               setScriptBusy(true);
@@ -86,8 +97,8 @@ export function CaseWorkbenchPage() {
                   flash(
                     r.ok
                       ? zh
-                        ? '剧本跑通：已结案'
-                        : 'Script OK: case closed'
+                        ? '剧本跑通：矛盾已收敛并结案'
+                        : 'Script OK: contradiction resolved & closed'
                       : zh
                         ? `剧本未过审（${r.findingsCount ?? '?'}）`
                         : `Script failed review (${r.findingsCount ?? '?'})`,
@@ -96,12 +107,12 @@ export function CaseWorkbenchPage() {
                 .finally(() => setScriptBusy(false));
             }}
           >
-            {scriptBusy ? (zh ? '剧本执行中…' : 'Running…') : zh ? '一键跑通 30 分钟剧本' : 'Run 30‑min script'}
+            {scriptBusy ? (zh ? '剧本执行中…' : 'Running…') : zh ? '一键跑通示范结案' : 'Run demo to close'}
           </button>
         </div>
         <p className="mt-6 text-[13px] text-faint">
           <Link to="/research-game" className="underline decoration-hairline underline-offset-2">
-            {zh ? '返回科研岛' : 'Back to island'}
+            {zh ? '先回岛上探案' : 'Investigate on the island'}
           </Link>
         </p>
       </div>
@@ -112,82 +123,100 @@ export function CaseWorkbenchPage() {
   const checklist = caseChecklist(c);
   const preview = previewReview();
   const passed = hasPassedReview(c);
+  const open = isContradictionOpen(c);
+  const hint = nextCaseHint(c, zh);
   const loc = (x: { zh: string; en: string }) => (zh ? x.zh : x.en);
 
   return (
-    <div className="research-game-ui min-h-dvh bg-canvas pb-16">
-      <header className="border-b border-hairline bg-paper/90">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <div className="min-w-0">
-            <p className="font-mono text-[10.5px] tracking-[0.16em] text-faint">
-              CASE · {c.id} · {caseStatusLabel(c.status, zh)}
-            </p>
-            <h1 className="truncate font-serif text-[22px] font-semibold sm:text-[26px]">{loc(c.title)}</h1>
+    <div className="research-game-ui min-h-dvh bg-canvas pb-[max(4rem,env(safe-area-inset-bottom))]">
+      <header className="sticky top-0 z-30 border-b border-hairline bg-paper/95 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:px-5 sm:py-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-[10.5px] tracking-[0.12em] text-faint">
+                {zh ? '卷宗' : 'Dossier'} · {c.id} · {caseStatusLabel(c.status, zh)}
+              </p>
+              <h1 className="mt-0.5 font-serif text-[20px] font-semibold leading-snug sm:text-[26px]">
+                {loc(c.title)}
+              </h1>
+              <p className={`mt-1 text-[12px] ${open ? 'text-ink-yellow' : 'text-ink-green'}`}>
+                {contradictionOpenLabel(zh, open)}
+              </p>
+            </div>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+              <CompletenessBar value={c.completeness} zh={zh} />
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="min-h-9 rounded-md border border-hairline px-3 py-1.5 text-[12.5px] text-faint hover:text-ink disabled:opacity-50"
+                  disabled={scriptBusy}
+                  onClick={() => {
+                    setScriptBusy(true);
+                    void playDemoScript({ submit: true, exportL1: false })
+                      .then((r) =>
+                        flash(
+                          r.ok
+                            ? zh
+                              ? '剧本已跑到可结案'
+                              : 'Script ready to export'
+                            : zh
+                              ? '剧本未过审'
+                              : 'Script failed review',
+                        ),
+                      )
+                      .finally(() => setScriptBusy(false));
+                  }}
+                >
+                  {zh ? '一键剧本' : 'Script'}
+                </button>
+                <button
+                  type="button"
+                  className="min-h-9 rounded-md border border-hairline px-3 py-1.5 text-[12.5px] text-faint hover:text-ink"
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        zh ? '重置案件？本地卷宗将清空。' : 'Reset case? Local dossier will be cleared.',
+                      )
+                    ) {
+                      resetCase();
+                      setReport(null);
+                      setMentorMsg(null);
+                      setExpDetail(null);
+                      setLimText('');
+                    }
+                  }}
+                >
+                  {zh ? '重置' : 'Reset'}
+                </button>
+                <Link
+                  to="/research-game"
+                  className="inline-flex min-h-9 items-center rounded-md border border-hairline px-3 py-1.5 text-[12.5px] text-faint hover:text-ink"
+                >
+                  {zh ? '回岛探案' : 'Island'}
+                </Link>
+              </div>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <CompletenessBar value={c.completeness} zh={zh} />
-            <button
-              type="button"
-              className="rounded-md border border-hairline px-3 py-1.5 text-[12.5px] text-faint hover:text-ink disabled:opacity-50"
-              disabled={scriptBusy}
-              onClick={() => {
-                setScriptBusy(true);
-                void playDemoScript({ submit: true, exportL1: false })
-                  .then((r) =>
-                    flash(
-                      r.ok
-                        ? zh
-                          ? '剧本已跑到可结案'
-                          : 'Script ready to export'
-                        : zh
-                          ? '剧本未过审'
-                          : 'Script failed review',
-                    ),
-                  )
-                  .finally(() => setScriptBusy(false));
-              }}
-            >
-              {zh ? '一键剧本' : 'Script'}
-            </button>
-            <button
-              type="button"
-              className="rounded-md border border-hairline px-3 py-1.5 text-[12.5px] text-faint hover:text-ink"
-              onClick={() => {
-                if (window.confirm(zh ? '重置案件？本地卷宗将清空。' : 'Reset case? Local dossier will be cleared.')) {
-                  resetCase();
-                  setReport(null);
-                  setMentorMsg(null);
-                  setExpDetail(null);
-                  setLimText('');
-                }
-              }}
-            >
-              {zh ? '重置' : 'Reset'}
-            </button>
-            <Link
-              to="/research-game"
-              className="rounded-md border border-hairline px-3 py-1.5 text-[12.5px] text-faint hover:text-ink"
-            >
-              {zh ? '回岛探案' : 'Island'}
-            </Link>
-          </div>
+          <p className="rounded-md border border-hairline bg-bone/60 px-3 py-2 text-[13px] leading-snug text-ink">
+            {hint}
+          </p>
         </div>
       </header>
 
       {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-md bg-ink px-4 py-2 text-[13px] text-paper shadow-lift">
+        <div className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-1/2 z-50 max-w-[min(92vw,24rem)] -translate-x-1/2 rounded-md bg-ink px-4 py-2 text-center text-[13px] text-paper shadow-lift">
           {toast}
         </div>
       )}
 
-      <div className="mx-auto grid max-w-6xl gap-6 px-5 py-6 lg:grid-cols-[1fr_1.1fr]">
+      <div className="mx-auto grid max-w-6xl gap-4 px-4 py-4 sm:gap-6 sm:px-5 sm:py-6 lg:grid-cols-[1fr_1.1fr]">
         {/* Left: world desk actions */}
-        <section className="space-y-4">
+        <section className="order-2 space-y-4 lg:order-1">
           <Panel title={zh ? '异常通报' : 'Bulletin'}>
             <p className="text-[14px] leading-relaxed text-ink">{loc(c.bulletin)}</p>
           </Panel>
 
-          <Panel title={zh ? '现场取证（书桌模式）' : 'Field POIs (desk mode)'}>
+          <Panel title={zh ? '现场取证' : 'Field sites'}>
             <ul className="space-y-2">
               {pois.map((poi) => (
                 <PoiRow
@@ -321,8 +350,8 @@ export function CaseWorkbenchPage() {
           </Panel>
         </section>
 
-        {/* Right: dossier board */}
-        <section className="space-y-4">
+        {/* Right: dossier board — first on mobile so players see the case spine */}
+        <section className="order-1 space-y-4 lg:order-2">
           <Panel title={zh ? '卷宗正文' : 'Dossier fields'}>
             <label className="block text-[12px] text-faint">{zh ? '研究问题' : 'Question'}</label>
             <textarea
@@ -628,12 +657,12 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 function CompletenessBar({ value, zh }: { value: number; zh: boolean }) {
   const pct = Math.round(value * 100);
   return (
-    <div className="flex items-center gap-2">
-      <div className="h-1.5 w-28 overflow-hidden rounded-full bg-bone">
+    <div className="flex w-full items-center gap-2 sm:w-auto">
+      <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-bone sm:w-28 sm:flex-none">
         <div className="h-full bg-ink transition-all" style={{ width: `${pct}%` }} />
       </div>
-      <span className="font-mono text-[11px] text-faint">
-        {pct}% {zh ? '完整度' : 'complete'}
+      <span className="shrink-0 font-mono text-[11px] text-faint">
+        {pct}% {completenessLabel(zh)}
       </span>
     </div>
   );

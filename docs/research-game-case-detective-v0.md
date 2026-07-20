@@ -300,7 +300,7 @@ closed when review passed && export done
 - [x] 审稿 ≥ 1 轮可失败可重来  
 - [x] L1 导出  
 - [x] 本地存档与 Reset Case  
-- [ ] 桌面可玩；移动端不崩（可简化拖拽）
+- [x] 桌面可玩；移动端不崩（可简化拖拽）
 
 ### 6.2 不做（v0）
 
@@ -321,7 +321,7 @@ closed when review passed && export done
 | **W2** | 挂 3D/2D POI 检视 → 真发现证据 | ✅ 3D 注入 case landmarks + 导师门控 + CaseIslandHud；2D 显示 HUD（2026-07-20） |
 | **W3** | ResearchRun 链接 + 导师对话状态机 | ✅ mentorStage + runCaseExperiment(live|sim) + 机房实验 overlay（2026-07-20） |
 | **W4** | 审稿规则 + L1 导出 + Reset + 存档 | ✅ 清单/预检/一键剧本/下载 L1 + smoke `scripts/check-case-detective-v0.ts`（2026-07-20） |
-| **W5** | 打磨文案、完整度提示、移动端降级 | Playwright 冒烟可选 |
+| **W5** | 打磨文案、完整度提示、移动端降级 | ✅ 案件语气 nextHint + 矛盾未解标签 + sticky 移动布局 + 岛 HUD 双语（2026-07-20） |
 
 ---
 

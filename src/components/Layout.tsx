@@ -73,7 +73,7 @@ export function Layout() {
               {lang === 'zh' ? '科研岛' : 'Research Island'}
             </NavLink>
             <NavLink to="/research-game/case" className={navCls}>
-              {lang === 'zh' ? '案件台' : 'Case desk'}
+              {lang === 'zh' ? '卷宗' : 'Dossier'}
             </NavLink>
             <NavLink to="/review" className={navCls}>
               <span className="inline-flex items-center gap-1.5">

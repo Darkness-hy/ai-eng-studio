@@ -532,9 +532,13 @@ export function ResearchGame3DShell({
 
       <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-4">
         <div className="game3d-hud-panel max-w-[min(70vw,470px)] px-3 py-2.5 sm:px-4 sm:py-3">
-          <p className="font-mono text-[10px] tracking-[0.14em] text-white/65">RESEARCH ISLAND · 3D</p>
+          <p className="font-mono text-[10px] tracking-[0.12em] text-white/65">
+            {caseFile && caseFile.status !== 'closed' ? '探案现场 · 3D' : '科研岛 · 3D'}
+          </p>
           <h1 className="mt-1 truncate font-serif text-[22px] font-semibold text-white sm:text-[26px]">{scene.name}</h1>
-          <p className="mt-1 hidden truncate text-[14px] text-white/68 sm:block">{scene.subtitle}</p>
+          <p className="mt-1 hidden truncate text-[14px] text-white/68 sm:block">
+            {caseFile && caseFile.status !== 'closed' ? '查线索、找导师、跑对照——卷宗在左下角' : scene.subtitle}
+          </p>
         </div>
 
         <nav className="game3d-hud-panel pointer-events-auto flex items-center gap-1.5 p-1.5" aria-label="游戏操作">
@@ -616,9 +620,13 @@ export function ResearchGame3DShell({
       {arrivalVisible && playerProfile && runtimeReady && (
         <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-[#17252a]/10" aria-live="polite">
           <div className="scene-arrival w-full border-y border-white/60 bg-[#17252a]/82 px-5 py-5 text-center text-white backdrop-blur-sm">
-            <p className="font-mono text-[11px] tracking-[0.18em] text-white/60">DESTINATION LOADED</p>
+            <p className="font-mono text-[11px] tracking-[0.14em] text-white/60">
+              {caseFile && caseFile.status !== 'closed' ? '抵达探案区' : '场景就绪'}
+            </p>
             <h2 className="mt-1 font-serif text-[32px] font-semibold sm:text-[38px]">{scene.name}</h2>
-            <p className="mx-auto mt-1 max-w-xl text-[15px] text-white/70">{scene.subtitle}</p>
+            <p className="mx-auto mt-1 max-w-xl text-[15px] text-white/70">
+              {caseFile && caseFile.status !== 'closed' ? '靠近高亮线索按交互键检视' : scene.subtitle}
+            </p>
           </div>
         </div>
       )}
