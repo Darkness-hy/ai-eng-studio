@@ -85,7 +85,12 @@ export interface ExperimentLink {
   linkedAt: string;
   /** When true, result came from local mock (ResearchRun unavailable). */
   simulated: boolean;
+  /** Linked ResearchRun id when a real API run was created. */
+  researchRunId?: string;
+  templateId?: string;
 }
+
+export type MentorStage = 'idle' | 'awaiting_contradiction' | 'taught_controls' | 'done';
 
 export interface ResearchCase {
   id: CaseId;
@@ -106,6 +111,7 @@ export interface ResearchCase {
   experimentRuns: ExperimentLink[];
   /** Mentor dialogue / soft-gate flags, e.g. knows_leak */
   flags: string[];
+  mentorStage: MentorStage;
   completeness: number;
   createdAt: string;
   updatedAt: string;

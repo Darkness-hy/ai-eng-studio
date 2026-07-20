@@ -25,6 +25,11 @@ function load(): ResearchCase | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as ResearchCase;
     if (!parsed?.id) return null;
+    if (!parsed.mentorStage) {
+      parsed.mentorStage = parsed.flags?.includes('knows_leak') ? 'taught_controls' : 'idle';
+    }
+    if (!parsed.flags) parsed.flags = [];
+    if (!parsed.experimentRuns) parsed.experimentRuns = [];
     parsed.completeness = computeCompleteness(parsed);
     return parsed;
   } catch {
@@ -140,32 +145,87 @@ export function visitPoi(poiId: string): { ok: boolean; reason?: string; gained:
 export function talkToMentor(statedContradiction: boolean): {
   ok: boolean;
   message: { zh: string; en: string };
+  stage: ResearchCase['mentorStage'];
 } {
-  requireCase();
+  const cur = requireCase();
+
+  if (cur.mentorStage === 'taught_controls' || cur.mentorStage === 'done') {
+    return {
+      ok: true,
+      stage: cur.mentorStage,
+      message: {
+        zh: '线索已经给过你了：去实验室档案柜查切分协议，再到机房跑清洁对照。卷宗写清楚后再来找我验收表述。',
+        en: 'You already have the lead: check the split protocol in the lab archive, then run a clean control at the bench. Come back after the dossier is clear.',
+      },
+    };
+  }
+
   if (!statedContradiction) {
+    mutate((c) => {
+      if (c.mentorStage === 'idle') c.mentorStage = 'awaiting_contradiction';
+      return c;
+    });
     return {
       ok: false,
+      stage: 'awaiting_contradiction',
       message: {
         zh: '先说清：海报与复现之间到底哪里对不上？说不清我没法往下教。',
         en: 'First name where the poster and the reproduction disagree. I will not continue until you do.',
       },
     };
   }
-  mutate((cur) => {
-    if (!cur.flags.includes('knows_leak')) cur.flags.push('knows_leak');
-    if (!cur.evidence.some((e) => e.id === 'ev_mentor_note')) {
+
+  mutate((c) => {
+    c.mentorStage = 'taught_controls';
+    if (!c.flags.includes('knows_leak')) c.flags.push('knows_leak');
+    if (!c.evidence.some((e) => e.id === 'ev_mentor_note')) {
       const note = DEMO_EVIDENCE_CATALOG.ev_mentor_note;
-      cur.evidence.push({ ...note, discoveredAt: new Date().toISOString() });
+      c.evidence.push({ ...note, discoveredAt: new Date().toISOString() });
     }
-    return cur;
+    return c;
   });
   return {
     ok: true,
+    stage: 'taught_controls',
     message: {
-      zh: '好。先别急着造新模型——去查评估协议与切分。档案柜里那份草稿值得一看。',
-      en: 'Good. Do not invent a new model yet — inspect the evaluation protocol and split. That archive draft matters.',
+      zh: '好。先别急着造新模型——去查评估协议与切分。档案柜里那份草稿值得一看；查完去机房跑清洁对照。',
+      en: 'Good. Do not invent a new model yet — inspect the evaluation protocol and split. That archive draft matters; then run a clean control at the bench.',
     },
   };
+}
+
+function applyExperimentLink(link: ExperimentLink) {
+  mutate((c) => {
+    if (!c.experimentRuns.some((r) => r.id === link.id)) c.experimentRuns.push(link);
+    if (!c.evidence.some((e) => e.id === 'ev_exp_01')) {
+      const exp = DEMO_EVIDENCE_CATALOG.ev_exp_01;
+      c.evidence.push({ ...exp, discoveredAt: new Date().toISOString() });
+    }
+    if (!c.edges.some((e) => e.from === 'ev_exp_01' && e.to === 'cl_protocol_bias')) {
+      c.edges.push({
+        id: `edge_${Date.now()}`,
+        from: 'ev_exp_01',
+        to: 'cl_protocol_bias',
+        type: 'supports',
+      });
+    }
+    if (
+      !c.edges.some(
+        (e) => e.from === 'ev_exp_01' && e.to === 'cl_method_a_magic' && e.type === 'contradicts',
+      )
+    ) {
+      c.edges.push({
+        id: `edge_${Date.now()}_c`,
+        from: 'ev_exp_01',
+        to: 'cl_method_a_magic',
+        type: 'contradicts',
+      });
+    }
+    if (!c.resultsSummary.trim()) {
+      c.resultsSummary = link.summary;
+    }
+    return c;
+  });
 }
 
 export function runSimulatedExperiment(): ExperimentLink {
@@ -176,32 +236,72 @@ export function runSimulatedExperiment(): ExperimentLink {
     linkedAt: new Date().toISOString(),
     simulated: true,
   };
-  mutate((c) => {
-    c.experimentRuns.push(link);
-    if (!c.evidence.some((e) => e.id === 'ev_exp_01')) {
-      const exp = DEMO_EVIDENCE_CATALOG.ev_exp_01;
-      c.evidence.push({ ...exp, discoveredAt: new Date().toISOString() });
-    }
-    // auto-support protocol bias claim
-    if (!c.edges.some((e) => e.from === 'ev_exp_01' && e.to === 'cl_protocol_bias')) {
-      c.edges.push({
-        id: `edge_${Date.now()}`,
-        from: 'ev_exp_01',
-        to: 'cl_protocol_bias',
-        type: 'supports',
-      });
-    }
-    if (!c.edges.some((e) => e.from === 'ev_exp_01' && e.to === 'cl_method_a_magic' && e.type === 'contradicts')) {
-      c.edges.push({
-        id: `edge_${Date.now()}_c`,
-        from: 'ev_exp_01',
-        to: 'cl_method_a_magic',
-        type: 'contradicts',
-      });
-    }
-    return c;
-  });
+  applyExperimentLink(link);
   return link;
+}
+
+/**
+ * Prefer a real ResearchRun create when API is configured; fall back to simulation.
+ * Full pipeline (hypothesis→jobs→analysis) stays in the Research workspace; case only
+ * needs a linked verification step for L1.
+ */
+export async function runCaseExperiment(): Promise<{
+  link: ExperimentLink;
+  mode: 'live' | 'simulated';
+  detail?: string;
+}> {
+  const c = requireCase();
+  if (!c.evidence.some((e) => e.id === 'ev_split_leak')) {
+    throw new Error('soft_gate_evidence');
+  }
+
+  const { researchApi, researchApiConfigured, formatResearchApiError } = await import(
+    '../../lib/researchApi'
+  );
+
+  if (!researchApiConfigured) {
+    return { link: runSimulatedExperiment(), mode: 'simulated', detail: 'Research API 未配置' };
+  }
+
+  try {
+    const catalog = await researchApi.listTemplates();
+    const template = catalog.items[0];
+    if (!template) {
+      return {
+        link: runSimulatedExperiment(),
+        mode: 'simulated',
+        detail: '模板目录为空，已回退模拟',
+      };
+    }
+    const topic =
+      c.researchQuestion.trim() ||
+      c.title.zh ||
+      'Case demo: inflated accuracy under biased evaluation protocol';
+    const snap = await researchApi.createRun(topic, template.id);
+    const link: ExperimentLink = {
+      id: `run_${snap.run.id}`,
+      label: `ResearchRun · ${template.nameZh || template.name}`,
+      summary: `已创建可信实验 run（${snap.run.id.slice(0, 8)}…，模板 ${template.id}）。案件侧记为对照验证锚点；完整阶段可在算力工坊工作台继续。`,
+      linkedAt: new Date().toISOString(),
+      simulated: false,
+      researchRunId: snap.run.id,
+      templateId: template.id,
+    };
+    applyExperimentLink(link);
+    // Also attach narrative experiment evidence for the board.
+    return { link, mode: 'live' };
+  } catch (err) {
+    const detail = formatResearchApiError(err);
+    return {
+      link: runSimulatedExperiment(),
+      mode: 'simulated',
+      detail: `真 API 失败，已回退模拟：${detail}`,
+    };
+  }
+}
+
+export function canRunCaseExperiment(c: ResearchCase): boolean {
+  return c.evidence.some((e) => e.id === 'ev_split_leak');
 }
 
 export function setResearchQuestion(text: string) {

@@ -119,23 +119,28 @@ export function CaseEvidenceOverlay({
 
 export function CaseMentorOverlay({
   flags,
+  mentorStage,
   onVague,
   onClear,
   message,
   onClose,
 }: {
   flags: string[];
+  mentorStage: string;
   message: string | null;
   onVague: () => void;
   onClear: () => void;
   onClose: () => void;
 }) {
+  const taught = mentorStage === 'taught_controls' || mentorStage === 'done' || flags.includes('knows_leak');
   return (
     <div className="absolute inset-0 z-40 flex items-end justify-center bg-[#0b1418]/35 p-3 sm:items-center" role="dialog">
       <section className="w-full max-w-lg rounded-lg border border-white/20 bg-[#17252a]/95 p-4 text-white shadow-lift">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="font-mono text-[10px] tracking-[0.16em] text-white/55">MENTOR · CASE GATE</p>
+            <p className="font-mono text-[10px] tracking-[0.16em] text-white/55">
+              MENTOR · {mentorStage}
+            </p>
             <h2 className="mt-1 font-serif text-[20px] font-semibold">方法导师</h2>
           </div>
           <button type="button" className="rounded p-1 text-white/70 hover:bg-white/10" onClick={onClose} aria-label="关闭">
@@ -143,18 +148,79 @@ export function CaseMentorOverlay({
           </button>
         </div>
         <p className="mt-3 text-[14px] leading-relaxed text-white/80">
-          有效互动：带着「海报宣称领先 vs 复现失败」的矛盾来。说不清不给关键线索。
+          {taught
+            ? '你已经拿到方法线索。去档案柜与机房把证据钉上；卷宗写清楚再来对表述。'
+            : '有效互动：带着「海报宣称领先 vs 复现失败」的矛盾来。说不清不给关键线索。'}
         </p>
         {flags.includes('knows_leak') && (
           <p className="mt-2 font-mono text-[11px] text-[#a9efbb]">flag: knows_leak · 档案柜已可检视</p>
         )}
         {message && <p className="mt-3 border-l-2 border-white/25 pl-3 text-[13.5px] leading-relaxed">{message}</p>}
         <div className="mt-4 flex flex-wrap gap-2">
-          <button type="button" className="rounded-md border border-white/25 px-3 py-1.5 text-[13px]" onClick={onVague}>
-            含糊请教
+          {!taught && (
+            <>
+              <button type="button" className="rounded-md border border-white/25 px-3 py-1.5 text-[13px]" onClick={onVague}>
+                含糊请教
+              </button>
+              <button type="button" className="rounded-md bg-white px-3 py-1.5 text-[13px] text-ink" onClick={onClear}>
+                说清矛盾
+              </button>
+            </>
+          )}
+          {taught && (
+            <button type="button" className="rounded-md bg-white px-3 py-1.5 text-[13px] text-ink" onClick={onClear}>
+              再听一遍要点
+            </button>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export function CaseExperimentOverlay({
+  canRun,
+  busy,
+  lastDetail,
+  onRun,
+  onClose,
+}: {
+  canRun: boolean;
+  busy: boolean;
+  lastDetail: string | null;
+  onRun: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="absolute inset-0 z-40 flex items-end justify-center bg-[#0b1418]/35 p-3 sm:items-center" role="dialog">
+      <section className="w-full max-w-lg rounded-lg border border-white/20 bg-[#17252a]/95 p-4 text-white shadow-lift">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="font-mono text-[10px] tracking-[0.16em] text-white/55">COMPUTE BENCH · CASE</p>
+            <h2 className="mt-1 font-serif text-[20px] font-semibold">清洁切分对照</h2>
+          </div>
+          <button type="button" className="rounded p-1 text-white/70 hover:bg-white/10" onClick={onClose} aria-label="关闭">
+            <X size={18} />
           </button>
-          <button type="button" className="rounded-md bg-white px-3 py-1.5 text-[13px] text-ink" onClick={onClear}>
-            说清矛盾
+        </div>
+        <p className="mt-3 text-[14px] leading-relaxed text-white/80">
+          在白名单模板上重跑对照。若已配置 Research API 会尝试创建真实 run；否则自动回退本地模拟，语义同构。
+        </p>
+        {!canRun && (
+          <p className="mt-2 text-[13px] text-[#f0d78d]">信息门：先取得「可疑切分」证据（导师门控 → 档案柜）。</p>
+        )}
+        {lastDetail && <p className="mt-2 font-mono text-[11px] text-white/60">{lastDetail}</p>}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={!canRun || busy}
+            className="rounded-md bg-white px-3 py-1.5 text-[13px] text-ink disabled:opacity-40"
+            onClick={onRun}
+          >
+            {busy ? '运行中…' : '跑对照实验'}
+          </button>
+          <button type="button" className="rounded-md border border-white/25 px-3 py-1.5 text-[13px]" onClick={onClose}>
+            关闭
           </button>
         </div>
       </section>

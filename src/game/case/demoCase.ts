@@ -115,10 +115,11 @@ export const DEMO_POIS: CasePoi[] = [
     sceneId: 'compute',
     label: L('机房对照工位', 'Compute control bench'),
     attractor: 'terminal',
-    grantsEvidenceIds: ['ev_exp_01'],
+    // Evidence is granted by explicit experiment run, not passive inspect.
+    grantsEvidenceIds: [],
     requires: { evidenceIds: ['ev_split_leak'] },
-    inspectOnce: true,
-    visitHint: L('白名单实验模板已加载，可跑一次清洁切分对照。', 'A whitelist template is loaded for one clean-split control run.'),
+    inspectOnce: false,
+    visitHint: L('白名单实验模板已加载，可跑一次清洁切分对照（真 API 或本地模拟）。', 'Whitelist control bench: real ResearchRun if configured, else local simulation.'),
   },
 ];
 
@@ -152,6 +153,7 @@ export function createDemoCaseShell(now = new Date().toISOString()): ResearchCas
     reviewRounds: [],
     experimentRuns: [],
     flags: [],
+    mentorStage: 'idle',
     completeness: 0,
     createdAt: now,
     updatedAt: now,

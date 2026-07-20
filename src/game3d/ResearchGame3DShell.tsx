@@ -21,10 +21,18 @@ import { useNavigate } from 'react-router-dom';
 import { AvatarSetup } from '../game/AvatarSetup';
 import {
   CaseEvidenceOverlay,
+  CaseExperimentOverlay,
   CaseIslandHud,
   CaseMentorOverlay,
 } from '../game/case/CaseIslandHud';
-import { getCase, talkToMentor, useCase, visitPoi } from '../game/case/caseStore';
+import {
+  canRunCaseExperiment,
+  getCase,
+  runCaseExperiment,
+  talkToMentor,
+  useCase,
+  visitPoi,
+} from '../game/case/caseStore';
 import { caseInteractionsForScene, isCaseMentorAgent } from '../game/case/caseWorld';
 import {
   loadCloudGameProfile,
@@ -74,6 +82,7 @@ type OpenPanel =
       reason?: string;
     }
   | { kind: 'case-mentor' }
+  | { kind: 'case-experiment' }
   | null;
 
 export function ResearchGame3DShell({
@@ -98,6 +107,8 @@ export function ResearchGame3DShell({
   }, [caseFile, sceneId]);
   const userId = auth.profile?.id ?? null;
   const [mentorMsg, setMentorMsg] = useState<string | null>(null);
+  const [expBusy, setExpBusy] = useState(false);
+  const [expDetail, setExpDetail] = useState<string | null>(null);
   const displayName =
     auth.profile?.display_name ?? auth.profile?.email.split('@')[0] ?? '访客研究员';
   const initialSceneRef = useRef(sceneId);
@@ -287,8 +298,12 @@ export function ResearchGame3DShell({
       if (interaction.kind === 'landmark') {
         // Case POIs write into the shared case store (detective v0).
         if (interaction.casePoiId && getCase()) {
-          const r = visitPoi(interaction.casePoiId);
           setMapOpen(false);
+          if (interaction.casePoiId === 'poi_bench') {
+            setOpenPanel({ kind: 'case-experiment' });
+            return;
+          }
+          const r = visitPoi(interaction.casePoiId);
           setOpenPanel({
             kind: 'case-evidence',
             title: interaction.title,
@@ -446,7 +461,8 @@ export function ResearchGame3DShell({
     : openPanel?.kind === 'dialogue' ||
         openPanel?.kind === 'discovery' ||
         openPanel?.kind === 'case-evidence' ||
-        openPanel?.kind === 'case-mentor'
+        openPanel?.kind === 'case-mentor' ||
+        openPanel?.kind === 'case-experiment'
       ? 'dialogue'
       : openPanel?.kind === 'workspace'
         ? 'workstation'
@@ -649,6 +665,7 @@ export function ResearchGame3DShell({
       {openPanel?.kind === 'case-mentor' && caseFile && (
         <CaseMentorOverlay
           flags={caseFile.flags}
+          mentorStage={caseFile.mentorStage}
           message={mentorMsg}
           onVague={() => {
             const r = talkToMentor(false);
@@ -657,6 +674,28 @@ export function ResearchGame3DShell({
           onClear={() => {
             const r = talkToMentor(true);
             setMentorMsg(r.message.zh);
+          }}
+          onClose={() => setOpenPanel(null)}
+        />
+      )}
+
+      {openPanel?.kind === 'case-experiment' && caseFile && (
+        <CaseExperimentOverlay
+          canRun={canRunCaseExperiment(caseFile)}
+          busy={expBusy}
+          lastDetail={expDetail}
+          onRun={() => {
+            setExpBusy(true);
+            void runCaseExperiment()
+              .then((r) => {
+                setExpDetail(
+                  r.mode === 'live'
+                    ? `live · ${r.link.researchRunId?.slice(0, 8) ?? ''}…`
+                    : r.detail || 'simulated',
+                );
+              })
+              .catch(() => setExpDetail('soft_gate_evidence'))
+              .finally(() => setExpBusy(false));
           }}
           onClose={() => setOpenPanel(null)}
         />

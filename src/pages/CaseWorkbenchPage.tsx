@@ -4,12 +4,13 @@ import { buildL1Markdown } from '../game/case/L1Export';
 import {
   addEdge,
   canVisitPoi,
+  canRunCaseExperiment,
   fillDemoScaffoldTexts,
   getDemoPois,
   markClosed,
   removeEdge,
   resetCase,
-  runSimulatedExperiment,
+  runCaseExperiment,
   setClaimState,
   setHypothesis,
   setLimitations,
@@ -36,6 +37,8 @@ export function CaseWorkbenchPage() {
   const [edgeType, setEdgeType] = useState<EdgeType>('supports');
   const [report, setReport] = useState<string | null>(null);
   const [limText, setLimText] = useState('');
+  const [expBusy, setExpBusy] = useState(false);
+  const [expDetail, setExpDetail] = useState<string | null>(null);
 
   const flash = (msg: string) => {
     setToast(msg);
@@ -173,8 +176,8 @@ export function CaseWorkbenchPage() {
           <Panel title={zh ? '导师' : 'Mentor'}>
             <p className="text-[13px] text-faint">
               {zh
-                ? '有效互动：带着「海报 vs 复现」的矛盾来。说不清不给关键提示。'
-                : 'Effective talk: bring the poster-vs-repro contradiction. No tip otherwise.'}
+                ? `状态机：${c.mentorStage}。带着「海报 vs 复现」矛盾来；说不清不给关键提示。`
+                : `Stage: ${c.mentorStage}. Bring the poster-vs-repro contradiction.`}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
@@ -193,41 +196,64 @@ export function CaseWorkbenchPage() {
                 onClick={() => {
                   const r = talkToMentor(true);
                   setMentorMsg(loc(r.message));
-                  if (r.ok) flash(zh ? '已解锁：协议/泄漏线索' : 'Unlocked: protocol/leak lead');
+                  if (r.ok && r.stage === 'taught_controls') {
+                    flash(zh ? '已解锁：协议/泄漏线索' : 'Unlocked: protocol/leak lead');
+                  }
                 }}
               >
-                {zh ? '说清矛盾' : 'State contradiction'}
+                {zh ? '说清矛盾 / 再听要点' : 'State contradiction / recap'}
               </button>
             </div>
             {mentorMsg && <p className="mt-3 border-l-2 border-hairline pl-3 text-[13.5px] leading-relaxed">{mentorMsg}</p>}
             {c.flags.includes('knows_leak') && (
-              <p className="mt-2 font-mono text-[11px] text-ink-green">flag: knows_leak</p>
+              <p className="mt-2 font-mono text-[11px] text-ink-green">flag: knows_leak · stage {c.mentorStage}</p>
             )}
           </Panel>
 
           <Panel title={zh ? '机房实验' : 'Experiment'}>
             <p className="text-[13px] text-faint">
               {zh
-                ? 'W1 使用本地模拟结果（与 ResearchRun 同构语义）。需先取得切分证据。'
-                : 'W1 uses a local simulated result (same semantics as ResearchRun). Need split evidence first.'}
+                ? '优先尝试 Research API 创建真实 run；失败或未配置则回退本地模拟。需先取得切分证据。'
+                : 'Prefer live ResearchRun create; fall back to simulation. Need split evidence first.'}
             </p>
             <button
               type="button"
               className="mt-3 rounded-md bg-ink px-3 py-1.5 text-[13px] text-paper disabled:opacity-40"
-              disabled={!c.evidence.some((e) => e.id === 'ev_split_leak')}
+              disabled={!canRunCaseExperiment(c) || expBusy}
               onClick={() => {
-                runSimulatedExperiment();
-                flash(zh ? '对照实验已挂上卷宗' : 'Control run linked to case');
+                setExpBusy(true);
+                void runCaseExperiment()
+                  .then((r) => {
+                    setExpDetail(
+                      r.mode === 'live'
+                        ? zh
+                          ? `已挂真实 run${r.link.researchRunId ? ` ${r.link.researchRunId.slice(0, 8)}…` : ''}`
+                          : `Live run linked${r.link.researchRunId ? ` ${r.link.researchRunId.slice(0, 8)}…` : ''}`
+                        : r.detail || (zh ? '已用模拟结果' : 'Used simulation'),
+                    );
+                    flash(
+                      r.mode === 'live'
+                        ? zh
+                          ? '真实 ResearchRun 已挂上卷宗'
+                          : 'Live ResearchRun linked'
+                        : zh
+                          ? '模拟对照已挂上卷宗'
+                          : 'Simulated control linked',
+                    );
+                  })
+                  .catch(() => flash(zh ? '无法开跑：还缺前置证据' : 'Cannot run: missing prereq'))
+                  .finally(() => setExpBusy(false));
               }}
             >
-              {zh ? '跑清洁切分对照（模拟）' : 'Run clean-split control (sim)'}
+              {expBusy ? (zh ? '运行中…' : 'Running…') : zh ? '跑清洁切分对照' : 'Run clean-split control'}
             </button>
+            {expDetail && <p className="mt-2 font-mono text-[11px] text-faint">{expDetail}</p>}
             {c.experimentRuns.length > 0 && (
               <ul className="mt-3 space-y-1 text-[12.5px] text-faint">
                 {c.experimentRuns.map((r) => (
                   <li key={r.id}>
                     {r.label}
-                    {r.simulated ? (zh ? ' · 模拟' : ' · sim') : ''}
+                    {r.simulated ? (zh ? ' · 模拟' : ' · sim') : r.researchRunId ? ' · live' : ''}
                   </li>
                 ))}
               </ul>
