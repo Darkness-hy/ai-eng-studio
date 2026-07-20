@@ -14,27 +14,35 @@ import { useLang } from '../../lib/i18n';
 export function CaseIslandHud({
   caseFile,
   onOpenMentor,
+  onOpenDesk,
 }: {
   caseFile: ResearchCase | null;
   onOpenMentor?: () => void;
+  /** Prefer in-world overlay over hard navigation (avoids white full-page jump). */
+  onOpenDesk?: () => void;
 }) {
   const { lang } = useLang();
   const zh = lang === 'zh';
   const hint = nextCaseHint(caseFile, zh);
+  const deskBtnClass =
+    'mt-2 inline-flex min-h-10 items-center rounded border border-white/20 bg-white/5 px-3 text-[14px] text-white/90 hover:bg-white/10';
 
   if (!caseFile) {
     return (
-      <div className="pointer-events-auto absolute bottom-20 left-3 z-20 max-w-[min(92vw,340px)] rounded-md border border-white/25 bg-[#17252a]/90 px-3 py-2.5 text-white shadow-lift backdrop-blur-sm sm:bottom-6 sm:left-4">
-        <p className="font-mono text-[10px] tracking-[0.12em] text-white/55">
+      <div className="pointer-events-auto absolute bottom-20 left-3 z-20 max-w-[min(92vw,360px)] rounded-md border border-white/18 bg-[#0f1a1e]/92 px-3.5 py-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur-md sm:bottom-6 sm:left-4">
+        <p className="font-mono text-[11px] tracking-[0.1em] text-white/55">
           {zh ? '卷宗' : 'Dossier'}
         </p>
-        <p className="mt-1 text-[13.5px] leading-snug">{hint}</p>
-        <Link
-          to="/research-game/case"
-          className="mt-2 inline-flex min-h-9 items-center rounded border border-white/25 px-2.5 text-[12.5px] text-[#cfe9ff] hover:bg-white/10"
-        >
-          {zh ? '打开案件台立案' : 'Open case desk'}
-        </Link>
+        <p className="mt-1 text-[15px] leading-snug">{hint}</p>
+        {onOpenDesk ? (
+          <button type="button" className={deskBtnClass} onClick={onOpenDesk}>
+            {zh ? '打开卷宗台立案' : 'Open case desk'}
+          </button>
+        ) : (
+          <Link to="/research-game/case" className={deskBtnClass}>
+            {zh ? '打开卷宗台立案' : 'Open case desk'}
+          </Link>
+        )}
       </div>
     );
   }
@@ -43,41 +51,42 @@ export function CaseIslandHud({
   const nEv = caseFile.evidence.length;
   const open = isContradictionOpen(caseFile);
 
+  const btn =
+    'inline-flex min-h-10 items-center rounded border border-white/18 bg-white/5 px-3 text-[13px] text-white/90 hover:bg-white/10';
   return (
-    <div className="pointer-events-auto absolute bottom-20 left-3 z-20 max-w-[min(92vw,360px)] rounded-md border border-white/25 bg-[#17252a]/90 px-3 py-2.5 text-white shadow-lift backdrop-blur-sm sm:bottom-6 sm:left-4">
-      <div className="flex items-start gap-2">
-        <ClipboardList size={16} className="mt-0.5 shrink-0 text-white/70" aria-hidden />
+    <div className="pointer-events-auto absolute bottom-20 left-3 z-20 max-w-[min(92vw,380px)] rounded-md border border-white/16 bg-[#0f1a1e]/92 px-3.5 py-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur-md sm:bottom-6 sm:left-4">
+      <div className="flex items-start gap-2.5">
+        <ClipboardList size={18} className="mt-0.5 shrink-0 text-white/70" aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="font-mono text-[10px] tracking-[0.12em] text-white/55">
+          <p className="font-mono text-[11px] tracking-[0.1em] text-white/55">
             {zh ? '卷宗' : 'Dossier'} · {caseStatusLabel(caseFile.status, zh)} · {pct}%
           </p>
-          <p className="mt-0.5 truncate font-serif text-[15px] font-semibold sm:text-[16px]">
+          <p className="mt-0.5 truncate font-serif text-[17px] font-semibold sm:text-[18px]">
             {zh ? caseFile.title.zh : caseFile.title.en}
           </p>
-          <p className="mt-1 text-[12px] text-white/70">
+          <p className="mt-1 text-[14px] text-white/70">
             {zh ? `证据 ${nEv}` : `Evidence ${nEv}`}
             {' · '}
-            <span className={open ? 'text-[#f0d78d]' : 'text-[#a9efbb]'}>
+            <span className={open ? 'text-[#e0c98a]' : 'text-[#9fd4a8]'}>
               {contradictionOpenLabel(zh, open)}
             </span>
           </p>
-          <p className="mt-1.5 text-[12px] leading-snug text-white/75">{hint}</p>
-          <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/15" aria-label={completenessLabel(zh)}>
+          <p className="mt-1.5 text-[14px] leading-snug text-white/80">{hint}</p>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/15" aria-label={completenessLabel(zh)}>
             <div className="h-full bg-[#9fd0ff]" style={{ width: `${pct}%` }} />
           </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <Link
-              to="/research-game/case"
-              className="inline-flex min-h-9 items-center rounded border border-white/25 px-2.5 text-[12px] text-white/90 hover:bg-white/10"
-            >
-              {zh ? '打开案件台' : 'Case desk'}
-            </Link>
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            {onOpenDesk ? (
+              <button type="button" className={btn} onClick={onOpenDesk}>
+                {zh ? '打开卷宗' : 'Open dossier'}
+              </button>
+            ) : (
+              <Link to="/research-game/case" className={btn}>
+                {zh ? '打开卷宗' : 'Open dossier'}
+              </Link>
+            )}
             {onOpenMentor && caseFile.status !== 'closed' && (
-              <button
-                type="button"
-                className="inline-flex min-h-9 items-center rounded border border-white/25 px-2.5 text-[12px] text-white/90 hover:bg-white/10"
-                onClick={onOpenMentor}
-              >
+              <button type="button" className={btn} onClick={onOpenMentor}>
                 {zh ? '找导师' : 'Mentor'}
               </button>
             )}

@@ -377,7 +377,7 @@ export function ResearchGameShell() {
       )}
 
       {!openPanel && !customizingAvatar && (
-        <CaseIslandHud caseFile={caseFile} />
+        <CaseIslandHud caseFile={caseFile} onOpenDesk={() => navigate('/research-game/case')} />
       )}
 
       {arrivalScene && playerProfile && !customizingAvatar && (

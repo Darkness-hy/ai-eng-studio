@@ -60,11 +60,12 @@ export function CaseWorkbenchPage() {
 
   if (!c) {
     return (
-      <div className="research-game-ui mx-auto max-w-3xl px-4 py-10 sm:px-5 sm:py-16">
-        <p className="font-mono text-[11px] tracking-[0.14em] text-faint">
+      <div className="research-game-ui case-desk-immersive min-h-dvh px-4 py-10 sm:px-5 sm:py-16">
+        <div className="mx-auto max-w-3xl">
+        <p className="font-mono text-[11px] tracking-[0.12em] text-white/55">
           {zh ? '卷宗台 · 探案' : 'Case desk · detective'}
         </p>
-        <h1 className="mt-3 font-serif text-[28px] font-semibold leading-tight sm:text-[32px]">
+        <h1 className="mt-3 font-serif text-[28px] font-semibold leading-tight text-white sm:text-[32px]">
           {zh ? '案件工作台' : 'Case workbench'}
         </h1>
         <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-faint">
@@ -110,11 +111,12 @@ export function CaseWorkbenchPage() {
             {scriptBusy ? (zh ? '剧本执行中…' : 'Running…') : zh ? '一键跑通示范结案' : 'Run demo to close'}
           </button>
         </div>
-        <p className="mt-6 text-[13px] text-faint">
-          <Link to="/research-game" className="underline decoration-hairline underline-offset-2">
+        <p className="mt-6 text-[13px] text-white/60">
+          <Link to="/research-game" className="underline decoration-white/25 underline-offset-2 hover:text-white">
             {zh ? '先回岛上探案' : 'Investigate on the island'}
           </Link>
         </p>
+        </div>
       </div>
     );
   }
@@ -128,18 +130,18 @@ export function CaseWorkbenchPage() {
   const loc = (x: { zh: string; en: string }) => (zh ? x.zh : x.en);
 
   return (
-    <div className="research-game-ui min-h-dvh bg-canvas pb-[max(4rem,env(safe-area-inset-bottom))]">
-      <header className="sticky top-0 z-30 border-b border-hairline bg-paper/95 backdrop-blur-sm">
+    <div className="research-game-ui case-desk-immersive min-h-dvh pb-[max(4rem,env(safe-area-inset-bottom))]">
+      <header className="case-desk-header sticky top-0 z-30">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:px-5 sm:py-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="font-mono text-[10.5px] tracking-[0.12em] text-faint">
+              <p className="font-mono text-[10.5px] tracking-[0.12em] text-white/55">
                 {zh ? '卷宗' : 'Dossier'} · {c.id} · {caseStatusLabel(c.status, zh)}
               </p>
-              <h1 className="mt-0.5 font-serif text-[20px] font-semibold leading-snug sm:text-[26px]">
+              <h1 className="mt-0.5 font-serif text-[20px] font-semibold leading-snug text-white sm:text-[26px]">
                 {loc(c.title)}
               </h1>
-              <p className={`mt-1 text-[12px] ${open ? 'text-ink-yellow' : 'text-ink-green'}`}>
+              <p className={`mt-1 text-[13px] ${open ? 'text-[#e0c98a]' : 'text-[#9fd4a8]'}`}>
                 {contradictionOpenLabel(zh, open)}
               </p>
             </div>
@@ -148,7 +150,7 @@ export function CaseWorkbenchPage() {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="min-h-9 rounded-md border border-hairline px-3 py-1.5 text-[12.5px] text-faint hover:text-ink disabled:opacity-50"
+                  className="min-h-10 rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-[13px] text-white/85 hover:bg-white/10 disabled:opacity-50"
                   disabled={scriptBusy}
                   onClick={() => {
                     setScriptBusy(true);
@@ -171,7 +173,7 @@ export function CaseWorkbenchPage() {
                 </button>
                 <button
                   type="button"
-                  className="min-h-9 rounded-md border border-hairline px-3 py-1.5 text-[12.5px] text-faint hover:text-ink"
+                  className="min-h-10 rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-[13px] text-white/85 hover:bg-white/10"
                   onClick={() => {
                     if (
                       window.confirm(
@@ -190,14 +192,14 @@ export function CaseWorkbenchPage() {
                 </button>
                 <Link
                   to="/research-game"
-                  className="inline-flex min-h-9 items-center rounded-md border border-hairline px-3 py-1.5 text-[12.5px] text-faint hover:text-ink"
+                  className="inline-flex min-h-10 items-center rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-[13px] text-white/85 hover:bg-white/10"
                 >
                   {zh ? '回岛探案' : 'Island'}
                 </Link>
               </div>
             </div>
           </div>
-          <p className="rounded-md border border-hairline bg-bone/60 px-3 py-2 text-[13px] leading-snug text-ink">
+          <p className="rounded-md border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[14px] leading-snug text-white/85">
             {hint}
           </p>
         </div>
@@ -647,8 +649,8 @@ export function CaseWorkbenchPage() {
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="rounded-lg border border-hairline bg-paper p-4 shadow-lift">
-      <h2 className="font-mono text-[10.5px] tracking-[0.14em] text-faint">{title}</h2>
+    <section className="case-desk-panel p-4">
+      <h2 className="font-mono text-[11px] tracking-[0.12em] text-white/50">{title}</h2>
       <div className="mt-3">{children}</div>
     </section>
   );
@@ -658,10 +660,10 @@ function CompletenessBar({ value, zh }: { value: number; zh: boolean }) {
   const pct = Math.round(value * 100);
   return (
     <div className="flex w-full items-center gap-2 sm:w-auto">
-      <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-bone sm:w-28 sm:flex-none">
-        <div className="h-full bg-ink transition-all" style={{ width: `${pct}%` }} />
+      <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-white/15 sm:w-28 sm:flex-none">
+        <div className="h-full bg-[#9fd0ff] transition-all" style={{ width: `${pct}%` }} />
       </div>
-      <span className="shrink-0 font-mono text-[11px] text-faint">
+      <span className="shrink-0 font-mono text-[12px] text-white/60">
         {pct}% {completenessLabel(zh)}
       </span>
     </div>

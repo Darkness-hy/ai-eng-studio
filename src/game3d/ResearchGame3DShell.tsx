@@ -52,6 +52,7 @@ import { useGamePresence } from '../game/useGamePresence';
 import { avatarPresetById, gameScenes } from '../game/worldContent';
 import { useAuth } from '../lib/auth';
 import type { ZoneId } from '../lib/researchGame';
+import { CaseWorkbenchPage } from '../pages/CaseWorkbenchPage';
 import { legacyToWorld3D, world3DToLegacy } from './coordinates';
 import { DiscoveryDialogueOverlay } from './DiscoveryDialogueOverlay';
 import { MobileGameControls } from './MobileGameControls';
@@ -83,6 +84,7 @@ type OpenPanel =
     }
   | { kind: 'case-mentor' }
   | { kind: 'case-experiment' }
+  | { kind: 'case-desk' }
   | null;
 
 export function ResearchGame3DShell({
@@ -462,7 +464,8 @@ export function ResearchGame3DShell({
         openPanel?.kind === 'discovery' ||
         openPanel?.kind === 'case-evidence' ||
         openPanel?.kind === 'case-mentor' ||
-        openPanel?.kind === 'case-experiment'
+        openPanel?.kind === 'case-experiment' ||
+        openPanel?.kind === 'case-desk'
       ? 'dialogue'
       : openPanel?.kind === 'workspace'
         ? 'workstation'
@@ -710,7 +713,27 @@ export function ResearchGame3DShell({
       )}
 
       {!openPanel && !mapOpen && !transitionTarget && !showAvatarSetup && (
-        <CaseIslandHud caseFile={caseFile} onOpenMentor={caseHudMentor} />
+        <CaseIslandHud
+          caseFile={caseFile}
+          onOpenMentor={caseHudMentor}
+          onOpenDesk={() => {
+            setMapOpen(false);
+            setOpenPanel({ kind: 'case-desk' });
+          }}
+        />
+      )}
+
+      {openPanel?.kind === 'case-desk' && (
+        <div className="case-desk-shell-overlay absolute inset-0 z-50">
+          <button
+            type="button"
+            className="absolute right-3 top-3 z-[60] min-h-10 rounded-md border border-white/20 bg-[#121c20]/9 px-3 text-[13px] text-white/90 hover:bg-white/10 sm:right-5 sm:top-4"
+            onClick={() => setOpenPanel(null)}
+          >
+            返回岛上
+          </button>
+          <CaseWorkbenchPage />
+        </div>
       )}
 
       {showAvatarSetup && (
