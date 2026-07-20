@@ -22,6 +22,9 @@ export function Layout() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   useReview(); // re-render the due badge when the review queue changes
   const due = dueCount();
+  // Fullscreen island only — case workbench keeps site chrome.
+  const isResearchGame =
+    pathname.startsWith('/research-game') && !pathname.startsWith('/research-game/case');
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -40,6 +43,7 @@ export function Layout() {
   return (
     <div className="min-h-dvh">
       <ScrollToTop />
+      {!isResearchGame && (
       <header className="sticky top-0 z-40 border-b border-hairline bg-canvas/85 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5">
           <Link to="/" className="group flex min-w-0 items-baseline gap-3">
@@ -65,6 +69,12 @@ export function Layout() {
                 {t('nav_leaderboards')}
               </NavLink>
             )}
+            <NavLink to="/research-game" className={navCls}>
+              {lang === 'zh' ? '科研岛' : 'Research Island'}
+            </NavLink>
+            <NavLink to="/research-game/case" className={navCls}>
+              {lang === 'zh' ? '案件台' : 'Case desk'}
+            </NavLink>
             <NavLink to="/review" className={navCls}>
               <span className="inline-flex items-center gap-1.5">
                 {lang === 'zh' ? '复习' : 'Review'}
@@ -126,14 +136,16 @@ export function Layout() {
           </nav>
         </div>
       </header>
+      )}
 
       <main>
         <Outlet />
       </main>
 
       {/* Hide the AI tutor on the placement quiz so it can't be used to answer it. */}
-      {tutorEnabled && pathname !== '/find-your-level' && <TutorWidget />}
+      {tutorEnabled && pathname !== '/find-your-level' && !isResearchGame && <TutorWidget />}
 
+      {!isResearchGame && (
       <footer className="mt-24 border-t border-hairline">
         <div className="bg-bone/40">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-8 gap-y-4 px-5 py-6">
@@ -211,8 +223,9 @@ export function Layout() {
           </div>
         </div>
       </footer>
+      )}
 
-      {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
+      {paletteOpen && !isResearchGame && <CommandPalette onClose={() => setPaletteOpen(false)} />}
     </div>
   );
 }

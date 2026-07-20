@@ -15,6 +15,8 @@ import { ClassDetailPage } from './pages/ClassDetailPage';
 import { ClassesPage } from './pages/ClassesPage';
 import { FlashcardsPage } from './pages/FlashcardsPage';
 import { ReviewPage } from './pages/ReviewPage';
+import { ResearchGamePage } from './pages/ResearchGamePage';
+import { CaseWorkbenchPage } from './pages/CaseWorkbenchPage';
 
 const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
 
@@ -47,6 +49,9 @@ export default function App() {
                 <Route path="/glossary" element={<GlossaryPage />} />
                 <Route path="/progress" element={<ProgressPage />} />
                 <Route path="/leaderboards" element={<LeaderboardsPage />} />
+                <Route path="/research-game" element={<ResearchGamePage />} />
+                <Route path="/research-game/case" element={<CaseWorkbenchPage />} />
+                <Route path="/research-game/:sceneId" element={<ResearchGamePage />} />
                 <Route path="/find-your-level" element={<PlacementPage />} />
                 <Route path="/review" element={<ReviewPage />} />
                 <Route path="/flashcards" element={<FlashcardsPage />} />
