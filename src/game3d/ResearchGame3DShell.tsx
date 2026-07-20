@@ -1,7 +1,7 @@
 import {
   BookOpen,
+  ClipboardList,
   DoorOpen,
-  Hand,
   LogOut,
   Map,
   MessageCircle,
@@ -49,7 +49,7 @@ import type {
   PlayerGameProfile,
 } from '../game/types';
 import { useGamePresence } from '../game/useGamePresence';
-import { avatarPresetById, gameScenes } from '../game/worldContent';
+import { gameScenes } from '../game/worldContent';
 import { useAuth } from '../lib/auth';
 import type { ZoneId } from '../lib/researchGame';
 import { CaseWorkbenchPage } from '../pages/CaseWorkbenchPage';
@@ -140,7 +140,6 @@ export function ResearchGame3DShell({
   const reducedMotion = useReducedMotion();
 
   const avatarPreset = playerProfile?.avatarPreset ?? selectedPreset;
-  const preset = avatarPresetById[avatarPreset];
   const landmarkTotal = useMemo(
     () => scene.interactions.filter((interaction) => interaction.kind === 'landmark').length,
     [scene.interactions],
@@ -242,7 +241,7 @@ export function ResearchGame3DShell({
     const [x, , z] = joinPosition;
     return world3DToLegacy(sceneId, { x, z });
   }, [joinPosition, sceneId]);
-  const { connected, remotePlayers, broadcastPosition, broadcastEmote } =
+  const { remotePlayers, broadcastPosition } =
     useGamePresence({
       userId: presenceUserId,
       displayName,
@@ -359,9 +358,19 @@ export function ResearchGame3DShell({
   }, [mapOpen, openPanel]);
 
   const toggleMap = useCallback(() => {
+    if (openPanel?.kind === 'case-desk') {
+      setOpenPanel(null);
+      return;
+    }
     if (openPanel || transitionTarget || !playerProfile) return;
     setMapOpen((current) => !current);
   }, [openPanel, playerProfile, transitionTarget]);
+
+  const toggleDossier = useCallback(() => {
+    if (transitionTarget || !playerProfile) return;
+    setMapOpen(false);
+    setOpenPanel((current) => (current?.kind === 'case-desk' ? null : { kind: 'case-desk' }));
+  }, [playerProfile, transitionTarget]);
 
   const inputEnabled =
     runtimeReady && Boolean(playerProfile) && !openPanel && !customizingAvatar && !transitionTarget;
@@ -370,6 +379,7 @@ export function ResearchGame3DShell({
     shortcutsEnabled: Boolean(playerProfile) && !customizingAvatar && !transitionTarget,
     onInteract: interactNearby,
     onToggleMap: toggleMap,
+    onToggleDossier: toggleDossier,
     onEscape: closeOverlay,
   });
 
@@ -454,9 +464,6 @@ export function ResearchGame3DShell({
     setOpenPanel({ kind: 'workspace', zoneId, interaction: null });
   };
 
-  const wave = () => {
-    broadcastEmote('wave');
-  };
 
   const cameraMode: CameraMode3D = mapOpen
     ? 'map'
@@ -534,56 +541,52 @@ export function ResearchGame3DShell({
       )}
 
       <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-4">
-        <div className="game3d-hud-panel max-w-[min(70vw,470px)] px-3 py-2.5 sm:px-4 sm:py-3">
-          <p className="font-mono text-[10px] tracking-[0.12em] text-white/65">
-            {caseFile && caseFile.status !== 'closed' ? '探案现场 · 3D' : '科研岛 · 3D'}
-          </p>
-          <h1 className="mt-1 truncate font-serif text-[22px] font-semibold text-white sm:text-[26px]">{scene.name}</h1>
-          <p className="mt-1 hidden truncate text-[14px] text-white/68 sm:block">
-            {caseFile && caseFile.status !== 'closed' ? '查线索、找导师、跑对照——卷宗在左下角' : scene.subtitle}
+        <div className="game3d-hud-panel max-w-[min(72vw,420px)] px-3.5 py-2.5">
+          <h1 className="truncate font-serif text-[20px] font-semibold text-white sm:text-[24px]">{scene.name}</h1>
+          <p className="mt-1 truncate text-[14px] leading-snug text-white/75">
+            {caseFile && caseFile.status !== 'closed'
+              ? (caseFile.completeness >= 0.85
+                  ? '卷宗将齐——打开组板送审'
+                  : caseFile.flags.includes('knows_leak')
+                    ? '去档案柜与机房钉证据'
+                    : '在园区走动，靠近线索或找导师')
+              : scene.subtitle}
           </p>
         </div>
 
-        <nav className="game3d-hud-panel pointer-events-auto flex items-center gap-1.5 p-1.5" aria-label="游戏操作">
-          <span className={`hidden px-2 text-[13px] sm:inline ${connected ? 'text-[#a9efbb]' : 'text-white/58'}`}>
-            {connected ? `附近 ${remotePlayers.length}` : userId ? '正在连接' : '本地模式'}
-          </span>
-          <HudIconButton label={mapOpen ? '关闭世界地图' : '打开世界地图'} onClick={toggleMap} active={mapOpen}>
+        <nav className="game3d-hud-panel pointer-events-auto flex items-center gap-1 p-1" aria-label="游戏操作">
+          <HudIconButton label={mapOpen ? '关闭地图' : '地图 M'} onClick={toggleMap} active={mapOpen}>
             {mapOpen ? <X size={18} /> : <Map size={18} />}
           </HudIconButton>
-          <HudIconButton label="挥手" onClick={wave}><Hand size={18} /></HudIconButton>
           <HudIconButton
-            label={`调整角色：${preset.name}`}
+            label="卷宗 J"
+            onClick={toggleDossier}
+            active={openPanel?.kind === 'case-desk'}
+          >
+            <ClipboardList size={18} />
+          </HudIconButton>
+          <HudIconButton
+            label="角色"
             onClick={() => {
               setSelectedPreset(avatarPreset);
               setCustomizingAvatar(true);
             }}
-            accent={preset.cssColor}
           >
             <UserRoundCog size={18} />
           </HudIconButton>
-          <HudIconButton label="退出科研岛" onClick={() => navigate('/')}><LogOut size={18} /></HudIconButton>
+          <HudIconButton label="退出" onClick={() => navigate('/')}>
+            <LogOut size={18} />
+          </HudIconButton>
         </nav>
       </header>
 
       {mapOpen && (
-        <div className="pointer-events-none absolute inset-x-0 top-[118px] z-20 flex justify-center px-4 sm:top-24" aria-live="polite">
-          <div className="game3d-hud-panel px-4 py-2 text-center text-white">
-            <p className="font-mono text-[11px] tracking-[0.16em] text-white/60">WORLD MAP</p>
-            <h2 className="mt-0.5 font-serif text-[22px] font-semibold">{scene.name}全景</h2>
-            {landmarkTotal > 0 && (
-              <p className="mt-1 font-mono text-[12px] text-[#f0d78d]">科研手记 {discoveredInScene}/{landmarkTotal}</p>
-            )}
+        <div className="pointer-events-none absolute inset-x-0 top-[108px] z-20 flex justify-center px-4" aria-live="polite">
+          <div className="game3d-map-banner px-5 py-3 text-center text-white">
+            <p className="font-mono text-[11px] tracking-[0.12em] text-white/55">园区总览</p>
+            <h2 className="mt-0.5 font-serif text-[22px] font-semibold">{scene.name}</h2>
+            <p className="mt-1 text-[13px] text-white/65">点选目的地移动 · 再按 M 关闭</p>
           </div>
-        </div>
-      )}
-
-      {landmarkTotal > 0 && !mapOpen && !openPanel && !transitionTarget && (
-        <div className="game3d-discovery-tracker pointer-events-none absolute left-3 top-[112px] z-20 sm:left-4 sm:top-[126px]">
-          <BookOpen size={15} aria-hidden="true" />
-          <span>科研手记</span>
-          <strong>{discoveredInScene}/{landmarkTotal}</strong>
-          <i aria-hidden="true"><b style={{ width: `${discoveredInScene / landmarkTotal * 100}%` }} /></i>
         </div>
       )}
 
@@ -591,9 +594,10 @@ export function ResearchGame3DShell({
         <button
           type="button"
           onClick={interactNearby}
-          className="game3d-interaction-prompt absolute bottom-5 left-1/2 z-20 hidden min-h-12 -translate-x-1/2 items-center gap-2.5 px-5 py-2.5 text-[15px] text-white md:flex"
+          className="game3d-interaction-prompt absolute bottom-5 left-1/2 z-20 hidden min-h-12 -translate-x-1/2 items-center gap-2.5 px-5 py-2.5 text-[16px] text-white md:flex"
         >
-          <NearbyIcon size={17} aria-hidden="true" />
+          <kbd className="rounded border border-white/25 bg-white/10 px-1.5 font-mono text-[12px] text-white/80">E</kbd>
+          <NearbyIcon size={18} aria-hidden="true" />
           <span>{nearby.label}</span>
         </button>
       )}
@@ -622,13 +626,10 @@ export function ResearchGame3DShell({
 
       {arrivalVisible && playerProfile && runtimeReady && (
         <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-[#17252a]/10" aria-live="polite">
-          <div className="scene-arrival w-full border-y border-white/60 bg-[#17252a]/82 px-5 py-5 text-center text-white backdrop-blur-sm">
-            <p className="font-mono text-[11px] tracking-[0.14em] text-white/60">
-              {caseFile && caseFile.status !== 'closed' ? '抵达探案区' : '场景就绪'}
-            </p>
-            <h2 className="mt-1 font-serif text-[32px] font-semibold sm:text-[38px]">{scene.name}</h2>
-            <p className="mx-auto mt-1 max-w-xl text-[15px] text-white/70">
-              {caseFile && caseFile.status !== 'closed' ? '靠近高亮线索按交互键检视' : scene.subtitle}
+          <div className="scene-arrival mx-auto max-w-lg rounded-lg border border-white/15 bg-[#121c20]/88 px-6 py-5 text-center text-white backdrop-blur-md">
+            <h2 className="font-serif text-[28px] font-semibold sm:text-[34px]">{scene.name}</h2>
+            <p className="mx-auto mt-2 max-w-md text-[15px] text-white/72">
+              {caseFile && caseFile.status !== 'closed' ? '在园区走动 · 靠近线索按 E' : scene.subtitle}
             </p>
           </div>
         </div>
@@ -730,7 +731,7 @@ export function ResearchGame3DShell({
             className="absolute right-3 top-3 z-[60] min-h-10 rounded-md border border-white/20 bg-[#121c20]/9 px-3 text-[13px] text-white/90 hover:bg-white/10 sm:right-5 sm:top-4"
             onClick={() => setOpenPanel(null)}
           >
-            返回岛上
+            返回岛上 · Esc
           </button>
           <CaseWorkbenchPage />
         </div>
@@ -766,7 +767,7 @@ function HudIconButton({
     <button
       type="button"
       onClick={onClick}
-      className={`grid h-9 w-9 shrink-0 place-items-center rounded-md border text-white transition-colors ${active ? 'border-[#f4c850] bg-[#f4c850]/22' : 'border-white/20 bg-white/8 hover:bg-white/15'}`}
+      className={`grid h-10 w-10 shrink-0 place-items-center rounded-md border text-white transition-colors ${active ? 'border-white/45 bg-white/18' : 'border-white/18 bg-white/8 hover:bg-white/15'}`}
       style={accent ? { borderColor: accent } : undefined}
       aria-label={label}
       title={label}

@@ -695,11 +695,16 @@ const campusMapBuildingDefinitions: Array<{
   wall: string;
   roof: string;
 }> = [
-  { position: [-23, 1.9, -22], size: [9, 3.8, 7], wall: '#b7b3a8', roof: '#5c4e48' },
-  { position: [-38, 2, -3], size: [8, 4, 8], wall: '#aeb6b2', roof: '#3f5552' },
-  { position: [24, 2.1, -22], size: [9, 4.2, 7], wall: '#aeb2b4', roof: '#4a5154' },
-  { position: [0, 1.8, -30], size: [10, 3.6, 6.5], wall: '#b8b2a8', roof: '#5a4d47' },
-  { position: [39, 1.7, 4], size: [8, 3.4, 9], wall: '#b4aaa6', roof: '#5c4a46' },
+  // Adult massing: ~2 storey heights, readable silhouettes (academy dome / lab / compute / paper / plaza)
+  { position: [-23, 2.35, -22], size: [10.5, 4.7, 8.2], wall: '#b7b3a8', roof: '#5c4e48' },
+  { position: [-38, 2.55, -3], size: [9.2, 5.1, 9.2], wall: '#aeb6b2', roof: '#3f5552' },
+  { position: [24, 2.7, -22], size: [10.2, 5.4, 8], wall: '#aeb2b4', roof: '#4a5154' },
+  { position: [0, 2.2, -30], size: [12, 4.4, 7.4], wall: '#b8b2a8', roof: '#5a4d47' },
+  { position: [39, 2.1, 4], size: [9, 4.2, 10], wall: '#b4aaa6', roof: '#5c4a46' },
+  // Secondary masses for density without decoration clutter
+  { position: [-12, 1.6, 16], size: [4.2, 3.2, 3.6], wall: '#a8aba6', roof: '#555850' },
+  { position: [14, 1.55, 17], size: [3.8, 3.1, 3.4], wall: '#a6aaa8', roof: '#545a58' },
+  { position: [8, 1.7, -12], size: [3.4, 3.4, 3.2], wall: '#b0aea8', roof: '#5a524c' },
 ];
 
 function CampusMapBuildings() {
@@ -711,6 +716,7 @@ function CampusMapBuildings() {
             <boxGeometry args={building.size} />
             <meshStandardMaterial color={building.wall} roughness={0.9} />
           </mesh>
+          <WindowBand width={building.size[0]} height={building.size[1]} depth={building.size[2]} />
           <mesh position={[0, building.size[1] / 2 + 0.32, 0]}>
             <boxGeometry args={[building.size[0] * 1.04, 0.58, building.size[2] * 1.04]} />
             <meshStandardMaterial color={building.roof} roughness={0.76} />
@@ -1600,6 +1606,17 @@ function surfaceNoise(x: number, y: number): number {
   const value = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
   const grain = value - Math.floor(value) - 0.5;
   return THREE.MathUtils.clamp(0.5 + broad * 0.105 + grain * 0.06, 0, 1);
+}
+
+
+/** Thin dark window band — cheap adult facade read without textures. */
+function WindowBand({ width, height, depth }: { width: number; height: number; depth: number }) {
+  return (
+    <mesh castShadow position={[0, height * 0.08, depth * 0.51]} userData={{ noCollision: true }}>
+      <boxGeometry args={[width * 0.72, height * 0.16, 0.06]} />
+      <meshStandardMaterial color="#3a4246" metalness={0.25} roughness={0.35} />
+    </mesh>
+  );
 }
 
 function scenePalette(sceneId: GameSceneId) {
