@@ -57,6 +57,8 @@ export function PlayerController3D({
   const lastReportRef = useRef(0);
   const lastMovingRef = useRef(false);
   const walkMovingRef = useRef(false);
+  /** Seconds remaining of free jump arc before re-snapping to terrain. */
+  const jumpAirRef = useRef(0);
   const spawn = useMemo(() => new THREE.Vector3(...scene.spawn), [scene.spawn]);
   const targetDirectionRef = useRef(new THREE.Vector3());
   const cameraForwardRef = useRef(new THREE.Vector3());
@@ -202,7 +204,6 @@ export function PlayerController3D({
     const RUN = 8.4;
     const CAPSULE_HALF = 0.55;
     const FEET_CLEAR = 0.05; // sit slightly above voxel top
-    const vel = body.linvel();
     let vx = 0;
     let vz = 0;
     if (enabled && (wishX !== 0 || wishZ !== 0)) {
@@ -212,54 +213,36 @@ export function PlayerController3D({
     }
 
     const position = controller.currPos;
-    // Sample ground under player (and slightly ahead to reduce edge catches)
-    const sampleX = position.x + vx * 0.04;
-    const sampleZ = position.z + vz * 0.04;
-    let groundY = 0.55;
-    try {
-      groundY = walkSurfaceY(sampleX, sampleZ);
-    } catch {
-      groundY = 0.55;
-    }
-    // Body origin is capsule center for Ecctrl
+    // Visual terrain top under / slightly ahead of the player (Minecraft ground sample).
+    const sampleX = position.x + vx * 0.05;
+    const sampleZ = position.z + vz * 0.05;
+    const groundY = walkSurfaceY(sampleX, sampleZ);
+    // Body origin is capsule center.
     const desiredCenterY = groundY + CAPSULE_HALF + FEET_CLEAR;
 
-    let vy = vel.y;
-    let grounded = position.y <= desiredCenterY + 0.2 && vy <= 0.4;
-    // Also trust Ecctrl ground ray when available
-    if (controller.isOnGround) grounded = true;
-
-    if (enabled && movement.jump && grounded && vy <= 0.2) {
-      vy = 6.5;
-      grounded = false;
+    // Jump: free arc for a short time, then re-snap to surface.
+    if (enabled && movement.jump && jumpAirRef.current <= 0) {
+      jumpAirRef.current = 0.38;
+      body.setLinvel({ x: vx, y: 7.0, z: vz }, true);
     }
 
-    // Minecraft-like stick to ground when not jumping
-    if (enabled && grounded && !movement.jump) {
-      vy = 0;
-      // Unstick if buried in mesh / heightfield
-      if (position.y < desiredCenterY - 0.01 || position.y > desiredCenterY + 0.35) {
+    if (jumpAirRef.current > 0) {
+      jumpAirRef.current = Math.max(0, jumpAirRef.current - 1 / 60);
+      const yVel = body.linvel().y - 22 / 60;
+      body.setLinvel({ x: vx, y: yVel, z: vz }, true);
+      const yNow = body.translation().y;
+      if (yNow <= desiredCenterY && yVel <= 0) {
+        jumpAirRef.current = 0;
         body.setTranslation({ x: position.x, y: desiredCenterY, z: position.z }, true);
-      } else {
-        // gentle settle
-        body.setTranslation(
-          { x: position.x, y: position.y * 0.35 + desiredCenterY * 0.65, z: position.z },
-          true,
-        );
+        body.setLinvel({ x: vx, y: 0, z: vz }, true);
       }
-    } else if (enabled && position.y < desiredCenterY - 0.5 && vy <= 0) {
-      // Emergency unstick when deeply embedded
-      body.setTranslation({ x: position.x, y: desiredCenterY + 0.2, z: position.z }, true);
-      vy = 0;
-    }
-
-    body.wakeUp();
-    if (!enabled) {
-      body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     } else {
-      body.setLinvel({ x: vx, y: vy, z: vz }, true);
+      // Not jumping: free XZ + hard Y snap (never fight mesh / heightfield).
+      body.setTranslation({ x: position.x, y: desiredCenterY, z: position.z }, true);
+      body.setLinvel({ x: enabled ? vx : 0, y: 0, z: enabled ? vz : 0 }, true);
     }
     body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    body.wakeUp();
 
     if (!navigationCommand && routeRef.current.commandId !== -1) {
       routeRef.current.commandId = -1;
@@ -278,12 +261,14 @@ export function PlayerController3D({
       body.setTranslation(spawn, true);
       body.setLinvel({ x: 0, y: 0, z: 0 }, true);
       body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+      jumpAirRef.current = 0;
       return;
     }
 
     const moving = enabled && Math.hypot(vx, vz) > 0.08;
+    const grounded = jumpAirRef.current <= 0;
     walkMovingRef.current = moving;
-    if (playerPosRef) playerPosRef.current.set(position.x, position.y, position.z);
+    if (playerPosRef) playerPosRef.current.set(pos.x, pos.y, pos.z);
     if (moving !== lastMovingRef.current) {
       lastMovingRef.current = moving;
       onMovementChange(moving);
@@ -291,9 +276,9 @@ export function PlayerController3D({
     if (clock.elapsedTime - lastReportRef.current < 0.1) return;
     lastReportRef.current = clock.elapsedTime;
     onPosition({
-      x: position.x,
-      y: position.y,
-      z: position.z,
+      x: pos.x,
+      y: pos.y,
+      z: pos.z,
       moving,
       grounded,
       direction: vx < -0.03 ? 'left' : 'right',
@@ -317,10 +302,10 @@ export function PlayerController3D({
       jumpVel={0}
       capsuleHalfHeight={0.55}
       capsuleRadius={0.3}
-      floatHeight={0.06}
-      rayHitForgiveness={0.2}
-      springK={30}
-      dampingC={8}
+      floatHeight={0.02}
+      rayHitForgiveness={0.25}
+      springK={8}
+      dampingC={3}
       autoBalance={false}
       friction={0}
       linearDamping={0}

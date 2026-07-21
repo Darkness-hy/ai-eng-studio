@@ -1,8 +1,7 @@
 import { useFrame } from '@react-three/fiber';
-import { CuboidCollider, HeightfieldCollider, RigidBody } from '@react-three/rapier';
+import { CuboidCollider, RigidBody } from '@react-three/rapier';
 import {
   useEffect,
-  useMemo,
   useRef,
   useState,
   type MutableRefObject,
@@ -13,7 +12,7 @@ import * as THREE from 'three';
  * Chunked procedural open world (Minicraft-like exploration).
  * - Biomes: meadow / shore / ridge
  * - Streamed chunks around the player
- * - Per-chunk heightfield colliders for walkable relief
+ * - Flat continent collider + character Y-snap (Minecraft-style walk)
  * - Ridge caves with walkable interiors
  * Original art; not affiliated with commercial block-game brands.
  */
@@ -304,16 +303,8 @@ function ChunkView({
   chunk: ChunkData;
   reducedMotion: boolean;
 }) {
-  // Rapier heightfield is XZ-aligned, centered on the rigid body.
-  // scale.y multiplies height samples; we store absolute meters so y=1.
-  const scale = useMemo(() => ({ x: CHUNK_WORLD, y: 1, z: CHUNK_WORLD }), []);
-  // Sit collider flush with top of voxel stack (tiny epsilon under top face).
-  const bodyPos: [number, number, number] = [
-    chunk.originX + CHUNK_WORLD / 2,
-    0,
-    chunk.originZ + CHUNK_WORLD / 2,
-  ];
-
+  // Visual-only chunk. Physics is a single flat continent plane + character Y-snap
+  // (Minecraft-style), which avoids heightfields trapping the capsule in mesh.
   return (
     <group>
       {(Object.keys(chunk.byKind) as TerrainKind[]).map((kind) => (
@@ -331,13 +322,6 @@ function ChunkView({
           <InstancedBoxes matrices={chunk.decor} color={chunk.decorColor} />
         </>
       )}
-      <RigidBody type="fixed" colliders={false} position={bodyPos} friction={0.9} restitution={0}>
-        <HeightfieldCollider
-          args={[CHUNK_CELLS, CHUNK_CELLS, chunk.heights, scale]}
-          friction={0.9}
-          restitution={0}
-        />
-      </RigidBody>
     </group>
   );
 }
@@ -531,9 +515,9 @@ export function OpenWorldTerrain({
 
   return (
     <group>
-      {/* Hub safety pad */}
-      <RigidBody type="fixed" colliders={false} friction={0.9} position={[0, -1.0, 8]}>
-        <CuboidCollider args={[18, 0.15, 18]} restitution={0} friction={0.9} />
+      {/* Flat physics floor — free XZ move; visual height via character walkSurfaceY snap. */}
+      <RigidBody type="fixed" colliders={false} friction={1} position={[0, -0.5, 0]}>
+        <CuboidCollider args={[WORLD_HALF + 8, 0.5, WORLD_HALF + 8]} restitution={0} friction={1} />
       </RigidBody>
 
       {loaded.map((chunk) => (
