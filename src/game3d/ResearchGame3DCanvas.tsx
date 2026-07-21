@@ -3,6 +3,7 @@ import { Physics } from '@react-three/rapier';
 import type { EcctrlHandle } from 'ecctrl';
 import { Suspense, useRef, type MutableRefObject } from 'react';
 import * as THREE from 'three';
+// player world pos shared with open-world streaming
 import type { AvatarPresetId } from '../game/types';
 import { CameraRig3D } from './CameraRig3D';
 import { PlayerController3D, RemoteAvatar3D } from './PlayerAvatar3D';
@@ -60,6 +61,7 @@ export function ResearchGame3DCanvas({
 }) {
   const controllerRef = useRef<EcctrlHandle | null>(null);
   const lookDirRef = useRef(createLookDirState());
+  const playerPosRef = useRef(new THREE.Vector3(0, 1.15, 22));
   const isMobile =
     typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
   const dpr = isMobile ? 1.25 : 1.5;
@@ -82,6 +84,7 @@ export function ResearchGame3DCanvas({
             scene={scene}
             cameraMode={cameraMode}
             reducedMotion={reducedMotion}
+            playerPosRef={playerPosRef}
             onSelectGround={onSelectGround}
             onSelectInteraction={onSelectInteraction}
           />
@@ -89,6 +92,7 @@ export function ResearchGame3DCanvas({
             controllerRef={controllerRef}
             movementRef={movementRef}
             lookDirRef={lookDirRef}
+            playerPosRef={playerPosRef}
             presetId={avatarPreset}
             initialPosition={initialPosition}
             scene={scene}

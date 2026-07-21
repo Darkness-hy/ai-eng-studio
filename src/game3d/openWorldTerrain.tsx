@@ -1,14 +1,31 @@
-import { useMemo } from 'react';
+import { useFrame } from '@react-three/fiber';
+import { CuboidCollider, HeightfieldCollider, RigidBody } from '@react-three/rapier';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from 'react';
 import * as THREE from 'three';
-import { CuboidCollider, RigidBody } from '@react-three/rapier';
 
 /**
- * Procedural voxel open-world layer (Minicraft-like exploration scale).
- * Original art direction — not affiliated with any commercial block game brand.
+ * Chunked procedural open world (Minicraft-like exploration).
+ * - Biomes: meadow / shore / ridge
+ * - Streamed chunks around the player
+ * - Per-chunk heightfield colliders for walkable relief
+ * Original art; not affiliated with commercial block-game brands.
  */
 
-const CELL = 2;
-const HALF = 36; // world half-extent in cells → ~144 world units across
+export const CELL = 2;
+export const WORLD_HALF = 72;
+const CHUNK_CELLS = 12;
+const CHUNK_WORLD = CHUNK_CELLS * CELL;
+const LOAD_RADIUS = 2;
+const MAX_CACHE = 48;
+
+export type BiomeId = 'meadow' | 'shore' | 'ridge';
+export type TerrainKind = 'grass' | 'sand' | 'dirt' | 'stone' | 'water' | 'path' | 'snow';
 
 function hash2(x: number, z: number): number {
   const n = Math.sin(x * 127.1 + z * 311.7) * 43758.5453;
@@ -31,38 +48,55 @@ function noise2(x: number, z: number): number {
 
 function fbm(x: number, z: number): number {
   return (
-    noise2(x * 0.08, z * 0.08) * 0.55 +
-    noise2(x * 0.18, z * 0.18) * 0.3 +
-    noise2(x * 0.4, z * 0.4) * 0.15
+    noise2(x * 0.07, z * 0.07) * 0.5 +
+    noise2(x * 0.16, z * 0.16) * 0.32 +
+    noise2(x * 0.38, z * 0.38) * 0.18
   );
 }
 
-export type TerrainKind = 'grass' | 'sand' | 'dirt' | 'stone' | 'water' | 'path';
+export function sampleBiome(wx: number, wz: number): BiomeId {
+  if (wz > 28 || Math.hypot(wx, wz) > 58) return 'shore';
+  if (wz < -28 || fbm(wx * 0.5, wz * 0.5) > 0.72) return 'ridge';
+  return 'meadow';
+}
 
-export function sampleTerrain(wx: number, wz: number): { h: number; kind: TerrainKind } {
-  // Station hub stays relatively flat.
+export function sampleHeight(wx: number, wz: number): number {
   const hubDist = Math.hypot(wx, wz - 8);
-  const island = 1 - Math.min(1, Math.hypot(wx * 0.012, wz * 0.012));
-  let h = fbm(wx, wz) * 4.2 * island;
-  if (hubDist < 18) h *= hubDist / 18;
-  // Southern pier / beach
-  if (wz > 28) h = Math.min(h, 0.15);
-  // Northern cliffs
-  if (wz < -40) h += (1 - (wz + 70) / 30) * 2.2;
+  const island = 1 - Math.min(1, Math.hypot(wx * 0.011, wz * 0.011));
+  let h = fbm(wx, wz) * 5.2 * Math.max(0.15, island);
+  if (hubDist < 20) h *= hubDist / 20;
+  const biome = sampleBiome(wx, wz);
+  if (biome === 'shore') h = Math.min(h, 0.35 + fbm(wx + 9, wz) * 0.4);
+  if (biome === 'ridge') h += 1.2 + fbm(wx - 11, wz + 5) * 2.4;
+  if (Math.abs(wx) < 2.2 || Math.abs(wz - 8) < 2) h = Math.min(h, 0.35);
+  return Math.max(0.05, h);
+}
 
+export function sampleTerrain(wx: number, wz: number): {
+  h: number;
+  kind: TerrainKind;
+  biome: BiomeId;
+} {
+  const biome = sampleBiome(wx, wz);
+  const h = sampleHeight(wx, wz);
   let kind: TerrainKind = 'grass';
-  if (wz > 32 || (wz > 20 && Math.abs(wx) > 22)) kind = 'sand';
-  else if (h > 2.6) kind = 'stone';
-  else if (h > 1.4) kind = 'dirt';
-  else if (h < 0.12 && fbm(wx + 40, wz - 20) < 0.32) kind = 'water';
-
-  // Soft path toward major axes
-  if (Math.abs(wx) < 1.6 || Math.abs(wz - 8) < 1.4) {
-    if (kind !== 'water' && kind !== 'stone') kind = 'path';
-    h = Math.min(h, 0.25);
+  if (biome === 'shore') {
+    kind = h < 0.25 && fbm(wx + 40, wz - 20) < 0.38 ? 'water' : 'sand';
+  } else if (biome === 'ridge') {
+    kind = h > 3.2 ? 'snow' : h > 2.0 ? 'stone' : 'dirt';
+  } else {
+    kind = h > 2.4 ? 'dirt' : 'grass';
+    if (h < 0.2 && fbm(wx + 40, wz - 20) < 0.3) kind = 'water';
   }
-
-  return { h: Math.max(0, h), kind };
+  if (
+    (Math.abs(wx) < 1.8 || Math.abs(wz - 8) < 1.6) &&
+    kind !== 'water' &&
+    kind !== 'stone' &&
+    kind !== 'snow'
+  ) {
+    kind = 'path';
+  }
+  return { h, kind, biome };
 }
 
 const KIND_COLOR: Record<TerrainKind, string> = {
@@ -72,78 +106,122 @@ const KIND_COLOR: Record<TerrainKind, string> = {
   stone: '#8a9096',
   water: '#4eb3d4',
   path: '#c4b48a',
+  snow: '#eef6ff',
 };
 
-function buildInstances() {
-  const grass: THREE.Matrix4[] = [];
-  const sand: THREE.Matrix4[] = [];
-  const dirt: THREE.Matrix4[] = [];
-  const stone: THREE.Matrix4[] = [];
-  const water: THREE.Matrix4[] = [];
-  const path: THREE.Matrix4[] = [];
-  const treeTrunk: THREE.Matrix4[] = [];
-  const treeLeaf: THREE.Matrix4[] = [];
-  const rocks: THREE.Matrix4[] = [];
-  const flowers: THREE.Matrix4[] = [];
+type ChunkKey = string;
+function chunkKey(cx: number, cz: number): ChunkKey {
+  return `${cx},${cz}`;
+}
 
-  const dummy = new THREE.Object3D();
-  const buckets: Record<TerrainKind, THREE.Matrix4[]> = {
-    grass,
-    sand,
-    dirt,
-    stone,
-    water,
-    path,
+function worldToChunk(wx: number, wz: number): [number, number] {
+  return [Math.floor(wx / CHUNK_WORLD), Math.floor(wz / CHUNK_WORLD)];
+}
+
+type ChunkData = {
+  key: ChunkKey;
+  cx: number;
+  cz: number;
+  originX: number;
+  originZ: number;
+  heights: number[];
+  byKind: Record<TerrainKind, THREE.Matrix4[]>;
+  trunk: THREE.Matrix4[];
+  leaf: THREE.Matrix4[];
+  decor: THREE.Matrix4[];
+  decorColor: string;
+};
+
+function createChunk(cx: number, cz: number): ChunkData {
+  const originX = cx * CHUNK_WORLD;
+  const originZ = cz * CHUNK_WORLD;
+  const n = CHUNK_CELLS + 1;
+  const heights: number[] = new Array(n * n);
+  const byKind: Record<TerrainKind, THREE.Matrix4[]> = {
+    grass: [],
+    sand: [],
+    dirt: [],
+    stone: [],
+    water: [],
+    path: [],
+    snow: [],
   };
+  const trunk: THREE.Matrix4[] = [];
+  const leaf: THREE.Matrix4[] = [];
+  const decor: THREE.Matrix4[] = [];
+  let decorColor = '#f2a0c0';
+  const dummy = new THREE.Object3D();
 
-  for (let ix = -HALF; ix <= HALF; ix += 1) {
-    for (let iz = -HALF; iz <= HALF; iz += 1) {
-      const wx = ix * CELL;
-      const wz = iz * CELL;
-      // Skip dense fill under far ocean skirt
-      if (Math.hypot(wx, wz) > HALF * CELL * 1.02) continue;
+  for (let iz = 0; iz < n; iz += 1) {
+    for (let ix = 0; ix < n; ix += 1) {
+      heights[iz * n + ix] = sampleHeight(originX + ix * CELL, originZ + iz * CELL);
+    }
+  }
 
-      const { h, kind } = sampleTerrain(wx, wz);
-      const layers = Math.max(1, Math.min(5, Math.round(h / 0.55) + 1));
+  for (let iz = 0; iz < CHUNK_CELLS; iz += 1) {
+    for (let ix = 0; ix < CHUNK_CELLS; ix += 1) {
+      const wx = originX + (ix + 0.5) * CELL;
+      const wz = originZ + (iz + 0.5) * CELL;
+      if (Math.abs(wx) > WORLD_HALF + 4 || Math.abs(wz) > WORLD_HALF + 4) continue;
+      const { h, kind, biome } = sampleTerrain(wx, wz);
+      const layers = Math.max(1, Math.min(6, Math.round(h / 0.55) + 1));
       for (let ly = 0; ly < layers; ly += 1) {
-        const y = ly * 0.55 + 0.275;
-        dummy.position.set(wx, y, wz);
-        dummy.scale.set(CELL * 0.98, 0.55, CELL * 0.98);
+        dummy.position.set(wx, ly * 0.55 + 0.275, wz);
+        dummy.scale.set(CELL * 0.96, 0.55, CELL * 0.96);
         dummy.updateMatrix();
         const k = ly === layers - 1 ? kind : ly === 0 ? 'stone' : 'dirt';
-        buckets[k].push(dummy.matrix.clone());
+        byKind[k].push(dummy.matrix.clone());
       }
 
-      // Vegetation
-      const hv = hash2(ix + 3, iz - 7);
-      if (kind === 'grass' && h < 2.2 && hv > 0.86) {
-        const trunkH = 1.2 + hv * 1.6;
+      const hv = hash2(cx * 97 + ix, cz * 53 + iz);
+      if (biome === 'meadow' && kind === 'grass' && hv > 0.88) {
+        const trunkH = 1.1 + hv * 1.5;
         dummy.position.set(wx, layers * 0.55 + trunkH / 2, wz);
-        dummy.scale.set(0.45, trunkH, 0.45);
+        dummy.scale.set(0.4, trunkH, 0.4);
         dummy.updateMatrix();
-        treeTrunk.push(dummy.matrix.clone());
-        for (let t = 0; t < 3; t += 1) {
-          dummy.position.set(wx, layers * 0.55 + trunkH + t * 0.55, wz);
-          const s = 1.6 - t * 0.35;
-          dummy.scale.set(s, 0.55, s);
+        trunk.push(dummy.matrix.clone());
+        for (let ti = 0; ti < 3; ti += 1) {
+          dummy.position.set(wx, layers * 0.55 + trunkH + ti * 0.5, wz);
+          const s = 1.5 - ti * 0.32;
+          dummy.scale.set(s, 0.5, s);
           dummy.updateMatrix();
-          treeLeaf.push(dummy.matrix.clone());
+          leaf.push(dummy.matrix.clone());
         }
-      } else if (kind === 'grass' && hv > 0.78 && hv <= 0.86) {
-        dummy.position.set(wx + (hv - 0.8) * 4, layers * 0.55 + 0.2, wz);
-        dummy.scale.set(0.35, 0.35, 0.35);
+      } else if (biome === 'meadow' && kind === 'grass' && hv > 0.8) {
+        dummy.position.set(wx, layers * 0.55 + 0.2, wz);
+        dummy.scale.set(0.32, 0.32, 0.32);
         dummy.updateMatrix();
-        flowers.push(dummy.matrix.clone());
-      } else if ((kind === 'stone' || kind === 'dirt') && hv > 0.9) {
-        dummy.position.set(wx, layers * 0.55 + 0.4, wz);
-        dummy.scale.set(0.9 + hv, 0.7 + hv, 0.9 + hv);
+        decor.push(dummy.matrix.clone());
+        decorColor = '#f2a0c0';
+      } else if (biome === 'ridge' && hv > 0.9) {
+        dummy.position.set(wx, layers * 0.55 + 0.45, wz);
+        dummy.scale.set(0.9 + hv, 0.7, 0.9 + hv);
         dummy.updateMatrix();
-        rocks.push(dummy.matrix.clone());
+        decor.push(dummy.matrix.clone());
+        decorColor = '#9aa3aa';
+      } else if (biome === 'shore' && kind === 'sand' && hv > 0.91) {
+        dummy.position.set(wx, layers * 0.55 + 0.25, wz);
+        dummy.scale.set(0.5, 0.35, 0.5);
+        dummy.updateMatrix();
+        decor.push(dummy.matrix.clone());
+        decorColor = '#d9c27a';
       }
     }
   }
 
-  return { grass, sand, dirt, stone, water, path, treeTrunk, treeLeaf, rocks, flowers };
+  return {
+    key: chunkKey(cx, cz),
+    cx,
+    cz,
+    originX,
+    originZ,
+    heights,
+    byKind,
+    trunk,
+    leaf,
+    decor,
+    decorColor,
+  };
 }
 
 function InstancedBoxes({
@@ -155,50 +233,96 @@ function InstancedBoxes({
   color: string;
   castShadow?: boolean;
 }) {
-  const mesh = useMemo(() => {
-    if (matrices.length === 0) return null;
-    const m = new THREE.InstancedMesh(
-      new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshStandardMaterial({ color, roughness: 0.92, flatShading: true }),
-      matrices.length,
-    );
-    matrices.forEach((mat, i) => m.setMatrixAt(i, mat));
-    m.instanceMatrix.needsUpdate = true;
-    m.castShadow = castShadow;
-    m.receiveShadow = true;
-    return m;
-  }, [matrices, color, castShadow]);
+  const ref = useRef<THREE.InstancedMesh>(null);
+  useEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    for (let i = 0; i < matrices.length; i += 1) mesh.setMatrixAt(i, matrices[i]!);
+    mesh.count = matrices.length;
+    mesh.instanceMatrix.needsUpdate = true;
+  }, [matrices]);
 
-  if (!mesh) return null;
-  return <primitive object={mesh} />;
+  if (matrices.length === 0) return null;
+  return (
+    <instancedMesh
+      ref={ref}
+      args={[undefined, undefined, matrices.length]}
+      castShadow={castShadow}
+      receiveShadow
+    >
+      <boxGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial color={color} roughness={0.92} flatShading />
+    </instancedMesh>
+  );
 }
 
-/** Outposts / ruins for open-world exploration density. */
-function VoxelOutpost({ position, palette }: { position: [number, number, number]; palette: string }) {
+function ChunkView({
+  chunk,
+  reducedMotion,
+}: {
+  chunk: ChunkData;
+  reducedMotion: boolean;
+}) {
+  const scale = useMemo(() => new THREE.Vector3(CHUNK_WORLD, 1, CHUNK_WORLD), []);
+  // Heightfield is centered on rigid body; shift so origin matches chunk min corner.
+  const bodyPos: [number, number, number] = [
+    chunk.originX + CHUNK_WORLD / 2,
+    0,
+    chunk.originZ + CHUNK_WORLD / 2,
+  ];
+
+  return (
+    <group>
+      {(Object.keys(chunk.byKind) as TerrainKind[]).map((kind) => (
+        <InstancedBoxes
+          key={kind}
+          matrices={chunk.byKind[kind]}
+          color={KIND_COLOR[kind]}
+          castShadow={kind === 'stone' || kind === 'snow'}
+        />
+      ))}
+      {!reducedMotion && (
+        <>
+          <InstancedBoxes matrices={chunk.trunk} color="#8b5a2b" castShadow />
+          <InstancedBoxes matrices={chunk.leaf} color="#3f9b4a" castShadow />
+          <InstancedBoxes matrices={chunk.decor} color={chunk.decorColor} />
+        </>
+      )}
+      <RigidBody type="fixed" colliders={false} position={bodyPos} friction={1.2}>
+        <HeightfieldCollider args={[CHUNK_CELLS, CHUNK_CELLS, chunk.heights, scale]} />
+      </RigidBody>
+    </group>
+  );
+}
+
+function VoxelOutpost({
+  position,
+  palette,
+}: {
+  position: [number, number, number];
+  palette: string;
+}) {
   const [x, y, z] = position;
   const blocks: Array<{ p: [number, number, number]; s: [number, number, number]; c: string }> = [];
-  // floor
   for (let ix = -2; ix <= 2; ix += 1) {
     for (let iz = -2; iz <= 2; iz += 1) {
-      blocks.push({ p: [x + ix * 0.6, y + 0.25, z + iz * 0.6], s: [0.58, 0.5, 0.58], c: '#b8a882' });
+      blocks.push({
+        p: [x + ix * 0.6, y + 0.25, z + iz * 0.6],
+        s: [0.58, 0.5, 0.58],
+        c: '#b8a882',
+      });
+      blocks.push({
+        p: [x + ix * 0.6, y + 1.7, z + iz * 0.6],
+        s: [0.58, 0.4, 0.58],
+        c: '#6d8f6a',
+      });
     }
   }
-  // walls
   for (let i = -2; i <= 2; i += 1) {
     blocks.push({ p: [x + i * 0.6, y + 1.0, z - 1.2], s: [0.58, 1.0, 0.4], c: palette });
     blocks.push({ p: [x + i * 0.6, y + 1.0, z + 1.2], s: [0.58, 1.0, 0.4], c: palette });
-    blocks.push({ p: [x - 1.2, y + 1.0, z + i * 0.6], s: [0.4, 1.0, 0.58], c: palette });
-    blocks.push({ p: [x + 1.2, y + 1.0, z + i * 0.6], s: [0.4, 1.0, 0.58], c: palette });
   }
-  // roof slab
-  for (let ix = -2; ix <= 2; ix += 1) {
-    for (let iz = -2; iz <= 2; iz += 1) {
-      blocks.push({ p: [x + ix * 0.6, y + 1.7, z + iz * 0.6], s: [0.58, 0.4, 0.58], c: '#6d8f6a' });
-    }
-  }
-  // beacon
   blocks.push({ p: [x, y + 2.4, z], s: [0.45, 1.2, 0.45], c: '#e8c45a' });
-
   return (
     <group>
       {blocks.map((b, i) => (
@@ -214,37 +338,78 @@ function VoxelOutpost({ position, palette }: { position: [number, number, number
   );
 }
 
-export function OpenWorldTerrain({ reducedMotion }: { reducedMotion: boolean }) {
-  const data = useMemo(() => buildInstances(), []);
-  const halfWorld = HALF * CELL;
+export function OpenWorldTerrain({
+  reducedMotion,
+  playerPosRef,
+}: {
+  reducedMotion: boolean;
+  playerPosRef?: MutableRefObject<THREE.Vector3>;
+}) {
+  const [loaded, setLoaded] = useState<ChunkData[]>([]);
+  const cacheRef = useRef(new Map<ChunkKey, ChunkData>());
+  const lastCenterRef = useRef('__none__');
+
+  useEffect(() => {
+    const seeds = [createChunk(0, 0), createChunk(0, 1), createChunk(-1, 0), createChunk(1, 0)];
+    for (const s of seeds) cacheRef.current.set(s.key, s);
+    setLoaded(seeds);
+  }, []);
+
+  useFrame(() => {
+    const px = playerPosRef?.current.x ?? 0;
+    const pz = playerPosRef?.current.z ?? 22;
+    const [pcx, pcz] = worldToChunk(px, pz);
+    const centerKey = `${pcx},${pcz}`;
+    if (centerKey === lastCenterRef.current) return;
+    lastCenterRef.current = centerKey;
+
+    const needed: Array<[number, number]> = [];
+    for (let dz = -LOAD_RADIUS; dz <= LOAD_RADIUS; dz += 1) {
+      for (let dx = -LOAD_RADIUS; dx <= LOAD_RADIUS; dx += 1) {
+        needed.push([pcx + dx, pcz + dz]);
+      }
+    }
+
+    const next: ChunkData[] = [];
+    const neededKeys = new Set<string>();
+    for (const [cx, cz] of needed) {
+      const ox = cx * CHUNK_WORLD + CHUNK_WORLD / 2;
+      const oz = cz * CHUNK_WORLD + CHUNK_WORLD / 2;
+      if (Math.abs(ox) > WORLD_HALF + CHUNK_WORLD || Math.abs(oz) > WORLD_HALF + CHUNK_WORLD) {
+        continue;
+      }
+      const key = chunkKey(cx, cz);
+      neededKeys.add(key);
+      let chunk = cacheRef.current.get(key);
+      if (!chunk) {
+        chunk = createChunk(cx, cz);
+        cacheRef.current.set(key, chunk);
+      }
+      next.push(chunk);
+    }
+
+    // prune cache
+    if (cacheRef.current.size > MAX_CACHE) {
+      for (const key of [...cacheRef.current.keys()]) {
+        if (!neededKeys.has(key)) cacheRef.current.delete(key);
+        if (cacheRef.current.size <= MAX_CACHE) break;
+      }
+    }
+
+    setLoaded(next);
+  });
 
   return (
     <group>
-      {/* Walkable mega-collider (flat playable plane). Visual height is decorative. */}
-      <RigidBody type="fixed" colliders={false} friction={1.2}>
-        <CuboidCollider args={[halfWorld + 4, 0.6, halfWorld + 4]} position={[0, -0.6, 0]} />
-        <mesh position={[0, -0.05, 0]} receiveShadow>
-          <boxGeometry args={[(halfWorld + 4) * 2, 0.2, (halfWorld + 4) * 2]} />
-          <meshStandardMaterial color="#6faf5a" roughness={0.98} flatShading />
-        </mesh>
+      {/* Hub safety pad */}
+      <RigidBody type="fixed" colliders={false} friction={1.1} position={[0, -0.05, 8]}>
+        <CuboidCollider args={[20, 0.35, 20]} />
       </RigidBody>
 
-      <InstancedBoxes matrices={data.grass} color={KIND_COLOR.grass} />
-      <InstancedBoxes matrices={data.sand} color={KIND_COLOR.sand} />
-      <InstancedBoxes matrices={data.dirt} color={KIND_COLOR.dirt} />
-      <InstancedBoxes matrices={data.stone} color={KIND_COLOR.stone} castShadow />
-      <InstancedBoxes matrices={data.water} color={KIND_COLOR.water} />
-      <InstancedBoxes matrices={data.path} color={KIND_COLOR.path} />
-      {!reducedMotion && (
-        <>
-          <InstancedBoxes matrices={data.treeTrunk} color="#8b5a2b" castShadow />
-          <InstancedBoxes matrices={data.treeLeaf} color="#3f9b4a" castShadow />
-          <InstancedBoxes matrices={data.rocks} color="#7a8086" castShadow />
-          <InstancedBoxes matrices={data.flowers} color="#f2a0c0" />
-        </>
-      )}
+      {loaded.map((chunk) => (
+        <ChunkView key={chunk.key} chunk={chunk} reducedMotion={reducedMotion} />
+      ))}
 
-      {/* Exploration outposts across the open map */}
       <VoxelOutpost position={[-36, 0, -28]} palette="#7d8a9a" />
       <VoxelOutpost position={[34, 0, -22]} palette="#9a7d6a" />
       <VoxelOutpost position={[-40, 0, 24]} palette="#6a8f7a" />
@@ -252,21 +417,8 @@ export function OpenWorldTerrain({ reducedMotion }: { reducedMotion: boolean }) 
       <VoxelOutpost position={[0, 0, -48]} palette="#6f7f8a" />
       <VoxelOutpost position={[-22, 0, 42]} palette="#8a9060" />
       <VoxelOutpost position={[20, 0, 44]} palette="#906a60" />
-
-      {/* Distant ridge wall (complexity silhouette) */}
-      {Array.from({ length: 40 }).map((_, i) => {
-        const x = -HALF * CELL + i * (CELL * 1.8);
-        const z = -HALF * CELL + 2;
-        const h = 2 + hash2(i, 9) * 5;
-        return (
-          <mesh key={`ridge-${i}`} position={[x, h / 2, z]} castShadow receiveShadow>
-            <boxGeometry args={[CELL * 1.6, h, CELL]} />
-            <meshStandardMaterial color="#8a9096" roughness={0.92} flatShading />
-          </mesh>
-        );
-      })}
     </group>
   );
 }
 
-export const OPEN_WORLD_HALF = HALF * CELL;
+export const OPEN_WORLD_HALF = WORLD_HALF;

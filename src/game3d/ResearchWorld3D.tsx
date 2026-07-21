@@ -1,7 +1,8 @@
 import { Html } from '@react-three/drei';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { CuboidCollider, RigidBody } from '@react-three/rapier';
-import { useEffect, useMemo, useRef, type ReactElement } from 'react';
+import { useEffect, useMemo, useRef, type ReactElement , type MutableRefObject } from 'react';
+// types
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { AgentId, GameSceneId } from '../game/types';
@@ -20,12 +21,14 @@ export function ResearchWorld3D({
   scene,
   cameraMode,
   reducedMotion,
+  playerPosRef,
   onSelectGround,
   onSelectInteraction,
 }: {
   scene: Game3DSceneDefinition;
   cameraMode: CameraMode3D;
   reducedMotion: boolean;
+  playerPosRef?: MutableRefObject<THREE.Vector3>;
   onSelectGround: (position: Vec3) => void;
   onSelectInteraction: (interaction: Game3DInteraction) => void;
 }) {
@@ -56,7 +59,7 @@ export function ResearchWorld3D({
       />
       <NavigationSurface
         scene={scene}
-        enabled={cameraMode === 'follow'}
+        enabled={cameraMode === 'follow' || cameraMode === 'first'}
         onSelect={onSelectGround}
       />
       {scene.id === 'campus' ? (
@@ -65,6 +68,7 @@ export function ResearchWorld3D({
           reducedMotion={reducedMotion}
           interactions={scene.interactions}
           onSelectInteraction={onSelectInteraction}
+          playerPosRef={playerPosRef}
         />
       ) : scene.id === 'academy' ? (
         <AcademyWorld
@@ -120,12 +124,13 @@ function CampusWorld({
   reducedMotion,
   interactions,
   onSelectInteraction,
-}: WorldProps) {
+  playerPosRef,
+}: WorldProps & { playerPosRef?: MutableRefObject<THREE.Vector3> }) {
   // Open voxel continent + research hub (paths/buildings remain the dense core).
   return (
     <>
       <WaveOcean reducedMotion={reducedMotion} />
-      <OpenWorldTerrain reducedMotion={reducedMotion} />
+      <OpenWorldTerrain reducedMotion={reducedMotion} playerPosRef={playerPosRef} />
       <CampusPaths mapMode={cameraMode === 'map'} />
       <CampusBuildings />
       <CampusLandmarks

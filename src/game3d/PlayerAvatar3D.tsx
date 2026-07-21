@@ -26,6 +26,7 @@ export function PlayerController3D({
   controllerRef,
   movementRef,
   lookDirRef,
+  playerPosRef,
   presetId,
   initialPosition,
   scene,
@@ -40,6 +41,7 @@ export function PlayerController3D({
   controllerRef: RefObject<EcctrlHandle | null>;
   movementRef: MutableRefObject<MovementState3D>;
   lookDirRef?: MutableRefObject<LookDirState>;
+  playerPosRef?: MutableRefObject<THREE.Vector3>;
   presetId: AvatarPresetId;
   initialPosition: Vec3;
   scene: Game3DSceneDefinition;
@@ -226,12 +228,14 @@ export function PlayerController3D({
     }
 
     const moving = enabled && controller.isMoving && controller.moveSpeed > 0.08;
+    if (playerPosRef) playerPosRef.current.set(position.x, position.y, position.z);
     if (moving !== lastMovingRef.current) {
       lastMovingRef.current = moving;
       onMovementChange(moving);
     }
     if (clock.elapsedTime - lastReportRef.current < 0.1) return;
     lastReportRef.current = clock.elapsedTime;
+    if (playerPosRef) playerPosRef.current.set(position.x, position.y, position.z);
     onPosition({
       x: position.x,
       y: position.y,
