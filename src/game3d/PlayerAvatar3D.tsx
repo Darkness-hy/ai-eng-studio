@@ -145,7 +145,7 @@ export function PlayerController3D({
       }
     }
     if (!commandMoving) {
-      // Prefer shared look basis (CameraRig). Fallback to camera if missing.
+      // Camera-relative forward from shared lookDir (updated by CameraRig).
       if (lookDirRef && lookDirRef.current.forward.lengthSq() > 1e-6) {
         controller.setForwardDir(lookDirRef.current.forward);
       } else {
@@ -159,37 +159,29 @@ export function PlayerController3D({
       if (!enabled) {
         controller.setMovement(STOPPED_MOVEMENT);
       } else {
-        const hasDigital =
-          movement.forward || movement.backward || movement.leftward || movement.rightward;
         const stickMag = Math.hypot(movement.joystick.x, movement.joystick.y);
-        // Digital keys: pass booleans only (Ecctrl ignores joystick when absent/zero).
-        // Stick: pass joystick only — more reliable than mixing both.
-        if (hasDigital) {
+        // Prefer joystick encoding for both keyboard (filled by useGame3DInput) and mobile.
+        // Ecctrl: joystick y = forward, x = right relative to setForwardDir.
+        if (stickMag > 0.04) {
+          controller.setMovement({
+            forward: false,
+            backward: false,
+            leftward: false,
+            rightward: false,
+            run: movement.run,
+            jump: movement.jump,
+            joystick: {
+              x: THREE.MathUtils.clamp(movement.joystick.x, -1, 1),
+              y: THREE.MathUtils.clamp(movement.joystick.y, -1, 1),
+            },
+          });
+        } else {
+          // Fallback digital flags if stick is zero
           controller.setMovement({
             forward: movement.forward,
             backward: movement.backward,
             leftward: movement.leftward,
             rightward: movement.rightward,
-            run: movement.run,
-            jump: movement.jump,
-            joystick: { x: 0, y: 0 },
-          });
-        } else if (stickMag > 0.05) {
-          controller.setMovement({
-            forward: false,
-            backward: false,
-            leftward: false,
-            rightward: false,
-            run: movement.run,
-            jump: movement.jump,
-            joystick: { x: movement.joystick.x, y: movement.joystick.y },
-          });
-        } else {
-          controller.setMovement({
-            forward: false,
-            backward: false,
-            leftward: false,
-            rightward: false,
             run: movement.run,
             jump: movement.jump,
             joystick: { x: 0, y: 0 },
@@ -255,21 +247,21 @@ export function PlayerController3D({
       canSleep={false}
       colliders={false}
       enabledRotations={[false, true, false]}
-      maxWalkVel={5.4}
-      maxRunVel={8.6}
+      maxWalkVel={4.8}
+      maxRunVel={7.5}
       accDeltaTime={0.14}
       decDeltaTime={0.1}
       jumpVel={4.2}
       capsuleHalfHeight={0.52}
       capsuleRadius={0.3}
-      floatHeight={0.06}
+      floatHeight={0.12}
       rayHitForgiveness={0.16}
-      springK={92}
-      dampingC={9}
-      autoBalanceSpringK={0.55}
-      autoBalanceDampingC={0.04}
-      friction={-0.35}
-      linearDamping={0.1}
+      springK={48}
+      dampingC={12}
+      autoBalanceSpringK={0.35}
+      autoBalanceDampingC={0.06}
+      friction={-0.2}
+      linearDamping={0.25}
       angularDamping={0.3}
       userData={{ kind: 'local-player' }}
     >

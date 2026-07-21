@@ -291,8 +291,9 @@ function ChunkView({
   chunk: ChunkData;
   reducedMotion: boolean;
 }) {
-  const scale = useMemo(() => new THREE.Vector3(CHUNK_WORLD, 1, CHUNK_WORLD), []);
-  // Heightfield is centered on rigid body; shift so origin matches chunk min corner.
+  // Rapier heightfield is XZ-aligned, centered on the rigid body.
+  // scale.y multiplies height samples; we store absolute meters so y=1.
+  const scale = useMemo(() => ({ x: CHUNK_WORLD, y: 1, z: CHUNK_WORLD }), []);
   const bodyPos: [number, number, number] = [
     chunk.originX + CHUNK_WORLD / 2,
     0,
@@ -316,8 +317,12 @@ function ChunkView({
           <InstancedBoxes matrices={chunk.decor} color={chunk.decorColor} />
         </>
       )}
-      <RigidBody type="fixed" colliders={false} position={bodyPos} friction={1.2}>
-        <HeightfieldCollider args={[CHUNK_CELLS, CHUNK_CELLS, chunk.heights, scale]} />
+      <RigidBody type="fixed" colliders={false} position={bodyPos} friction={0.9} restitution={0}>
+        <HeightfieldCollider
+          args={[CHUNK_CELLS, CHUNK_CELLS, chunk.heights, scale]}
+          friction={0.9}
+          restitution={0}
+        />
       </RigidBody>
     </group>
   );
@@ -513,8 +518,8 @@ export function OpenWorldTerrain({
   return (
     <group>
       {/* Hub safety pad */}
-      <RigidBody type="fixed" colliders={false} friction={1.1} position={[0, -0.05, 8]}>
-        <CuboidCollider args={[20, 0.35, 20]} />
+      <RigidBody type="fixed" colliders={false} friction={0.95} position={[0, -0.2, 8]}>
+        <CuboidCollider args={[16, 0.25, 16]} restitution={0} friction={0.95} />
       </RigidBody>
 
       {loaded.map((chunk) => (

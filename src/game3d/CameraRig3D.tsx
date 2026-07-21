@@ -5,7 +5,7 @@ import type { EcctrlHandle } from 'ecctrl';
 import { useEffect, useMemo, useRef, type MutableRefObject, type RefObject } from 'react';
 import * as THREE from 'three';
 import type { LookDirState } from './lookDir';
-import { setLookFromYawPitch } from './lookDir';
+import { setLookFromCamera, setLookFromYawPitch } from './lookDir';
 import type { CameraMode3D, Game3DSceneDefinition, Vec3 } from './types3d';
 
 export function CameraRig3D({
@@ -128,7 +128,7 @@ export function CameraRig3D({
   }, [mode, lookDirRef]);
 
   useFrame((_, delta) => {
-    // Publish look basis before / regardless of camera lerp so movement can read it.
+    // Early yaw publish so keyboard in this frame tracks latest mouse look.
     if (lookDirRef) setLookFromYawPitch(lookDirRef.current, yawRef.current, pitchRef.current);
 
     const controller = controllerRef.current;
@@ -193,7 +193,7 @@ export function CameraRig3D({
           controller.body,
         );
         if (hit) {
-          const safeDistance = Math.max(1.6, hit.timeOfImpact - 0.32);
+          const safeDistance = Math.max(2.4, hit.timeOfImpact - 0.45);
           desiredCamera.copy(cameraAnchor).addScaledVector(cameraDirection, safeDistance);
         }
       }
@@ -203,6 +203,15 @@ export function CameraRig3D({
     currentTarget.lerp(desiredTarget, smoothing);
     followCamera.position.lerp(desiredCamera, smoothing);
     followCamera.lookAt(currentTarget);
+
+    // Publish movement basis AFTER camera is placed so WASD matches the view.
+    if (lookDirRef) {
+      if (mode === 'first') {
+        setLookFromYawPitch(lookDirRef.current, yawRef.current, pitchRef.current);
+      } else {
+        setLookFromCamera(lookDirRef.current, followCamera, yawRef.current, pitchRef.current);
+      }
+    }
 
     const mapCamera = mapRef.current;
     if (mapCamera) {
