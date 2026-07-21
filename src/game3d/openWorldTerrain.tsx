@@ -127,6 +127,13 @@ export function sampleTerrain(wx: number, wz: number): {
   return { h, kind, biome };
 }
 
+/** Top of stacked voxel columns (must match createChunk visual layers). */
+export function surfaceTopY(wx: number, wz: number): number {
+  const h = sampleHeight(wx, wz);
+  const layers = Math.max(1, Math.min(6, Math.round(h / 0.55) + 1));
+  return layers * 0.55;
+}
+
 const KIND_COLOR: Record<TerrainKind, string> = {
   grass: '#6faf5a',
   sand: '#e2d3a2',
@@ -182,7 +189,7 @@ function createChunk(cx: number, cz: number): ChunkData {
 
   for (let iz = 0; iz < n; iz += 1) {
     for (let ix = 0; ix < n; ix += 1) {
-      heights[iz * n + ix] = sampleHeight(originX + ix * CELL, originZ + iz * CELL);
+      heights[iz * n + ix] = surfaceTopY(originX + ix * CELL, originZ + iz * CELL);
     }
   }
 
@@ -294,9 +301,10 @@ function ChunkView({
   // Rapier heightfield is XZ-aligned, centered on the rigid body.
   // scale.y multiplies height samples; we store absolute meters so y=1.
   const scale = useMemo(() => ({ x: CHUNK_WORLD, y: 1, z: CHUNK_WORLD }), []);
+  // Sit collider flush with top of voxel stack (tiny epsilon under top face).
   const bodyPos: [number, number, number] = [
     chunk.originX + CHUNK_WORLD / 2,
-    0,
+    -0.02,
     chunk.originZ + CHUNK_WORLD / 2,
   ];
 

@@ -55,6 +55,7 @@ export function PlayerController3D({
 }) {
   const lastReportRef = useRef(0);
   const lastMovingRef = useRef(false);
+  const walkMovingRef = useRef(false);
   const spawn = useMemo(() => new THREE.Vector3(...scene.spawn), [scene.spawn]);
   const targetDirectionRef = useRef(new THREE.Vector3());
   const cameraForwardRef = useRef(new THREE.Vector3());
@@ -242,6 +243,7 @@ export function PlayerController3D({
     }
 
     const moving = enabled && Math.hypot(vx, vz) > 0.08;
+    walkMovingRef.current = moving;
     if (playerPosRef) playerPosRef.current.set(position.x, position.y, position.z);
     if (moving !== lastMovingRef.current) {
       lastMovingRef.current = moving;
@@ -290,6 +292,7 @@ export function PlayerController3D({
         <AvatarFigure3D
           presetId={presetId}
           controllerRef={controllerRef}
+          movingRef={walkMovingRef}
           reducedMotion={reducedMotion}
         />
       )}
@@ -353,9 +356,15 @@ function AvatarFigure3D({
   useFrame(({ clock }) => {
     const root = rootRef.current;
     if (!root) return;
-    const moving = controllerRef?.current
-      ? controllerRef.current.isMoving && controllerRef.current.moveSpeed > 0.08
-      : Boolean(movingRef?.current);
+    // Prefer external movingRef (Minecraft velocity controller); Ecctrl moveSpeed is zeroed.
+    const moving =
+      movingRef !== undefined
+        ? Boolean(movingRef.current)
+        : Boolean(
+            controllerRef?.current &&
+              controllerRef.current.isMoving &&
+              controllerRef.current.moveSpeed > 0.08,
+          );
     const time = clock.elapsedTime;
     const stride = moving && !reducedMotion ? Math.sin(time * 10) * 0.62 : 0;
     const breath = reducedMotion ? 0 : Math.sin(time * 2.1) * 0.012;
