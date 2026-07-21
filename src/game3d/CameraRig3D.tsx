@@ -26,8 +26,8 @@ export function CameraRig3D({
   const followRef = useRef<THREE.PerspectiveCamera | null>(null);
   const mapRef = useRef<THREE.OrthographicCamera | null>(null);
   const yawRef = useRef(0);
-  const pitchRef = useRef(0.46);
-  const distanceRef = useRef(8.4);
+  const pitchRef = useRef(0.52);
+  const distanceRef = useRef(9.6);
   const draggingRef = useRef(false);
   const pointerRef = useRef({ x: 0, y: 0 });
   const currentTarget = useMemo(() => new THREE.Vector3(...scene.spawn), [scene.spawn]);
@@ -55,8 +55,8 @@ export function CameraRig3D({
       yawRef.current -= dx * 0.006;
       // First-person: mouse up looks up (invert screen Y). Third-person orbit keeps original feel.
       const pitchDelta = mode === 'first' ? -dy * 0.004 : dy * 0.0035;
-      const pitchMin = mode === 'first' ? -1.2 : 0.12;
-      const pitchMax = mode === 'first' ? 1.2 : 0.85;
+      const pitchMin = mode === 'first' ? -1.2 : 0.28;
+      const pitchMax = mode === 'first' ? 1.2 : 0.78;
       pitchRef.current = THREE.MathUtils.clamp(pitchRef.current + pitchDelta, pitchMin, pitchMax);
       if (lookDirRef) setLookFromYawPitch(lookDirRef.current, yawRef.current, pitchRef.current);
     };
@@ -67,7 +67,7 @@ export function CameraRig3D({
     const onWheel = (event: WheelEvent) => {
       if (mode === 'first') return;
       if (mode !== 'follow') return;
-      distanceRef.current = THREE.MathUtils.clamp(distanceRef.current + event.deltaY * 0.006, 4.8, 10.5);
+      distanceRef.current = THREE.MathUtils.clamp(distanceRef.current + event.deltaY * 0.006, 6.0, 14.0);
     };
     const onContextMenu = (event: MouseEvent) => event.preventDefault();
     const onClick = () => {
@@ -116,8 +116,13 @@ export function CameraRig3D({
 
   useEffect(() => {
     if (mode === 'first') {
-      // Start near eye-level when entering FPS so pitch range feels natural.
-      pitchRef.current = THREE.MathUtils.clamp(pitchRef.current * 0.35, -0.35, 0.35);
+      // Near eye-level pitch when entering FPS.
+      pitchRef.current = THREE.MathUtils.clamp(pitchRef.current * 0.25, -0.25, 0.25);
+      if (lookDirRef) setLookFromYawPitch(lookDirRef.current, yawRef.current, pitchRef.current);
+    } else if (mode === 'follow') {
+      // Restore elevated third-person orbit after FPS (avoid stuck low pitch).
+      pitchRef.current = 0.52;
+      distanceRef.current = Math.max(distanceRef.current, 9.2);
       if (lookDirRef) setLookFromYawPitch(lookDirRef.current, yawRef.current, pitchRef.current);
     }
   }, [mode, lookDirRef]);
@@ -158,16 +163,20 @@ export function CameraRig3D({
         cameraAnchor.z - Math.cos(yawRef.current) * cp * lookDist,
       );
     } else {
-      const horizontal = Math.cos(pitchRef.current) * distanceRef.current;
+      // Elevated third-person: higher pitch floor, taller boom, look at upper body.
+      const tpsPitch = THREE.MathUtils.clamp(pitchRef.current, 0.28, 0.72);
+      const boom = distanceRef.current;
+      const horizontal = Math.cos(tpsPitch) * boom;
+      const heightBoost = 2.15;
       desiredCamera.set(
         cameraAnchor.x + Math.sin(yawRef.current) * horizontal,
-        cameraAnchor.y + Math.sin(pitchRef.current) * distanceRef.current + 1.35,
+        cameraAnchor.y + Math.sin(tpsPitch) * boom + heightBoost,
         cameraAnchor.z + Math.cos(yawRef.current) * horizontal,
       );
       desiredTarget.set(
-        cameraAnchor.x - Math.sin(yawRef.current) * 0.7,
-        cameraAnchor.y,
-        cameraAnchor.z - Math.cos(yawRef.current) * 0.7,
+        cameraAnchor.x - Math.sin(yawRef.current) * 0.55,
+        cameraAnchor.y + 0.95,
+        cameraAnchor.z - Math.cos(yawRef.current) * 0.55,
       );
       if (controller) {
         cameraDirection.subVectors(desiredCamera, cameraAnchor);
