@@ -2,8 +2,10 @@ import { OrthographicCamera, PerspectiveCamera } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useRapier } from '@react-three/rapier';
 import type { EcctrlHandle } from 'ecctrl';
-import { useEffect, useMemo, useRef, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, type MutableRefObject, type RefObject } from 'react';
 import * as THREE from 'three';
+import type { LookDirState } from './lookDir';
+import { setLookFromYawPitch } from './lookDir';
 import type { CameraMode3D, Game3DSceneDefinition, Vec3 } from './types3d';
 
 export function CameraRig3D({
@@ -12,12 +14,14 @@ export function CameraRig3D({
   scene,
   focusPosition,
   reducedMotion,
+  lookDirRef,
 }: {
   controllerRef: RefObject<EcctrlHandle | null>;
   mode: CameraMode3D;
   scene: Game3DSceneDefinition;
   focusPosition: Vec3 | null;
   reducedMotion: boolean;
+  lookDirRef?: MutableRefObject<LookDirState>;
 }) {
   const followRef = useRef<THREE.PerspectiveCamera | null>(null);
   const mapRef = useRef<THREE.OrthographicCamera | null>(null);
@@ -49,7 +53,8 @@ export function CameraRig3D({
       const dy = event.clientY - pointerRef.current.y;
       pointerRef.current = { x: event.clientX, y: event.clientY };
       yawRef.current -= dx * 0.006;
-      pitchRef.current = THREE.MathUtils.clamp(pitchRef.current + dy * 0.0035, 0.12, 0.65);
+      pitchRef.current = THREE.MathUtils.clamp(pitchRef.current + dy * 0.0035, 0.12, 0.85);
+      if (lookDirRef) setLookFromYawPitch(lookDirRef.current, yawRef.current, pitchRef.current);
     };
     const onPointerUp = (event: PointerEvent) => {
       draggingRef.current = false;
@@ -74,6 +79,7 @@ export function CameraRig3D({
         0.05,
         0.85,
       );
+      if (lookDirRef) setLookFromYawPitch(lookDirRef.current, yawRef.current, pitchRef.current);
     };
     const onPointerLockChange = () => {
       if (document.pointerLockElement !== canvas) {
@@ -104,6 +110,9 @@ export function CameraRig3D({
   }, [gl, mode]);
 
   useFrame((_, delta) => {
+    // Publish look basis before / regardless of camera lerp so movement can read it.
+    if (lookDirRef) setLookFromYawPitch(lookDirRef.current, yawRef.current, pitchRef.current);
+
     const controller = controllerRef.current;
     const followCamera = followRef.current;
     if (!followCamera) return;
@@ -194,7 +203,7 @@ export function CameraRig3D({
       );
       mapCamera.updateProjectionMatrix();
     }
-  });
+  }, -1);
 
   return (
     <>

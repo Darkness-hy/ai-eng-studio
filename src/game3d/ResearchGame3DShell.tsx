@@ -376,7 +376,12 @@ export function ResearchGame3DShell({
 
   const togglePersonView = useCallback(() => {
     if (mapOpen || openPanel || transitionTarget || !playerProfile) return;
-    setPersonView((v) => (v === 'third' ? 'first' : 'third'));
+    setPersonView((v) => {
+      const next = v === 'third' ? 'first' : 'third';
+      // Drop click-pathfinding so first-person keyboard is never blocked by commandMoving.
+      if (next === 'first') setNavigationCommand(null);
+      return next;
+    });
   }, [mapOpen, openPanel, playerProfile, transitionTarget]);
 
   const inputEnabled =

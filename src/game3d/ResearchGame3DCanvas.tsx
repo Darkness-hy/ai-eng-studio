@@ -7,6 +7,7 @@ import type { AvatarPresetId } from '../game/types';
 import { CameraRig3D } from './CameraRig3D';
 import { PlayerController3D, RemoteAvatar3D } from './PlayerAvatar3D';
 import { ResearchWorld3D } from './ResearchWorld3D';
+import { createLookDirState } from './lookDir';
 import type {
   CameraMode3D,
   Game3DInteraction,
@@ -58,6 +59,7 @@ export function ResearchGame3DCanvas({
   onReady: () => void;
 }) {
   const controllerRef = useRef<EcctrlHandle | null>(null);
+  const lookDirRef = useRef(createLookDirState());
   const isMobile =
     typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
   const dpr = isMobile ? 1.25 : 1.5;
@@ -86,6 +88,7 @@ export function ResearchGame3DCanvas({
           <PlayerController3D
             controllerRef={controllerRef}
             movementRef={movementRef}
+            lookDirRef={lookDirRef}
             presetId={avatarPreset}
             initialPosition={initialPosition}
             scene={scene}
@@ -106,6 +109,7 @@ export function ResearchGame3DCanvas({
             scene={scene}
             focusPosition={focusPosition}
             reducedMotion={reducedMotion}
+            lookDirRef={lookDirRef}
           />
           <WorldLogic3D
             controllerRef={controllerRef}

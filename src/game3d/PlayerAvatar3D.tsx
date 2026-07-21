@@ -12,6 +12,7 @@ import {
 import * as THREE from 'three';
 import type { AvatarPresetId } from '../game/types';
 import { avatarPresetById } from '../game/worldContent';
+import type { LookDirState } from './lookDir';
 import type {
   Game3DSceneDefinition,
   MovementState3D,
@@ -24,6 +25,7 @@ import type {
 export function PlayerController3D({
   controllerRef,
   movementRef,
+  lookDirRef,
   presetId,
   initialPosition,
   scene,
@@ -37,6 +39,7 @@ export function PlayerController3D({
 }: {
   controllerRef: RefObject<EcctrlHandle | null>;
   movementRef: MutableRefObject<MovementState3D>;
+  lookDirRef?: MutableRefObject<LookDirState>;
   presetId: AvatarPresetId;
   initialPosition: Vec3;
   scene: Game3DSceneDefinition;
@@ -140,24 +143,56 @@ export function PlayerController3D({
       }
     }
     if (!commandMoving) {
-      camera.getWorldDirection(cameraForwardRef.current);
-      cameraForwardRef.current.y = 0;
-      if (cameraForwardRef.current.lengthSq() > 0.001) {
-        controller.setForwardDir(cameraForwardRef.current.normalize());
+      // Prefer shared look basis (CameraRig). Fallback to camera if missing.
+      if (lookDirRef && lookDirRef.current.forward.lengthSq() > 1e-6) {
+        controller.setForwardDir(lookDirRef.current.forward);
+      } else {
+        camera.getWorldDirection(cameraForwardRef.current);
+        cameraForwardRef.current.y = 0;
+        if (cameraForwardRef.current.lengthSq() > 0.001) {
+          controller.setForwardDir(cameraForwardRef.current.normalize());
+        }
       }
-      // Pass a fresh snapshot every frame so Ecctrl never holds a sticky shared object.
+
       if (!enabled) {
         controller.setMovement(STOPPED_MOVEMENT);
       } else {
-        controller.setMovement({
-          forward: movement.forward,
-          backward: movement.backward,
-          leftward: movement.leftward,
-          rightward: movement.rightward,
-          run: movement.run,
-          jump: movement.jump,
-          joystick: { x: movement.joystick.x, y: movement.joystick.y },
-        });
+        const hasDigital =
+          movement.forward || movement.backward || movement.leftward || movement.rightward;
+        const stickMag = Math.hypot(movement.joystick.x, movement.joystick.y);
+        // Digital keys: pass booleans only (Ecctrl ignores joystick when absent/zero).
+        // Stick: pass joystick only — more reliable than mixing both.
+        if (hasDigital) {
+          controller.setMovement({
+            forward: movement.forward,
+            backward: movement.backward,
+            leftward: movement.leftward,
+            rightward: movement.rightward,
+            run: movement.run,
+            jump: movement.jump,
+            joystick: { x: 0, y: 0 },
+          });
+        } else if (stickMag > 0.05) {
+          controller.setMovement({
+            forward: false,
+            backward: false,
+            leftward: false,
+            rightward: false,
+            run: movement.run,
+            jump: movement.jump,
+            joystick: { x: movement.joystick.x, y: movement.joystick.y },
+          });
+        } else {
+          controller.setMovement({
+            forward: false,
+            backward: false,
+            leftward: false,
+            rightward: false,
+            run: movement.run,
+            jump: movement.jump,
+            joystick: { x: 0, y: 0 },
+          });
+        }
       }
     }
 
