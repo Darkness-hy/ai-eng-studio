@@ -36,15 +36,15 @@ export function ResearchWorld3D({
         attach="fog"
         args={[
           palette.fog,
-          cameraMode === 'map' ? (scene.id === 'campus' ? 90 : 55) : 18,
-          cameraMode === 'map' ? (scene.id === 'campus' ? 170 : 110) : scene.id === 'campus' ? 88 : 56,
+          cameraMode === 'map' ? (scene.id === 'campus' ? 100 : 60) : 28,
+          cameraMode === 'map' ? (scene.id === 'campus' ? 190 : 125) : scene.id === 'campus' ? 120 : 72,
         ]}
       />
-      <hemisphereLight args={[palette.hemi, palette.ground, 1.05]} />
+      <hemisphereLight args={[palette.hemi, palette.ground, 1.55]} />
       <directionalLight
         castShadow={cameraMode !== 'map'}
         position={[14, 22, 6]}
-        intensity={1.15}
+        intensity={1.85}
         color={palette.sun}
         shadow-mapSize={[1024, 1024]}
         shadow-camera-left={scene.id === 'campus' ? -54 : -24}
@@ -127,7 +127,7 @@ function CampusWorld({
         <CuboidCollider args={[48, 0.55, 34]} position={[0, -0.55, 0]} />
         <mesh position={[0, -0.5, 0]} scale={[48, 1, 34]} receiveShadow>
           <cylinderGeometry args={[1, 1, 1, 72]} />
-          <TexturedSurfaceMaterial color="#5a5e5c" variance={0.075} repeat={[12, 9]} roughness={0.98} />
+          <TexturedSurfaceMaterial color="#b0c4a0" variance={0.075} repeat={[12, 9]} roughness={0.98} />
         </mesh>
         <mesh position={[0, -1.12, 0]} scale={[48.7, 1.25, 34.7]}>
           <cylinderGeometry args={[1, 1, 1, 72]} />
@@ -186,7 +186,7 @@ function AcademyWorld({
         <CuboidCollider args={[11, 0.35, 9]} position={[0, -0.35, 0]} />
         <mesh receiveShadow position={[0, -0.38, 0]}>
           <boxGeometry args={[22, 0.7, 18]} />
-          <meshStandardMaterial color="#6a6e6c" roughness={0.92} />
+          <meshStandardMaterial color="#c5c0b0" roughness={0.92} />
         </mesh>
         <AcademyWalls />
         <AcademyFurniture />
@@ -482,8 +482,8 @@ function WaveOcean({ reducedMotion }: { reducedMotion: boolean }) {
         fragmentShader={`
           varying float vWave;
           void main() {
-            vec3 deep = vec3(0.12, 0.16, 0.20);
-            vec3 lightWater = vec3(0.22, 0.28, 0.32);
+            vec3 deep = vec3(0.28, 0.62, 0.72);
+            vec3 lightWater = vec3(0.55, 0.84, 0.88);
             vec3 color = mix(deep, lightWater, clamp(vWave * 2.8 + 0.45, 0.0, 1.0));
             gl_FragColor = vec4(color, 0.94);
           }
@@ -499,11 +499,11 @@ function CampusPaths({ mapMode }: { mapMode: boolean }) {
       <MergedCampusPaths />
       <PlazaSurface position={[0, 0, 2]} radius={[5.6, 4.8]} color="#6c706e" simplified={mapMode} />
       <PlazaSurface position={[0, 0, 24]} radius={[4.2, 3.2]} color="#6e726f" simplified={mapMode} />
-      <PlazaSurface position={[-10, 0, 4]} radius={[4.0, 3.4]} color="#6a6e6c" simplified={mapMode} />
+      <PlazaSurface position={[-10, 0, 4]} radius={[4.0, 3.4]} color="#c5c0b0" simplified={mapMode} />
       <PlazaSurface position={[-10, 0, -8]} radius={[4.0, 3.4]} color="#686c6a" simplified={mapMode} />
       <PlazaSurface position={[11, 0, -6]} radius={[4.0, 3.4]} color="#686c6a" simplified={mapMode} />
       <PlazaSurface position={[0, 0, -18]} radius={[4.4, 3.2]} color="#666a68" simplified={mapMode} />
-      <PlazaSurface position={[11, 0, 8]} radius={[4.0, 3.4]} color="#6a6e6c" simplified={mapMode} />
+      <PlazaSurface position={[11, 0, 8]} radius={[4.0, 3.4]} color="#c5c0b0" simplified={mapMode} />
     </group>
   );
 }
@@ -1690,20 +1690,20 @@ function WindowBand({ width, height, depth }: { width: number; height: number; d
 }
 
 function scenePalette(sceneId: GameSceneId) {
-  // Calm overcast research campus: low chroma sky/fog, cool sun, muted ground.
+  // Bright healing coastal station: clear sky, soft sun, warm concrete (still voxel, not gloomy).
   if (sceneId === 'campus') {
-    return { sky: '#5c6a74', fog: '#667680', hemi: '#a8b4bc', ground: '#2f3436', sun: '#cfd0ca' };
+    return { sky: '#b8dff5', fog: '#c9e8f7', hemi: '#fff6e8', ground: '#7a9a72', sun: '#fff2cc' };
   }
   if (sceneId === 'plaza') {
-    return { sky: '#5e6c76', fog: '#687882', hemi: '#aab6be', ground: '#313638', sun: '#cecfc9' };
+    return { sky: '#bfe3f7', fog: '#d0ebf8', hemi: '#fff8ec', ground: '#7d9d76', sun: '#fff0c8' };
   }
   if (sceneId === 'compute') {
-    return { sky: '#586268', fog: '#586268', hemi: '#9aa4aa', ground: '#262b2e', sun: '#c4cacd' };
+    return { sky: '#c5e4f6', fog: '#c5e4f6', hemi: '#eef8ff', ground: '#6e8890', sun: '#e8f4ff' };
   }
   if (sceneId === 'paper') {
-    return { sky: '#5e5a56', fog: '#5e5a56', hemi: '#b0aaa4', ground: '#2e2b28', sun: '#d2ccc4' };
+    return { sky: '#d8ebe0', fog: '#d8ebe0', hemi: '#fff8ef', ground: '#8a7d6c', sun: '#ffe8c4' };
   }
-  return { sky: '#5a6664', fog: '#5a6664', hemi: '#a4aeac', ground: '#2f3433', sun: '#cac8c2' };
+  return { sky: '#c4e6d8', fog: '#c4e6d8', hemi: '#fff8ef', ground: '#7a9680', sun: '#fff0d0' };
 }
 
 function agentColor(agentId: AgentId): string {

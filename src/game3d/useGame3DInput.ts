@@ -17,25 +17,121 @@ export function clearMovement3D(ref: MutableRefObject<MovementState3D>): void {
   Object.assign(ref.current, createMovementState3D());
 }
 
+/**
+ * Keyboard + shortcut input for the 3D island.
+ * WASD / arrows drive Ecctrl via movementRef (required for both third- and first-person).
+ * E interact · V person view · M map · J/Tab dossier · Esc close.
+ */
 export function useGame3DInput(options: {
   movementEnabled: boolean;
   shortcutsEnabled: boolean;
   onInteract: () => void;
   onToggleMap: () => void;
   onToggleDossier?: () => void;
+  onTogglePersonView?: () => void;
   onEscape: () => void;
 }) {
-  const { movementEnabled, shortcutsEnabled, onInteract, onToggleMap, onToggleDossier, onEscape } =
-    options;
+  const {
+    movementEnabled,
+    shortcutsEnabled,
+    onInteract,
+    onToggleMap,
+    onToggleDossier,
+    onTogglePersonView,
+    onEscape,
+  } = options;
   const movementRef = useRef<MovementState3D>(createMovementState3D());
+  const keysRef = useRef({
+    forward: false,
+    backward: false,
+    leftward: false,
+    rightward: false,
+    run: false,
+    jump: false,
+  });
+
+  const applyKeysToMovement = () => {
+    const k = keysRef.current;
+    const m = movementRef.current;
+    // Joystick (mobile) wins when active; otherwise keyboard.
+    const stickActive = Math.hypot(m.joystick.x, m.joystick.y) > 0.05;
+    if (!stickActive) {
+      m.forward = k.forward;
+      m.backward = k.backward;
+      m.leftward = k.leftward;
+      m.rightward = k.rightward;
+      m.run = k.run;
+      m.jump = k.jump;
+      // Encode digital WASD as a unit joystick so Ecctrl custom-forward path is reliable.
+      let x = 0;
+      let y = 0;
+      if (k.leftward) x -= 1;
+      if (k.rightward) x += 1;
+      if (k.forward) y += 1;
+      if (k.backward) y -= 1;
+      const len = Math.hypot(x, y);
+      if (len > 0) {
+        m.joystick.x = x / len;
+        m.joystick.y = y / len;
+      } else {
+        m.joystick.x = 0;
+        m.joystick.y = 0;
+      }
+    } else {
+      m.run = k.run;
+      m.jump = k.jump;
+    }
+  };
 
   useEffect(() => {
-    if (!movementEnabled) clearMovement3D(movementRef);
+    if (!movementEnabled) {
+      keysRef.current = {
+        forward: false,
+        backward: false,
+        leftward: false,
+        rightward: false,
+        run: false,
+        jump: false,
+      };
+      clearMovement3D(movementRef);
+    }
   }, [movementEnabled]);
 
   useEffect(() => {
+    const setKey = (code: string, pressed: boolean): boolean => {
+      const k = keysRef.current;
+      switch (code) {
+        case 'KeyW':
+        case 'ArrowUp':
+          k.forward = pressed;
+          return true;
+        case 'KeyS':
+        case 'ArrowDown':
+          k.backward = pressed;
+          return true;
+        case 'KeyA':
+        case 'ArrowLeft':
+          k.leftward = pressed;
+          return true;
+        case 'KeyD':
+        case 'ArrowRight':
+          k.rightward = pressed;
+          return true;
+        case 'ShiftLeft':
+        case 'ShiftRight':
+          k.run = pressed;
+          return true;
+        case 'Space':
+          k.jump = pressed;
+          return true;
+        default:
+          return false;
+      }
+    };
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (isEditableTarget(event.target)) return;
+
       if (event.code === 'Escape' && shortcutsEnabled) {
         event.preventDefault();
         onEscape();
@@ -44,6 +140,11 @@ export function useGame3DInput(options: {
       if (event.code === 'KeyM' && shortcutsEnabled && !event.repeat) {
         event.preventDefault();
         onToggleMap();
+        return;
+      }
+      if (event.code === 'KeyV' && shortcutsEnabled && !event.repeat && onTogglePersonView) {
+        event.preventDefault();
+        onTogglePersonView();
         return;
       }
       if (
@@ -61,21 +162,67 @@ export function useGame3DInput(options: {
         onInteract();
         return;
       }
+
+      if (!movementEnabled) return;
+      if (setKey(event.code, true)) {
+        // Prevent page scroll on arrows/space while playing.
+        if (
+          event.code.startsWith('Arrow') ||
+          event.code === 'Space' ||
+          event.code === 'KeyW' ||
+          event.code === 'KeyA' ||
+          event.code === 'KeyS' ||
+          event.code === 'KeyD'
+        ) {
+          event.preventDefault();
+        }
+        applyKeysToMovement();
+      }
     };
 
-    const onBlur = () => clearMovement3D(movementRef);
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (isEditableTarget(event.target)) return;
+      if (setKey(event.code, false)) {
+        applyKeysToMovement();
+      }
+    };
+
+    const onBlur = () => {
+      keysRef.current = {
+        forward: false,
+        backward: false,
+        leftward: false,
+        rightward: false,
+        run: false,
+        jump: false,
+      };
+      clearMovement3D(movementRef);
+    };
+
     window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
     window.addEventListener('blur', onBlur);
     return () => {
       window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('blur', onBlur);
     };
-  }, [movementEnabled, onEscape, onInteract, onToggleDossier, onToggleMap, shortcutsEnabled]);
+  }, [
+    movementEnabled,
+    onEscape,
+    onInteract,
+    onToggleDossier,
+    onToggleMap,
+    onTogglePersonView,
+    shortcutsEnabled,
+  ]);
 
   return movementRef;
 }
 
 function isEditableTarget(target: EventTarget | null): boolean {
-  return target instanceof HTMLElement &&
-    (target.isContentEditable || target.matches('input, textarea, select'));
+  return (
+    target instanceof HTMLElement &&
+    (target.isContentEditable || target.matches('input, textarea, select, button'))
+  );
 }

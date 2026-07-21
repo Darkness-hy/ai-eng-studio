@@ -3,7 +3,7 @@ import type { AgentId, AvatarPresetId, GameSceneId } from '../game/types';
 
 export type Vec3 = [number, number, number];
 
-export type CameraMode3D = 'follow' | 'map' | 'dialogue' | 'workstation';
+export type CameraMode3D = 'follow' | 'first' | 'map' | 'dialogue' | 'workstation';
 
 export type MovementState3D = {
   forward: boolean;

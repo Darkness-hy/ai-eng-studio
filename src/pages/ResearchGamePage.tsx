@@ -23,7 +23,7 @@ export function ResearchGamePage() {
     <Game3DErrorBoundary key={sceneId} sceneId={sceneId}>
       <Suspense
         fallback={
-          <div className="research-game-ui flex h-dvh min-h-[520px] items-center justify-center bg-[#6f7d82] text-[16px] text-[#e8eef0]">
+          <div className="research-game-ui flex h-dvh min-h-[520px] items-center justify-center bg-[#b8dff5] text-[16px] text-[#e8eef0]">
             正在加载 3D 引擎……
           </div>
         }

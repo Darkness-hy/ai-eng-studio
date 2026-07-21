@@ -2,6 +2,7 @@ import {
   BookOpen,
   ClipboardList,
   DoorOpen,
+  Eye,
   LogOut,
   Map,
   MessageCircle,
@@ -129,6 +130,7 @@ export function ResearchGame3DShell({
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
   const [nearby, setNearby] = useState<Game3DInteraction | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
+  const [personView, setPersonView] = useState<'third' | 'first'>('third');
   const [runtimeReady, setRuntimeReady] = useState(false);
   const [playerMoving, setPlayerMoving] = useState(false);
   const [navigationCommand, setNavigationCommand] = useState<NavigationCommand3D | null>(null);
@@ -372,6 +374,11 @@ export function ResearchGame3DShell({
     setOpenPanel((current) => (current?.kind === 'case-desk' ? null : { kind: 'case-desk' }));
   }, [playerProfile, transitionTarget]);
 
+  const togglePersonView = useCallback(() => {
+    if (mapOpen || openPanel || transitionTarget || !playerProfile) return;
+    setPersonView((v) => (v === 'third' ? 'first' : 'third'));
+  }, [mapOpen, openPanel, playerProfile, transitionTarget]);
+
   const inputEnabled =
     runtimeReady && Boolean(playerProfile) && !openPanel && !customizingAvatar && !transitionTarget;
   const movementRef = useGame3DInput({
@@ -380,6 +387,7 @@ export function ResearchGame3DShell({
     onInteract: interactNearby,
     onToggleMap: toggleMap,
     onToggleDossier: toggleDossier,
+    onTogglePersonView: togglePersonView,
     onEscape: closeOverlay,
   });
 
@@ -389,7 +397,8 @@ export function ResearchGame3DShell({
 
   const navigateTo = useCallback(
     (target: Vec3, interaction: Game3DInteraction | null = null) => {
-      if (!inputEnabled || mapOpen || transitionTarget) return;
+      // First-person is keyboard/look driven; skip click-to-walk pathfinding.
+      if (!inputEnabled || mapOpen || transitionTarget || personView === 'first') return;
       const command = createNavigationCommand(
         ++navigationIdRef.current,
         scene,
@@ -399,7 +408,7 @@ export function ResearchGame3DShell({
       );
       setNavigationCommand(command);
     },
-    [inputEnabled, mapOpen, scene, transitionTarget],
+    [inputEnabled, mapOpen, personView, scene, transitionTarget],
   );
 
   const selectInteraction = useCallback(
@@ -464,7 +473,6 @@ export function ResearchGame3DShell({
     setOpenPanel({ kind: 'workspace', zoneId, interaction: null });
   };
 
-
   const cameraMode: CameraMode3D = mapOpen
     ? 'map'
     : openPanel?.kind === 'dialogue' ||
@@ -476,7 +484,9 @@ export function ResearchGame3DShell({
       ? 'dialogue'
       : openPanel?.kind === 'workspace'
         ? 'workstation'
-        : 'follow';
+        : personView === 'first'
+          ? 'first'
+          : 'follow';
   const focusPosition =
     openPanel && 'interaction' in openPanel && openPanel.interaction
       ? openPanel.interaction.position
@@ -507,7 +517,7 @@ export function ResearchGame3DShell({
 
   return (
     <div
-      className="research-game-ui game3d-shell relative h-dvh min-h-[520px] overflow-hidden bg-[#6f7d82] text-ink"
+      className="research-game-ui game3d-shell relative h-dvh min-h-[520px] overflow-hidden bg-[#b8dff5] text-ink"
       data-renderer="three"
       data-current-scene={sceneId}
       data-camera-mode={cameraMode}
@@ -541,15 +551,15 @@ export function ResearchGame3DShell({
       )}
 
       <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-4">
-        <div className="game3d-hud-panel max-w-[min(72vw,420px)] px-3.5 py-2.5">
-          <h1 className="truncate font-serif text-[20px] font-semibold text-white sm:text-[24px]">{scene.name}</h1>
-          <p className="mt-1 truncate text-[14px] leading-snug text-white/75">
+        <div className="game3d-hud-panel max-w-[min(72vw,420px)] px-3.5 py-2.5 text-[#2a3a36]">
+          <h1 className="truncate font-serif text-[20px] font-semibold text-[#1e332c] sm:text-[24px]">{scene.name}</h1>
+          <p className="mt-1 truncate text-[14px] leading-snug text-[#3d5a50]">
             {caseFile && caseFile.status !== 'closed'
               ? (caseFile.completeness >= 0.85
                   ? '卷宗将齐——打开组板送审'
                   : caseFile.flags.includes('knows_leak')
                     ? '去档案柜与机房钉证据'
-                    : '在园区走动，靠近线索或找导师')
+                    : 'WASD 移动 · E 交互 · V 切换视角')
               : scene.subtitle}
           </p>
         </div>
@@ -557,6 +567,13 @@ export function ResearchGame3DShell({
         <nav className="game3d-hud-panel pointer-events-auto flex items-center gap-1 p-1" aria-label="游戏操作">
           <HudIconButton label={mapOpen ? '关闭地图' : '地图 M'} onClick={toggleMap} active={mapOpen}>
             {mapOpen ? <X size={18} /> : <Map size={18} />}
+          </HudIconButton>
+          <HudIconButton
+            label={personView === 'first' ? '第三人称 V' : '第一人称 V'}
+            onClick={togglePersonView}
+            active={personView === 'first'}
+          >
+            <Eye size={18} />
           </HudIconButton>
           <HudIconButton
             label="卷宗 J"
@@ -594,12 +611,18 @@ export function ResearchGame3DShell({
         <button
           type="button"
           onClick={interactNearby}
-          className="game3d-interaction-prompt absolute bottom-5 left-1/2 z-20 hidden min-h-12 -translate-x-1/2 items-center gap-2.5 px-5 py-2.5 text-[16px] text-white md:flex"
+          className="game3d-interaction-prompt absolute bottom-5 left-1/2 z-20 hidden min-h-12 -translate-x-1/2 items-center gap-2.5 px-5 py-2.5 text-[16px] text-[#1e332c] md:flex"
         >
-          <kbd className="rounded border border-white/25 bg-white/10 px-1.5 font-mono text-[12px] text-white/80">E</kbd>
+          <kbd className="rounded border border-emerald-900/25 bg-white/80 px-1.5 font-mono text-[12px] text-[#1e332c]">E</kbd>
           <NearbyIcon size={18} aria-hidden="true" />
           <span>{nearby.label}</span>
         </button>
+      )}
+
+      {personView === 'first' && !openPanel && !mapOpen && !transitionTarget && !nearby && (
+        <div className="pointer-events-none absolute bottom-5 left-1/2 z-20 hidden -translate-x-1/2 rounded border border-emerald-900/15 bg-white/90 px-3 py-1.5 font-mono text-[12px] text-[#2a4a40] shadow md:block">
+          WASD 移动 · 点击画面锁定视角 · E 交互 · V 第三人称
+        </div>
       )}
 
       <MobileGameControls
@@ -613,7 +636,7 @@ export function ResearchGame3DShell({
       />
 
       {!runtimeReady && playerProfile && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-[#6f7d82] text-[16px] text-[#29464d]">
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-[#b8dff5] text-[16px] text-[#2a4a40]">
           正在构建体素观测站……
         </div>
       )}
@@ -767,7 +790,7 @@ function HudIconButton({
     <button
       type="button"
       onClick={onClick}
-      className={`grid h-10 w-10 shrink-0 place-items-center rounded-md border text-white transition-colors ${active ? 'border-white/45 bg-white/18' : 'border-white/18 bg-white/8 hover:bg-white/15'}`}
+      className={`grid h-10 w-10 shrink-0 place-items-center rounded-md border transition-colors ${active ? 'border-[#5a9a88] bg-[#d8f0e6] text-[#1e332c]' : 'border-[#8ab5a8]/55 bg-white/50 text-[#2a3a36] hover:bg-white/80'}`}
       style={accent ? { borderColor: accent } : undefined}
       aria-label={label}
       title={label}

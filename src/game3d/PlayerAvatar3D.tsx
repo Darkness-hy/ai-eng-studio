@@ -28,6 +28,7 @@ export function PlayerController3D({
   initialPosition,
   scene,
   enabled,
+  hideAvatar = false,
   reducedMotion,
   onPosition,
   onMovementChange,
@@ -40,6 +41,7 @@ export function PlayerController3D({
   initialPosition: Vec3;
   scene: Game3DSceneDefinition;
   enabled: boolean;
+  hideAvatar?: boolean;
   reducedMotion: boolean;
   onPosition: (state: PlayerWorldState3D) => void;
   onMovementChange: (moving: boolean) => void;
@@ -70,7 +72,12 @@ export function PlayerController3D({
     const controller = controllerRef.current;
     if (!controller) return;
     const movement = movementRef.current;
-    const manualInput = Math.hypot(movement.joystick.x, movement.joystick.y) > 0.05;
+    const manualInput =
+      Math.hypot(movement.joystick.x, movement.joystick.y) > 0.05 ||
+      movement.forward ||
+      movement.backward ||
+      movement.leftward ||
+      movement.rightward;
     let commandMoving = false;
     if (enabled && navigationCommand && !manualInput) {
       const route = routeRef.current;
@@ -214,11 +221,13 @@ export function PlayerController3D({
       angularDamping={0.3}
       userData={{ kind: 'local-player' }}
     >
-      <AvatarFigure3D
-        presetId={presetId}
-        controllerRef={controllerRef}
-        reducedMotion={reducedMotion}
-      />
+      {!hideAvatar && (
+        <AvatarFigure3D
+          presetId={presetId}
+          controllerRef={controllerRef}
+          reducedMotion={reducedMotion}
+        />
+      )}
     </Ecctrl>
   );
 }

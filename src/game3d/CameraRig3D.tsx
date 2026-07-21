@@ -37,14 +37,14 @@ export function CameraRig3D({
   useEffect(() => {
     const canvas = gl.domElement;
     const onPointerDown = (event: PointerEvent) => {
-      if (mode !== 'follow' || (event.button !== 1 && event.button !== 2)) return;
+      if ((mode !== 'follow' && mode !== 'first') || (event.button !== 1 && event.button !== 2 && !(mode === 'first' && event.button === 0))) return;
       event.preventDefault();
       draggingRef.current = true;
       pointerRef.current = { x: event.clientX, y: event.clientY };
       canvas.setPointerCapture(event.pointerId);
     };
     const onPointerMove = (event: PointerEvent) => {
-      if (!draggingRef.current || mode !== 'follow') return;
+      if (!draggingRef.current || (mode !== 'follow' && mode !== 'first')) return;
       const dx = event.clientX - pointerRef.current.x;
       const dy = event.clientY - pointerRef.current.y;
       pointerRef.current = { x: event.clientX, y: event.clientY };
@@ -56,16 +56,39 @@ export function CameraRig3D({
       if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
     };
     const onWheel = (event: WheelEvent) => {
+      if (mode === 'first') return;
       if (mode !== 'follow') return;
       distanceRef.current = THREE.MathUtils.clamp(distanceRef.current + event.deltaY * 0.006, 4.8, 10.5);
     };
     const onContextMenu = (event: MouseEvent) => event.preventDefault();
+    const onClick = () => {
+      if (mode === 'first' && document.pointerLockElement !== canvas) {
+        canvas.requestPointerLock?.();
+      }
+    };
+    const onPointerLockMove = (event: MouseEvent) => {
+      if (mode !== 'first' || document.pointerLockElement !== canvas) return;
+      yawRef.current -= event.movementX * 0.0022;
+      pitchRef.current = THREE.MathUtils.clamp(
+        pitchRef.current + event.movementY * 0.0016,
+        0.05,
+        0.85,
+      );
+    };
+    const onPointerLockChange = () => {
+      if (document.pointerLockElement !== canvas) {
+        draggingRef.current = false;
+      }
+    };
     canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('pointermove', onPointerMove);
     canvas.addEventListener('pointerup', onPointerUp);
     canvas.addEventListener('pointercancel', onPointerUp);
     canvas.addEventListener('wheel', onWheel, { passive: true });
     canvas.addEventListener('contextmenu', onContextMenu);
+    canvas.addEventListener('click', onClick);
+    document.addEventListener('mousemove', onPointerLockMove);
+    document.addEventListener('pointerlockchange', onPointerLockChange);
     return () => {
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('pointermove', onPointerMove);
@@ -73,6 +96,10 @@ export function CameraRig3D({
       canvas.removeEventListener('pointercancel', onPointerUp);
       canvas.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('contextmenu', onContextMenu);
+      canvas.removeEventListener('click', onClick);
+      document.removeEventListener('mousemove', onPointerLockMove);
+      document.removeEventListener('pointerlockchange', onPointerLockChange);
+      if (document.pointerLockElement === canvas) document.exitPointerLock?.();
     };
   }, [gl, mode]);
 
@@ -86,7 +113,6 @@ export function CameraRig3D({
     desiredTarget.copy(cameraAnchor);
 
     if ((mode === 'dialogue' || mode === 'workstation') && focusPosition) {
-      // Adult portrait framing: closer, slightly off-axis, aim near face/torso.
       const focus = new THREE.Vector3(...focusPosition).add(new THREE.Vector3(0, 1.45, 0));
       desiredTarget.lerp(focus, mode === 'dialogue' ? 0.72 : 0.48);
       const dist = mode === 'dialogue' ? 2.85 : 3.6;
@@ -94,6 +120,17 @@ export function CameraRig3D({
         desiredTarget.x + dist * 0.72,
         desiredTarget.y + (mode === 'dialogue' ? 1.15 : 1.8),
         desiredTarget.z + dist * 0.72,
+      );
+    } else if (mode === 'first') {
+      // Eye height first-person; look along yaw/pitch.
+      const eyeY = 1.55;
+      desiredCamera.set(cameraAnchor.x, cameraAnchor.y + eyeY - 0.72, cameraAnchor.z);
+      const lookDist = 6;
+      const pitch = pitchRef.current - 0.2;
+      desiredTarget.set(
+        cameraAnchor.x - Math.sin(yawRef.current) * Math.cos(pitch) * lookDist,
+        cameraAnchor.y + eyeY - 0.72 + Math.sin(pitch) * lookDist * 0.35,
+        cameraAnchor.z - Math.cos(yawRef.current) * Math.cos(pitch) * lookDist,
       );
     } else {
       const horizontal = Math.cos(pitchRef.current) * distanceRef.current;
