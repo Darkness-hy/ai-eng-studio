@@ -300,17 +300,17 @@ function AvatarFigure3D({
   return (
     <group ref={rootRef} position={[0, -1.02, 0]} scale={1}>
       <mesh castShadow position={[0, 1.62, 0]}>
-        <sphereGeometry args={[0.22, 12, 10]} />
-        <meshStandardMaterial color={skin} roughness={0.9} />
+        <boxGeometry args={[0.4, 0.4, 0.4]} />
+        <meshStandardMaterial color={skin} roughness={0.95} flatShading />
       </mesh>
-      <mesh castShadow position={[0, 1.78, -0.01]} scale={[1.05, 0.38, 1.05]}>
-        <sphereGeometry args={[0.23, 10, 8]} />
-        <meshStandardMaterial color={hair} roughness={0.92} />
+      <mesh castShadow position={[0, 1.86, 0]}>
+        <boxGeometry args={[0.44, 0.16, 0.44]} />
+        <meshStandardMaterial color={hair} roughness={0.95} flatShading />
       </mesh>
       {/* torso */}
       <mesh castShadow position={[0, 1.12, 0]}>
-        <capsuleGeometry args={[0.24, 0.62, 4, 10]} />
-        <meshStandardMaterial color={cloth} roughness={0.86} />
+        <boxGeometry args={[0.55, 0.85, 0.35]} />
+        <meshStandardMaterial color={cloth} roughness={0.92} flatShading />
       </mesh>
       {/* collar accent */}
       <mesh castShadow position={[0, 1.38, 0.06]}>
@@ -338,8 +338,8 @@ const Limb = forwardRef<
     return (
       <group ref={ref} position={position}>
         <mesh castShadow position={[0, leg ? -0.28 : -0.22, 0]}>
-          <capsuleGeometry args={[leg ? 0.1 : 0.08, leg ? 0.42 : 0.36, 3, 8]} />
-          <meshStandardMaterial color={color} roughness={0.86} />
+          <boxGeometry args={[leg ? 0.18 : 0.16, leg ? 0.55 : 0.48, leg ? 0.18 : 0.16]} />
+          <meshStandardMaterial color={color} roughness={0.92} flatShading />
         </mesh>
         {!leg && accent && (
           <mesh castShadow position={[0, -0.38, 0]}>

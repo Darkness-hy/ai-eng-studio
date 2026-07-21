@@ -1,7 +1,7 @@
 import { Html } from '@react-three/drei';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { CuboidCollider, RigidBody } from '@react-three/rapier';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, type ReactElement } from 'react';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { AgentId, GameSceneId } from '../game/types';
@@ -139,14 +139,16 @@ function CampusWorld({
       {/* coastal: no orchard */}
       {cameraMode === 'map' ? (
         <>
-          <CampusMapBuildings />
-          <CampusMapLandmarks interactions={interactions} />
+          <CampusBuildings />
+          <CampusLandmarks
+            interactions={interactions}
+            reducedMotion={reducedMotion}
+            onSelect={onSelectInteraction}
+          />
         </>
       ) : (
         <>
           <CampusBuildings />
-          {/* coastal: no terrain clutter */}
-          {/* coastal: no candy props */}
           <CampusLandmarks
             interactions={interactions}
             reducedMotion={reducedMotion}
@@ -644,43 +646,179 @@ function createPathRibbonGeometry(points: Array<[number, number]>, width: number
 
 
 function StationPier() {
+  const planks = [];
+  for (let i = -3; i <= 3; i += 1) {
+    planks.push(
+      <VoxelBrick
+        key={i}
+        position={[i * 0.55, 0.25, 2]}
+        size={[0.5, 0.5, 8]}
+        color={i % 2 === 0 ? '#5a5e5c' : '#4a4e4c'}
+      />,
+    );
+  }
   return (
     <group position={[0, 0, 24]}>
-      {[-2.6, 2.6].map((x) => (
-        <mesh key={x} castShadow position={[x, 0.9, 2]}>
-          <cylinderGeometry args={[0.18, 0.22, 2.2, 8]} />
-          <meshStandardMaterial color="#4a4f52" metalness={0.35} roughness={0.55} />
-        </mesh>
+      {planks}
+      {[-2.5, 2.5].map((x) => (
+        <group key={x}>
+          <VoxelBrick position={[x, 1.0, 4]} size={[0.5, 2.0, 0.5]} color="#3a4246" />
+          <VoxelBrick position={[x, 2.25, 4]} size={[0.5, 0.5, 0.5]} color="#c4a35a" roughness={0.55} />
+        </group>
       ))}
-      <mesh castShadow position={[0, 2.05, 2]}>
-        <boxGeometry args={[5.6, 0.12, 0.35]} />
-        <meshStandardMaterial color="#5a6064" metalness={0.4} roughness={0.5} />
-      </mesh>
+      <VoxelBrick position={[0, 2.0, 4]} size={[5.5, 0.5, 0.5]} color="#4a5054" />
     </group>
   );
 }
 
+
 function StationRadar() {
+  // Voxel stepped dome (architectural beacon, not a brand asset)
+  const layers = [
+    { y: 0.25, s: 5.0, c: '#5a5e5c' },
+    { y: 0.75, s: 4.5, c: '#6a6e6c' },
+    { y: 1.25, s: 4.0, c: '#7a7e7c' },
+    { y: 1.75, s: 3.0, c: '#8a9094' },
+    { y: 2.25, s: 2.0, c: '#9aa0a4' },
+    { y: 2.75, s: 1.0, c: '#aab0b4' },
+  ];
   return (
     <group position={[0, 0, -2]}>
-      <mesh castShadow receiveShadow position={[0, 0.6, 0]}>
-        <cylinderGeometry args={[2.4, 2.8, 1.2, 16]} />
-        <meshStandardMaterial color="#6e7270" roughness={0.88} />
-      </mesh>
-      <mesh castShadow position={[0, 2.4, 0]}>
-        <sphereGeometry args={[2.1, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
-        <meshStandardMaterial color="#8a9194" metalness={0.2} roughness={0.42} />
-      </mesh>
-      <mesh castShadow position={[0, 3.5, 0]}>
-        <cylinderGeometry args={[0.12, 0.12, 2.4, 8]} />
-        <meshStandardMaterial color="#4a5054" metalness={0.5} roughness={0.4} />
-      </mesh>
-      <mesh castShadow position={[0, 4.7, 0]} rotation={[0.2, 0, 0.3]}>
-        <boxGeometry args={[2.8, 0.08, 0.5]} />
-        <meshStandardMaterial color="#5a6266" metalness={0.45} roughness={0.35} />
-      </mesh>
+      {layers.map((layer) => (
+        <VoxelBrick
+          key={layer.y}
+          position={[0, layer.y, 0]}
+          size={[layer.s, 0.5, layer.s]}
+          color={layer.c}
+        />
+      ))}
+      <VoxelBrick position={[0, 3.5, 0]} size={[0.5, 2.5, 0.5]} color="#3a4246" />
+      <VoxelBrick position={[0, 5.0, 0]} size={[2.5, 0.5, 0.5]} color="#5a6266" />
     </group>
   );
+}
+
+
+
+/** Unit size for the voxel architectural language (not any commercial brand). */
+const VOX = 0.5;
+
+function snapVox(n: number): number {
+  return Math.max(VOX, Math.round(n / VOX) * VOX);
+}
+
+function VoxelBrick({
+  position,
+  size = [VOX, VOX, VOX],
+  color,
+  roughness = 0.95,
+}: {
+  position: Vec3;
+  size?: Vec3;
+  color: string;
+  roughness?: number;
+}) {
+  return (
+    <mesh castShadow receiveShadow position={position}>
+      <boxGeometry args={size} />
+      <meshStandardMaterial color={color} roughness={roughness} metalness={0} flatShading />
+    </mesh>
+  );
+}
+
+/** Stepped voxel mass: layered boxes + window grid + flat slab roof. */
+function VoxelMass({
+  size,
+  wall,
+  accent,
+  roofColor,
+  kind,
+}: {
+  size: Vec3;
+  wall: string;
+  accent: string;
+  roofColor: string;
+  kind: 'gable' | 'glass' | 'antenna' | 'pavilion';
+}) {
+  const w = snapVox(size[0]);
+  const h = snapVox(size[1]);
+  const d = snapVox(size[2]);
+  const layers = Math.max(3, Math.round(h / VOX));
+  const winY = [Math.floor(layers * 0.35), Math.floor(layers * 0.65)];
+  const bricks: ReactElement[] = [];
+  // main body as single box for perf, plus detail layer of window voxels on front
+  bricks.push(
+    <VoxelBrick key="body" position={[0, 0, 0]} size={[w, h, d]} color={wall} />,
+  );
+  // base plinth
+  bricks.push(
+    <VoxelBrick
+      key="plinth"
+      position={[0, -h / 2 + VOX * 0.5, 0]}
+      size={[w + VOX, VOX, d + VOX]}
+      color={accent}
+    />,
+  );
+  // front window grid
+  const cols = Math.max(2, Math.floor((w - VOX * 2) / (VOX * 2)));
+  for (const ly of winY) {
+    const y = -h / 2 + ly * VOX + VOX * 0.5;
+    for (let c = 0; c < cols; c += 1) {
+      const x = -w / 2 + VOX * 1.5 + c * VOX * 2;
+      bricks.push(
+        <VoxelBrick
+          key={`w-${ly}-${c}`}
+          position={[x, y, d / 2 + 0.02]}
+          size={[VOX * 1.2, VOX * 1.2, 0.08]}
+          color="#2a3338"
+          roughness={0.4}
+        />,
+      );
+    }
+  }
+  // door
+  bricks.push(
+    <VoxelBrick
+      key="door"
+      position={[0, -h / 2 + VOX * 1.5, d / 2 + 0.03]}
+      size={[VOX * 2, VOX * 3, 0.1]}
+      color={accent}
+    />,
+  );
+  // roof style
+  if (kind === 'antenna') {
+    bricks.push(
+      <VoxelBrick key="roof" position={[0, h / 2 + VOX * 0.5, 0]} size={[w, VOX, d]} color={roofColor} />,
+    );
+    bricks.push(
+      <VoxelBrick key="mast" position={[0, h / 2 + VOX * 3, 0]} size={[VOX * 0.6, VOX * 5, VOX * 0.6]} color="#3a4246" />,
+    );
+    bricks.push(
+      <VoxelBrick key="beacon" position={[0, h / 2 + VOX * 5.5, 0]} size={[VOX, VOX, VOX]} color="#c4a35a" roughness={0.5} />,
+    );
+  } else if (kind === 'glass' || kind === 'pavilion') {
+    // stepped dome approximation
+    const rings = [0.9, 0.7, 0.45];
+    rings.forEach((s, i) => {
+      bricks.push(
+        <VoxelBrick
+          key={`dome-${i}`}
+          position={[0, h / 2 + VOX * (0.5 + i), 0]}
+          size={[w * s, VOX, d * s]}
+          color={i === 0 ? roofColor : '#5a7074'}
+        />,
+      );
+    });
+  } else {
+    // stepped gable
+    bricks.push(
+      <VoxelBrick key="roof1" position={[0, h / 2 + VOX * 0.5, 0]} size={[w + VOX * 0.5, VOX, d + VOX * 0.5]} color={roofColor} />,
+    );
+    bricks.push(
+      <VoxelBrick key="roof2" position={[0, h / 2 + VOX * 1.5, 0]} size={[w * 0.7, VOX, d * 0.7]} color={roofColor} />,
+    );
+  }
+  return <group>{bricks}</group>;
 }
 
 function CampusBuildings() {
@@ -688,103 +826,13 @@ function CampusBuildings() {
     <>
       <StationRadar />
       <StationPier />
-      <CampusBuilding
-        sceneId="academy"
-        position={[-10, 2.5, 4]}
-        size={[7.2, 5.0, 6.0]}
-        wall="#8a8e8c"
-        accent="#4a5250"
-        roof="gable"
-      />
-      <CampusBuilding
-        sceneId="research"
-        position={[-10, 2.6, -8]}
-        size={[7.0, 5.2, 6.2]}
-        wall="#848886"
-        accent="#3f4a4c"
-        roof="glass"
-      />
-      <CampusBuilding
-        sceneId="compute"
-        position={[11, 2.8, -6]}
-        size={[7.4, 5.6, 6.4]}
-        wall="#7e8486"
-        accent="#3a4246"
-        roof="antenna"
-      />
-      <CampusBuilding
-        sceneId="paper"
-        position={[0, 2.4, -18]}
-        size={[8.0, 4.8, 5.8]}
-        wall="#8c8884"
-        accent="#4a4642"
-        roof="gable"
-      />
-      <CampusBuilding
-        sceneId="plaza"
-        position={[11, 2.3, 8]}
-        size={[6.8, 4.6, 5.6]}
-        wall="#868a88"
-        accent="#4c5452"
-        roof="pavilion"
-      />
-    </>
-  );
-}
-
-const campusMapBuildingDefinitions: Array<{
-  position: Vec3;
-  size: Vec3;
-  wall: string;
-  roof: string;
-}> = [
-  // Adult massing: ~2 storey heights, readable silhouettes (academy dome / lab / compute / paper / plaza)
-  { position: [-10, 2.5, 4], size: [10.5, 4.7, 8.2], wall: '#b7b3a8', roof: '#5c4e48' },
-  { position: [-10, 2.6, -8], size: [9.2, 5.1, 9.2], wall: '#aeb6b2', roof: '#3f5552' },
-  { position: [11, 2.8, -6], size: [10.2, 5.4, 8], wall: '#aeb2b4', roof: '#4a5154' },
-  { position: [0, 2.4, -18], size: [12, 4.4, 7.4], wall: '#b8b2a8', roof: '#5a4d47' },
-  { position: [11, 2.3, 8], size: [9, 4.2, 10], wall: '#b4aaa6', roof: '#5c4a46' },
-  // Secondary masses for density without decoration clutter
-  { position: [-12, 1.6, 16], size: [4.2, 3.2, 3.6], wall: '#a8aba6', roof: '#555850' },
-  { position: [14, 1.55, 17], size: [3.8, 3.1, 3.4], wall: '#a6aaa8', roof: '#545a58' },
-  { position: [8, 1.7, -12], size: [3.4, 3.4, 3.2], wall: '#b0aea8', roof: '#5a524c' },
-];
-
-function CampusMapBuildings() {
-  return (
-    <>
-      {campusMapBuildingDefinitions.map((building, index) => (
-        <group key={index} position={building.position}>
-          <mesh>
-            <boxGeometry args={building.size} />
-            <meshStandardMaterial color={building.wall} roughness={0.9} />
-          </mesh>
-          <WindowBand width={building.size[0]} height={building.size[1]} depth={building.size[2]} />
-          <mesh position={[0, building.size[1] / 2 + 0.32, 0]}>
-            <boxGeometry args={[building.size[0] * 1.04, 0.58, building.size[2] * 1.04]} />
-            <meshStandardMaterial color={building.roof} roughness={0.76} />
-          </mesh>
-        </group>
-      ))}
-    </>
-  );
-}
-
-function CampusMapLandmarks({ interactions }: { interactions: Game3DInteraction[] }) {
-  return (
-    <>
-      {interactions.filter(isLandmark).map((interaction) => (
-        <group key={interaction.id} position={interaction.position}>
-          <mesh position={[0, 0.28, 0]}>
-            <cylinderGeometry args={[1.35, 1.55, 0.56, 10]} />
-            <meshStandardMaterial color="#818982" roughness={0.94} />
-          </mesh>
-          <mesh position={[0, 1.28, 0]}>
-            <octahedronGeometry args={[0.52, 0]} />
-            <meshStandardMaterial color="#9a9588" emissive="#4a4840" emissiveIntensity={0.08} />
-          </mesh>
-        </group>
-      ))}
+      <CampusBuilding sceneId="academy" position={[-10, 2.5, 4]} size={[7.2, 5.0, 6.0]} wall="#8a8e8c" accent="#4a5250" roof="gable" />
+      <CampusBuilding sceneId="research" position={[-10, 2.6, -8]} size={[7.0, 5.2, 6.2]} wall="#848886" accent="#3f4a4c" roof="glass" />
+      <CampusBuilding sceneId="compute" position={[11, 2.8, -6]} size={[7.4, 5.6, 6.4]} wall="#7e8486" accent="#3a4246" roof="antenna" />
+      <CampusBuilding sceneId="paper" position={[0, 2.4, -18]} size={[8.0, 4.8, 5.8]} wall="#8c8884" accent="#4a4642" roof="gable" />
+      <CampusBuilding sceneId="plaza" position={[11, 2.3, 8]} size={[6.8, 4.6, 5.6]} wall="#868a88" accent="#4c5452" roof="pavilion" />
+      <CampusBuilding sceneId="academy" position={[-6, 1.4, 18]} size={[3.2, 2.8, 3.0]} wall="#7a7e7c" accent="#454a48" roof="gable" />
+      <CampusBuilding sceneId="academy" position={[6, 1.4, 18]} size={[3.2, 2.8, 3.0]} wall="#7a7e7c" accent="#454a48" roof="gable" />
     </>
   );
 }
@@ -808,28 +856,7 @@ function CampusBuilding({
     <RigidBody type="fixed" colliders={false} userData={{ kind: 'building', sceneId }}>
       <CuboidCollider args={[size[0] / 2, size[1] / 2, size[2] / 2]} position={position} />
       <group position={position}>
-        <mesh castShadow receiveShadow>
-          <boxGeometry args={size} />
-          <TexturedSurfaceMaterial color={wall} variance={0.04} repeat={[3, 2]} roughness={0.86} />
-        </mesh>
-        <mesh castShadow position={[0, -size[1] / 2 + 0.18, size[2] / 2 + 0.04]}>
-          <boxGeometry args={[size[0] + 0.08, 0.36, 0.12]} />
-          <meshStandardMaterial color="#656c69" roughness={0.82} />
-        </mesh>
-        <mesh castShadow position={[0, 0.1, size[2] / 2 + 0.045]}>
-          <boxGeometry args={[1.45, 2.05, 0.12]} />
-          <TexturedSurfaceMaterial color={accent} variance={0.06} repeat={[2, 3]} roughness={0.68} />
-        </mesh>
-        <mesh position={[0, 0.45, size[2] / 2 + 0.11]}>
-          <boxGeometry args={[0.6, 0.68, 0.04]} />
-          <meshPhysicalMaterial color="#89aeb4" transmission={0.22} metalness={0.12} roughness={0.22} />
-        </mesh>
-        <mesh castShadow position={[0, 1.2, size[2] / 2 + 0.42]}>
-          <boxGeometry args={[2.4, 0.12, 0.85]} />
-          <meshStandardMaterial color="#4e5859" metalness={0.45} roughness={0.42} />
-        </mesh>
-        <Roof kind={roof} size={size} color={accent} />
-        <WindowRow width={size[0]} depth={size[2]} y={0.55} />
+        <VoxelMass size={size} wall={wall} accent={accent} roofColor={accent} kind={roof} />
       </group>
     </RigidBody>
   );
@@ -1706,3 +1733,5 @@ function interiorWallColor(sceneId: GameSceneId): string {
 
 // Referenced to satisfy noUnusedLocals after coastal declutter.
 void (0 as unknown as typeof CampusTrees | typeof CampusDetails | typeof CampusTerrainDetails);
+
+void (0 as unknown as typeof Roof | typeof WindowRow | typeof WindowBand);

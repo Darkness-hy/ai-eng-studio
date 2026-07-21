@@ -614,7 +614,7 @@ export function ResearchGame3DShell({
 
       {!runtimeReady && playerProfile && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-[#6f7d82] text-[16px] text-[#29464d]">
-          正在构建 3D 科研岛……
+          正在构建体素观测站……
         </div>
       )}
 
