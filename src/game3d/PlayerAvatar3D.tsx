@@ -251,10 +251,10 @@ export function PlayerController3D({
       canSleep={false}
       colliders={false}
       enabledRotations={[false, true, false]}
-      maxWalkVel={3.1}
-      maxRunVel={5.1}
-      accDeltaTime={0.18}
-      decDeltaTime={0.12}
+      maxWalkVel={5.4}
+      maxRunVel={8.6}
+      accDeltaTime={0.14}
+      decDeltaTime={0.1}
       jumpVel={4.2}
       capsuleHalfHeight={0.52}
       capsuleRadius={0.3}

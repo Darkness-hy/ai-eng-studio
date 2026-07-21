@@ -53,7 +53,11 @@ export function CameraRig3D({
       const dy = event.clientY - pointerRef.current.y;
       pointerRef.current = { x: event.clientX, y: event.clientY };
       yawRef.current -= dx * 0.006;
-      pitchRef.current = THREE.MathUtils.clamp(pitchRef.current + dy * 0.0035, 0.12, 0.85);
+      // First-person: mouse up looks up (invert screen Y). Third-person orbit keeps original feel.
+      const pitchDelta = mode === 'first' ? -dy * 0.004 : dy * 0.0035;
+      const pitchMin = mode === 'first' ? -1.2 : 0.12;
+      const pitchMax = mode === 'first' ? 1.2 : 0.85;
+      pitchRef.current = THREE.MathUtils.clamp(pitchRef.current + pitchDelta, pitchMin, pitchMax);
       if (lookDirRef) setLookFromYawPitch(lookDirRef.current, yawRef.current, pitchRef.current);
     };
     const onPointerUp = (event: PointerEvent) => {
@@ -73,11 +77,12 @@ export function CameraRig3D({
     };
     const onPointerLockMove = (event: MouseEvent) => {
       if (mode !== 'first' || document.pointerLockElement !== canvas) return;
-      yawRef.current -= event.movementX * 0.0022;
+      yawRef.current -= event.movementX * 0.0024;
+      // Pointer-lock: movementY>0 is mouse down; invert so mouse-up looks up.
       pitchRef.current = THREE.MathUtils.clamp(
-        pitchRef.current + event.movementY * 0.0016,
-        0.05,
-        0.85,
+        pitchRef.current - event.movementY * 0.002,
+        -1.25,
+        1.25,
       );
       if (lookDirRef) setLookFromYawPitch(lookDirRef.current, yawRef.current, pitchRef.current);
     };
@@ -107,7 +112,15 @@ export function CameraRig3D({
       document.removeEventListener('pointerlockchange', onPointerLockChange);
       if (document.pointerLockElement === canvas) document.exitPointerLock?.();
     };
-  }, [gl, mode]);
+  }, [gl, mode, lookDirRef]);
+
+  useEffect(() => {
+    if (mode === 'first') {
+      // Start near eye-level when entering FPS so pitch range feels natural.
+      pitchRef.current = THREE.MathUtils.clamp(pitchRef.current * 0.35, -0.35, 0.35);
+      if (lookDirRef) setLookFromYawPitch(lookDirRef.current, yawRef.current, pitchRef.current);
+    }
+  }, [mode, lookDirRef]);
 
   useFrame((_, delta) => {
     // Publish look basis before / regardless of camera lerp so movement can read it.
@@ -131,15 +144,18 @@ export function CameraRig3D({
         desiredTarget.z + dist * 0.72,
       );
     } else if (mode === 'first') {
-      // Eye height first-person; look along yaw/pitch.
-      const eyeY = 1.55;
-      desiredCamera.set(cameraAnchor.x, cameraAnchor.y + eyeY - 0.72, cameraAnchor.z);
-      const lookDist = 6;
-      const pitch = pitchRef.current - 0.2;
+      // Eye-height FPS: yaw/pitch → look target (pitch: + = up after invert).
+      const eyeHeight = 1.58;
+      const eyeY = cameraAnchor.y + eyeHeight - 0.72;
+      desiredCamera.set(cameraAnchor.x, eyeY, cameraAnchor.z);
+      const lookDist = 8;
+      const pitch = pitchRef.current;
+      const cp = Math.cos(pitch);
+      const sp = Math.sin(pitch);
       desiredTarget.set(
-        cameraAnchor.x - Math.sin(yawRef.current) * Math.cos(pitch) * lookDist,
-        cameraAnchor.y + eyeY - 0.72 + Math.sin(pitch) * lookDist * 0.35,
-        cameraAnchor.z - Math.cos(yawRef.current) * Math.cos(pitch) * lookDist,
+        cameraAnchor.x - Math.sin(yawRef.current) * cp * lookDist,
+        eyeY + sp * lookDist,
+        cameraAnchor.z - Math.cos(yawRef.current) * cp * lookDist,
       );
     } else {
       const horizontal = Math.cos(pitchRef.current) * distanceRef.current;
@@ -208,9 +224,10 @@ export function CameraRig3D({
   return (
     <>
       <PerspectiveCamera
+        key={mode === 'first' ? 'fps' : 'tps'}
         ref={followRef}
         makeDefault={mode !== 'map'}
-        fov={48}
+        fov={mode === 'first' ? 78 : 58}
         near={0.08}
         far={220}
         position={[0, 6, 12]}
