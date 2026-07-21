@@ -76,6 +76,9 @@ export function PlayerController3D({
   useFrame(({ clock, camera }) => {
     const controller = controllerRef.current;
     if (!controller) return;
+    const body = controller.body;
+    if (!body) return;
+
     const movement = movementRef.current;
     const manualInput =
       Math.hypot(movement.joystick.x, movement.joystick.y) > 0.05 ||
@@ -83,7 +86,29 @@ export function PlayerController3D({
       movement.backward ||
       movement.leftward ||
       movement.rightward;
+
+    // Resolve camera-relative basis (Minecraft: move on XZ relative to look yaw).
+    const forward = cameraForwardRef.current;
+    if (lookDirRef && lookDirRef.current.forward.lengthSq() > 1e-6) {
+      forward.copy(lookDirRef.current.forward);
+    } else {
+      camera.getWorldDirection(forward);
+      forward.y = 0;
+      if (forward.lengthSq() > 1e-6) forward.normalize();
+      else forward.set(0, 0, -1);
+    }
+    // right = cross(forward, worldUp) => (-fz, 0, fx) wait: f×y = (fz*0-0*1, 0*fx-fz*0, fx*1-0*0) wrong
+    // f = (fx,0,fz), up=(0,1,0), f×up = (0*0 - fz*1, fz*0 - fx*0, fx*1 - 0*0) = (-fz, 0, fx)
+    const right = targetDirectionRef.current;
+    right.set(-forward.z, 0, forward.x);
+    if (right.lengthSq() > 1e-6) right.normalize();
+    else right.set(1, 0, 0);
+
+    // Minecraft-style wish direction on XZ
+    let wishX = 0;
+    let wishZ = 0;
     let commandMoving = false;
+
     if (enabled && navigationCommand && !manualInput) {
       const route = routeRef.current;
       if (route.commandId !== navigationCommand.id) {
@@ -121,18 +146,10 @@ export function PlayerController3D({
           route.lastDistance = Number.POSITIVE_INFINITY;
         } else {
           route.lastDistance = distance;
-          targetDirectionRef.current.set(dx, 0, dz).normalize();
-          controller.setForwardDir(targetDirectionRef.current);
-          controller.setMovement({
-            forward: false,
-            backward: false,
-            leftward: false,
-            rightward: false,
-            run: distance > 5,
-            jump: false,
-            joystick: { x: 0, y: 1 },
-          });
+          wishX = dx / distance;
+          wishZ = dz / distance;
           commandMoving = true;
+          movement.run = distance > 5;
         }
       }
       if (
@@ -140,74 +157,79 @@ export function PlayerController3D({
         route.completedId !== navigationCommand.id
       ) {
         route.completedId = navigationCommand.id;
-        controller.setMovement(STOPPED_MOVEMENT);
         onNavigationComplete(navigationCommand);
       }
     }
-    if (!commandMoving) {
-      // Camera-relative forward from shared lookDir (updated by CameraRig).
-      if (lookDirRef && lookDirRef.current.forward.lengthSq() > 1e-6) {
-        controller.setForwardDir(lookDirRef.current.forward);
-      } else {
-        camera.getWorldDirection(cameraForwardRef.current);
-        cameraForwardRef.current.y = 0;
-        if (cameraForwardRef.current.lengthSq() > 0.001) {
-          controller.setForwardDir(cameraForwardRef.current.normalize());
-        }
-      }
 
-      if (!enabled) {
-        controller.setMovement(STOPPED_MOVEMENT);
+    if (!commandMoving && enabled) {
+      // Keyboard/stick: Minecraft strafe relative to camera
+      let inputX = 0;
+      let inputZ = 0; // +Z wish is forward in our local stick? We use forward/back on camera forward
+      const stickMag = Math.hypot(movement.joystick.x, movement.joystick.y);
+      if (stickMag > 0.04) {
+        // joystick: x = strafe right, y = forward
+        inputX = THREE.MathUtils.clamp(movement.joystick.x, -1, 1);
+        inputZ = THREE.MathUtils.clamp(movement.joystick.y, -1, 1);
       } else {
-        const stickMag = Math.hypot(movement.joystick.x, movement.joystick.y);
-        // Prefer joystick encoding for both keyboard (filled by useGame3DInput) and mobile.
-        // Ecctrl: joystick y = forward, x = right relative to setForwardDir.
-        if (stickMag > 0.04) {
-          controller.setMovement({
-            forward: false,
-            backward: false,
-            leftward: false,
-            rightward: false,
-            run: movement.run,
-            jump: movement.jump,
-            joystick: {
-              x: THREE.MathUtils.clamp(movement.joystick.x, -1, 1),
-              y: THREE.MathUtils.clamp(movement.joystick.y, -1, 1),
-            },
-          });
-        } else {
-          // Fallback digital flags if stick is zero
-          controller.setMovement({
-            forward: movement.forward,
-            backward: movement.backward,
-            leftward: movement.leftward,
-            rightward: movement.rightward,
-            run: movement.run,
-            jump: movement.jump,
-            joystick: { x: 0, y: 0 },
-          });
+        if (movement.forward) inputZ += 1;
+        if (movement.backward) inputZ -= 1;
+        if (movement.rightward) inputX += 1;
+        if (movement.leftward) inputX -= 1;
+      }
+      if (inputX !== 0 || inputZ !== 0) {
+        // wish = forward * inputZ + right * inputX
+        wishX = forward.x * inputZ + right.x * inputX;
+        wishZ = forward.z * inputZ + right.z * inputX;
+        const len = Math.hypot(wishX, wishZ);
+        if (len > 1e-6) {
+          wishX /= len;
+          wishZ /= len;
         }
       }
     }
 
-    const body = controller.body;
-    if (!body) return;
+    // Stop Ecctrl's own horizontal integrator — we drive velocity ourselves (MC-style).
+    controller.setMovement(STOPPED_MOVEMENT);
+    controller.setForwardDir(forward);
+
+    const WALK = 5.6;
+    const RUN = 8.4;
+    const vel = body.linvel();
+    let vx = 0;
+    let vz = 0;
+    if (enabled && (wishX !== 0 || wishZ !== 0)) {
+      const finalSpeed = movement.run ? RUN : WALK;
+      vx = wishX * finalSpeed;
+      vz = wishZ * finalSpeed;
+    }
+    // Jump (Minecraft-like): grounded + jump key edge-ish
+    let vy = vel.y;
+    const grounded = controller.isOnGround;
+    if (enabled && movement.jump && grounded && vy <= 0.15) {
+      vy = 6.2;
+    }
+    // Soft ground snap: kill tiny vertical bounce on heightfields when not jumping
+    if (grounded && !movement.jump && vy < 0) {
+      vy = Math.max(vy, -0.5);
+    }
+
+    if (!enabled) {
+      body.setLinvel({ x: 0, y: Math.min(vel.y, 0), z: 0 }, true);
+    } else {
+      body.setLinvel({ x: vx, y: vy, z: vz }, true);
+    }
+    // Prevent spinning
+    body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+
     if (!navigationCommand && routeRef.current.commandId !== -1) {
-      const velocity = body.linvel();
-      body.setLinvel({ x: 0, y: velocity.y, z: 0 }, true);
       routeRef.current.commandId = -1;
       routeRef.current.waypointIndex = 0;
       routeRef.current.lastDistance = Number.POSITIVE_INFINITY;
     }
-    if (!enabled) {
-      const velocity = body.linvel();
-      if (Math.abs(velocity.x) > 0.01 || Math.abs(velocity.z) > 0.01) {
-        body.setLinvel({ x: 0, y: velocity.y, z: 0 }, true);
-      }
-    }
+
     const position = controller.currPos;
     if (
-      position.y < -4 ||
+      position.y < -8 ||
       position.x < scene.bounds.minX - 3 ||
       position.x > scene.bounds.maxX + 3 ||
       position.z < scene.bounds.minZ - 3 ||
@@ -219,7 +241,7 @@ export function PlayerController3D({
       return;
     }
 
-    const moving = enabled && controller.isMoving && controller.moveSpeed > 0.08;
+    const moving = enabled && Math.hypot(vx, vz) > 0.08;
     if (playerPosRef) playerPosRef.current.set(position.x, position.y, position.z);
     if (moving !== lastMovingRef.current) {
       lastMovingRef.current = moving;
@@ -227,18 +249,18 @@ export function PlayerController3D({
     }
     if (clock.elapsedTime - lastReportRef.current < 0.1) return;
     lastReportRef.current = clock.elapsedTime;
-    if (playerPosRef) playerPosRef.current.set(position.x, position.y, position.z);
     onPosition({
       x: position.x,
       y: position.y,
       z: position.z,
       moving,
-      grounded: controller.isOnGround,
-      direction: controller.currLinVel.x < -0.03 ? 'left' : 'right',
+      grounded,
+      direction: vx < -0.03 ? 'left' : 'right',
     });
   });
 
   return (
+
     <Ecctrl
       ref={controllerRef}
       position={initialPosition}
@@ -246,23 +268,22 @@ export function PlayerController3D({
       useCustomForward
       canSleep={false}
       colliders={false}
-      enabledRotations={[false, true, false]}
-      maxWalkVel={4.8}
-      maxRunVel={7.5}
-      accDeltaTime={0.14}
-      decDeltaTime={0.1}
-      jumpVel={4.2}
-      capsuleHalfHeight={0.52}
-      capsuleRadius={0.3}
-      floatHeight={0.12}
-      rayHitForgiveness={0.16}
-      springK={48}
-      dampingC={12}
-      autoBalanceSpringK={0.35}
-      autoBalanceDampingC={0.06}
-      friction={-0.2}
-      linearDamping={0.25}
-      angularDamping={0.3}
+      enabledRotations={[false, false, false]}
+      maxWalkVel={0.01}
+      maxRunVel={0.01}
+      accDeltaTime={0.05}
+      decDeltaTime={0.05}
+      jumpVel={0}
+      capsuleHalfHeight={0.5}
+      capsuleRadius={0.28}
+      floatHeight={0.08}
+      rayHitForgiveness={0.2}
+      springK={70}
+      dampingC={14}
+      autoBalance={false}
+      friction={0}
+      linearDamping={0}
+      angularDamping={1}
       userData={{ kind: 'local-player' }}
     >
       {!hideAvatar && (
