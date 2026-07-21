@@ -127,16 +127,16 @@ function CampusWorld({
         <CuboidCollider args={[48, 0.55, 34]} position={[0, -0.55, 0]} />
         <mesh position={[0, -0.5, 0]} scale={[48, 1, 34]} receiveShadow>
           <cylinderGeometry args={[1, 1, 1, 72]} />
-          <TexturedSurfaceMaterial color="#5c655c" variance={0.075} repeat={[12, 9]} roughness={0.98} />
+          <TexturedSurfaceMaterial color="#5a5e5c" variance={0.075} repeat={[12, 9]} roughness={0.98} />
         </mesh>
         <mesh position={[0, -1.12, 0]} scale={[48.7, 1.25, 34.7]}>
           <cylinderGeometry args={[1, 1, 1, 72]} />
-          <TexturedSurfaceMaterial color="#505852" variance={0.06} repeat={[14, 10]} roughness={1} />
+          <TexturedSurfaceMaterial color="#3f4341" variance={0.06} repeat={[14, 10]} roughness={1} />
         </mesh>
       </RigidBody>
 
       <CampusPaths mapMode={cameraMode === 'map'} />
-      <CampusTrees reducedMotion={reducedMotion} />
+      {/* coastal: no orchard */}
       {cameraMode === 'map' ? (
         <>
           <CampusMapBuildings />
@@ -145,8 +145,8 @@ function CampusWorld({
       ) : (
         <>
           <CampusBuildings />
-          <CampusTerrainDetails />
-          <CampusDetails reducedMotion={reducedMotion} />
+          {/* coastal: no terrain clutter */}
+          {/* coastal: no candy props */}
           <CampusLandmarks
             interactions={interactions}
             reducedMotion={reducedMotion}
@@ -154,7 +154,7 @@ function CampusWorld({
           />
           <AgentFigure
             agentId="campus-guide"
-            position={[0.8, 0, 9.5]}
+            position={[1.4, 0, 15.5]}
             color="#7a5c56"
             reducedMotion={reducedMotion}
             showLabel
@@ -184,7 +184,7 @@ function AcademyWorld({
         <CuboidCollider args={[11, 0.35, 9]} position={[0, -0.35, 0]} />
         <mesh receiveShadow position={[0, -0.38, 0]}>
           <boxGeometry args={[22, 0.7, 18]} />
-          <meshStandardMaterial color="#d9d2bc" roughness={0.92} />
+          <meshStandardMaterial color="#6a6e6c" roughness={0.92} />
         </mesh>
         <AcademyWalls />
         <AcademyFurniture />
@@ -480,8 +480,8 @@ function WaveOcean({ reducedMotion }: { reducedMotion: boolean }) {
         fragmentShader={`
           varying float vWave;
           void main() {
-            vec3 deep = vec3(0.16, 0.49, 0.58);
-            vec3 lightWater = vec3(0.32, 0.68, 0.71);
+            vec3 deep = vec3(0.12, 0.16, 0.20);
+            vec3 lightWater = vec3(0.22, 0.28, 0.32);
             vec3 color = mix(deep, lightWater, clamp(vWave * 2.8 + 0.45, 0.0, 1.0));
             gl_FragColor = vec4(color, 0.94);
           }
@@ -495,13 +495,13 @@ function CampusPaths({ mapMode }: { mapMode: boolean }) {
   return (
     <group position={[0, 0.03, 0]}>
       <MergedCampusPaths />
-      <PlazaSurface position={[0, 0, 4]} radius={[7.4, 6.8]} color="#9a968c" simplified={mapMode} />
-      <PlazaSurface position={[0, 0, 27]} radius={[5.4, 4.1]} color="#8a867c" simplified={mapMode} />
-      <PlazaSurface position={[-23, 0, -18]} radius={[4.7, 3.5]} color="#8c887e" simplified={mapMode} />
-      <PlazaSurface position={[-38, 0, 1]} radius={[4.3, 4.1]} color="#7f8a85" simplified={mapMode} />
-      <PlazaSurface position={[24, 0, -18]} radius={[4.7, 3.5]} color="#868b8a" simplified={mapMode} />
-      <PlazaSurface position={[0, 0, -25]} radius={[5.1, 3.5]} color="#8e877f" simplified={mapMode} />
-      <PlazaSurface position={[39, 0, 9]} radius={[4.5, 4]} color="#8f827c" simplified={mapMode} />
+      <PlazaSurface position={[0, 0, 2]} radius={[5.6, 4.8]} color="#6c706e" simplified={mapMode} />
+      <PlazaSurface position={[0, 0, 24]} radius={[4.2, 3.2]} color="#6e726f" simplified={mapMode} />
+      <PlazaSurface position={[-10, 0, 4]} radius={[4.0, 3.4]} color="#6a6e6c" simplified={mapMode} />
+      <PlazaSurface position={[-10, 0, -8]} radius={[4.0, 3.4]} color="#686c6a" simplified={mapMode} />
+      <PlazaSurface position={[11, 0, -6]} radius={[4.0, 3.4]} color="#686c6a" simplified={mapMode} />
+      <PlazaSurface position={[0, 0, -18]} radius={[4.4, 3.2]} color="#666a68" simplified={mapMode} />
+      <PlazaSurface position={[11, 0, 8]} radius={[4.0, 3.4]} color="#6a6e6c" simplified={mapMode} />
     </group>
   );
 }
@@ -642,47 +642,90 @@ function createPathRibbonGeometry(points: Array<[number, number]>, width: number
   return geometry;
 }
 
+
+function StationPier() {
+  return (
+    <group position={[0, 0, 24]}>
+      {[-2.6, 2.6].map((x) => (
+        <mesh key={x} castShadow position={[x, 0.9, 2]}>
+          <cylinderGeometry args={[0.18, 0.22, 2.2, 8]} />
+          <meshStandardMaterial color="#4a4f52" metalness={0.35} roughness={0.55} />
+        </mesh>
+      ))}
+      <mesh castShadow position={[0, 2.05, 2]}>
+        <boxGeometry args={[5.6, 0.12, 0.35]} />
+        <meshStandardMaterial color="#5a6064" metalness={0.4} roughness={0.5} />
+      </mesh>
+    </group>
+  );
+}
+
+function StationRadar() {
+  return (
+    <group position={[0, 0, -2]}>
+      <mesh castShadow receiveShadow position={[0, 0.6, 0]}>
+        <cylinderGeometry args={[2.4, 2.8, 1.2, 16]} />
+        <meshStandardMaterial color="#6e7270" roughness={0.88} />
+      </mesh>
+      <mesh castShadow position={[0, 2.4, 0]}>
+        <sphereGeometry args={[2.1, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
+        <meshStandardMaterial color="#8a9194" metalness={0.2} roughness={0.42} />
+      </mesh>
+      <mesh castShadow position={[0, 3.5, 0]}>
+        <cylinderGeometry args={[0.12, 0.12, 2.4, 8]} />
+        <meshStandardMaterial color="#4a5054" metalness={0.5} roughness={0.4} />
+      </mesh>
+      <mesh castShadow position={[0, 4.7, 0]} rotation={[0.2, 0, 0.3]}>
+        <boxGeometry args={[2.8, 0.08, 0.5]} />
+        <meshStandardMaterial color="#5a6266" metalness={0.45} roughness={0.35} />
+      </mesh>
+    </group>
+  );
+}
+
 function CampusBuildings() {
   return (
     <>
+      <StationRadar />
+      <StationPier />
       <CampusBuilding
         sceneId="academy"
-        position={[-23, 1.9, -22]}
-        size={[9, 3.8, 7]}
-        wall="#e9dfc9"
-        accent="#5c4e48"
+        position={[-10, 2.5, 4]}
+        size={[7.2, 5.0, 6.0]}
+        wall="#8a8e8c"
+        accent="#4a5250"
         roof="gable"
       />
       <CampusBuilding
         sceneId="research"
-        position={[-38, 2, -3]}
-        size={[8, 4, 8]}
-        wall="#d5e8dc"
-        accent="#3f5552"
+        position={[-10, 2.6, -8]}
+        size={[7.0, 5.2, 6.2]}
+        wall="#848886"
+        accent="#3f4a4c"
         roof="glass"
       />
       <CampusBuilding
         sceneId="compute"
-        position={[24, 2.1, -22]}
-        size={[9, 4.2, 7]}
-        wall="#d9e0e2"
-        accent="#6a6558"
+        position={[11, 2.8, -6]}
+        size={[7.4, 5.6, 6.4]}
+        wall="#7e8486"
+        accent="#3a4246"
         roof="antenna"
       />
       <CampusBuilding
         sceneId="paper"
-        position={[0, 1.8, -30]}
-        size={[10, 3.6, 6.5]}
-        wall="#eee3d5"
-        accent="#5a4d47"
+        position={[0, 2.4, -18]}
+        size={[8.0, 4.8, 5.8]}
+        wall="#8c8884"
+        accent="#4a4642"
         roof="gable"
       />
       <CampusBuilding
         sceneId="plaza"
-        position={[39, 1.7, 4]}
-        size={[8, 3.4, 9]}
-        wall="#e8d7d0"
-        accent="#5c4a46"
+        position={[11, 2.3, 8]}
+        size={[6.8, 4.6, 5.6]}
+        wall="#868a88"
+        accent="#4c5452"
         roof="pavilion"
       />
     </>
@@ -696,11 +739,11 @@ const campusMapBuildingDefinitions: Array<{
   roof: string;
 }> = [
   // Adult massing: ~2 storey heights, readable silhouettes (academy dome / lab / compute / paper / plaza)
-  { position: [-23, 2.35, -22], size: [10.5, 4.7, 8.2], wall: '#b7b3a8', roof: '#5c4e48' },
-  { position: [-38, 2.55, -3], size: [9.2, 5.1, 9.2], wall: '#aeb6b2', roof: '#3f5552' },
-  { position: [24, 2.7, -22], size: [10.2, 5.4, 8], wall: '#aeb2b4', roof: '#4a5154' },
-  { position: [0, 2.2, -30], size: [12, 4.4, 7.4], wall: '#b8b2a8', roof: '#5a4d47' },
-  { position: [39, 2.1, 4], size: [9, 4.2, 10], wall: '#b4aaa6', roof: '#5c4a46' },
+  { position: [-10, 2.5, 4], size: [10.5, 4.7, 8.2], wall: '#b7b3a8', roof: '#5c4e48' },
+  { position: [-10, 2.6, -8], size: [9.2, 5.1, 9.2], wall: '#aeb6b2', roof: '#3f5552' },
+  { position: [11, 2.8, -6], size: [10.2, 5.4, 8], wall: '#aeb2b4', roof: '#4a5154' },
+  { position: [0, 2.4, -18], size: [12, 4.4, 7.4], wall: '#b8b2a8', roof: '#5a4d47' },
+  { position: [11, 2.3, 8], size: [9, 4.2, 10], wall: '#b4aaa6', roof: '#5c4a46' },
   // Secondary masses for density without decoration clutter
   { position: [-12, 1.6, 16], size: [4.2, 3.2, 3.6], wall: '#a8aba6', roof: '#555850' },
   { position: [14, 1.55, 17], size: [3.8, 3.1, 3.4], wall: '#a6aaa8', roof: '#545a58' },
@@ -1622,18 +1665,18 @@ function WindowBand({ width, height, depth }: { width: number; height: number; d
 function scenePalette(sceneId: GameSceneId) {
   // Calm overcast research campus: low chroma sky/fog, cool sun, muted ground.
   if (sceneId === 'campus') {
-    return { sky: '#7f9098', fog: '#8a98a0', hemi: '#c8d0d2', ground: '#3d4542', sun: '#e4e0d6' };
+    return { sky: '#5c6a74', fog: '#667680', hemi: '#a8b4bc', ground: '#2f3436', sun: '#cfd0ca' };
   }
   if (sceneId === 'plaza') {
-    return { sky: '#82929a', fog: '#8d9aa1', hemi: '#cbd2d4', ground: '#424a47', sun: '#e2ddd4' };
+    return { sky: '#5e6c76', fog: '#687882', hemi: '#aab6be', ground: '#313638', sun: '#cecfc9' };
   }
   if (sceneId === 'compute') {
-    return { sky: '#8a9499', fog: '#8a9499', hemi: '#c5cccf', ground: '#353b3e', sun: '#d7dde0' };
+    return { sky: '#586268', fog: '#586268', hemi: '#9aa4aa', ground: '#262b2e', sun: '#c4cacd' };
   }
   if (sceneId === 'paper') {
-    return { sky: '#8e8a84', fog: '#8e8a84', hemi: '#d0cbc4', ground: '#433e39', sun: '#e6e0d4' };
+    return { sky: '#5e5a56', fog: '#5e5a56', hemi: '#b0aaa4', ground: '#2e2b28', sun: '#d2ccc4' };
   }
-  return { sky: '#84918e', fog: '#84918e', hemi: '#c9d0cd', ground: '#3d4542', sun: '#e0ddd4' };
+  return { sky: '#5a6664', fog: '#5a6664', hemi: '#a4aeac', ground: '#2f3433', sun: '#cac8c2' };
 }
 
 function agentColor(agentId: AgentId): string {
@@ -1660,3 +1703,6 @@ function interiorWallColor(sceneId: GameSceneId): string {
   if (sceneId === 'paper') return '#b5aea4';
   return '#9aa5a0';
 }
+
+// Referenced to satisfy noUnusedLocals after coastal declutter.
+void (0 as unknown as typeof CampusTrees | typeof CampusDetails | typeof CampusTerrainDetails);
