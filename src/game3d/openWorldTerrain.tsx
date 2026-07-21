@@ -131,7 +131,13 @@ export function sampleTerrain(wx: number, wz: number): {
 export function surfaceTopY(wx: number, wz: number): number {
   const h = sampleHeight(wx, wz);
   const layers = Math.max(1, Math.min(6, Math.round(h / 0.55) + 1));
+  // Top face of the uppermost block (center = (ly+0.5)*0.55, half = 0.275 → top = (ly+1)*0.55).
   return layers * 0.55;
+}
+
+/** Collider surface slightly ABOVE visual top so feet never clip into grass blocks. */
+export function walkSurfaceY(wx: number, wz: number): number {
+  return surfaceTopY(wx, wz) + 0.12;
 }
 
 const KIND_COLOR: Record<TerrainKind, string> = {
@@ -189,7 +195,7 @@ function createChunk(cx: number, cz: number): ChunkData {
 
   for (let iz = 0; iz < n; iz += 1) {
     for (let ix = 0; ix < n; ix += 1) {
-      heights[iz * n + ix] = surfaceTopY(originX + ix * CELL, originZ + iz * CELL);
+      heights[iz * n + ix] = walkSurfaceY(originX + ix * CELL, originZ + iz * CELL);
     }
   }
 
@@ -304,7 +310,7 @@ function ChunkView({
   // Sit collider flush with top of voxel stack (tiny epsilon under top face).
   const bodyPos: [number, number, number] = [
     chunk.originX + CHUNK_WORLD / 2,
-    -0.02,
+    0,
     chunk.originZ + CHUNK_WORLD / 2,
   ];
 
@@ -526,8 +532,8 @@ export function OpenWorldTerrain({
   return (
     <group>
       {/* Hub safety pad */}
-      <RigidBody type="fixed" colliders={false} friction={0.95} position={[0, -0.2, 8]}>
-        <CuboidCollider args={[16, 0.25, 16]} restitution={0} friction={0.95} />
+      <RigidBody type="fixed" colliders={false} friction={0.95} position={[0, -0.5, 8]}>
+        <CuboidCollider args={[14, 0.2, 14]} restitution={0} friction={0.95} />
       </RigidBody>
 
       {loaded.map((chunk) => (

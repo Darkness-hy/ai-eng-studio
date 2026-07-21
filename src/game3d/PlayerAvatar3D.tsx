@@ -88,24 +88,28 @@ export function PlayerController3D({
       movement.leftward ||
       movement.rightward;
 
-    // Resolve camera-relative basis (Minecraft: move on XZ relative to look yaw).
+    // Minecraft-style: wish direction on XZ from the LIVE camera view
+    // (not yaw cache — third-person orbit must match what you see on screen).
     const forward = cameraForwardRef.current;
-    if (lookDirRef && lookDirRef.current.forward.lengthSq() > 1e-6) {
-      forward.copy(lookDirRef.current.forward);
+    camera.getWorldDirection(forward);
+    forward.y = 0;
+    if (forward.lengthSq() < 1e-6) {
+      // Looking nearly straight down/up — fall back to lookDir / -Z
+      if (lookDirRef && lookDirRef.current.forward.lengthSq() > 1e-6) {
+        forward.copy(lookDirRef.current.forward);
+      } else {
+        forward.set(0, 0, -1);
+      }
     } else {
-      camera.getWorldDirection(forward);
-      forward.y = 0;
-      if (forward.lengthSq() > 1e-6) forward.normalize();
-      else forward.set(0, 0, -1);
+      forward.normalize();
     }
-    // right = cross(forward, worldUp) => (-fz, 0, fx) wait: f×y = (fz*0-0*1, 0*fx-fz*0, fx*1-0*0) wrong
-    // f = (fx,0,fz), up=(0,1,0), f×up = (0*0 - fz*1, fz*0 - fx*0, fx*1 - 0*0) = (-fz, 0, fx)
+    // right = forward × worldUp  →  (-fz, 0, fx)
     const right = targetDirectionRef.current;
     right.set(-forward.z, 0, forward.x);
-    if (right.lengthSq() > 1e-6) right.normalize();
-    else right.set(1, 0, 0);
+    if (right.lengthSq() < 1e-6) right.set(1, 0, 0);
+    else right.normalize();
 
-    // Minecraft-style wish direction on XZ
+    // Wish on XZ: W/S along forward, A/D along ±right (Minecraft).
     let wishX = 0;
     let wishZ = 0;
     let commandMoving = false;
@@ -276,12 +280,12 @@ export function PlayerController3D({
       accDeltaTime={0.05}
       decDeltaTime={0.05}
       jumpVel={0}
-      capsuleHalfHeight={0.5}
-      capsuleRadius={0.28}
-      floatHeight={0.08}
+      capsuleHalfHeight={0.55}
+      capsuleRadius={0.3}
+      floatHeight={0.18}
       rayHitForgiveness={0.2}
-      springK={70}
-      dampingC={14}
+      springK={90}
+      dampingC={16}
       autoBalance={false}
       friction={0}
       linearDamping={0}
