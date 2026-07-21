@@ -135,9 +135,9 @@ export function surfaceTopY(wx: number, wz: number): number {
   return layers * 0.55;
 }
 
-/** Collider surface slightly ABOVE visual top so feet never clip into grass blocks. */
+/** Walk height used by character snap (visual column top). */
 export function walkSurfaceY(wx: number, wz: number): number {
-  return surfaceTopY(wx, wz) + 0.12;
+  return surfaceTopY(wx, wz);
 }
 
 const KIND_COLOR: Record<TerrainKind, string> = {
@@ -195,7 +195,7 @@ function createChunk(cx: number, cz: number): ChunkData {
 
   for (let iz = 0; iz < n; iz += 1) {
     for (let ix = 0; ix < n; ix += 1) {
-      heights[iz * n + ix] = walkSurfaceY(originX + ix * CELL, originZ + iz * CELL);
+      heights[iz * n + ix] = Math.max(0.02, surfaceTopY(originX + ix * CELL, originZ + iz * CELL) - 0.08);
     }
   }
 
@@ -532,8 +532,8 @@ export function OpenWorldTerrain({
   return (
     <group>
       {/* Hub safety pad */}
-      <RigidBody type="fixed" colliders={false} friction={0.95} position={[0, -0.5, 8]}>
-        <CuboidCollider args={[14, 0.2, 14]} restitution={0} friction={0.95} />
+      <RigidBody type="fixed" colliders={false} friction={0.9} position={[0, -1.0, 8]}>
+        <CuboidCollider args={[18, 0.15, 18]} restitution={0} friction={0.9} />
       </RigidBody>
 
       {loaded.map((chunk) => (

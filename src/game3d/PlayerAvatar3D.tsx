@@ -13,6 +13,7 @@ import * as THREE from 'three';
 import type { AvatarPresetId } from '../game/types';
 import { avatarPresetById } from '../game/worldContent';
 import type { LookDirState } from './lookDir';
+import { walkSurfaceY } from './openWorldTerrain';
 import type {
   Game3DSceneDefinition,
   MovementState3D,
@@ -193,12 +194,14 @@ export function PlayerController3D({
       }
     }
 
-    // Stop Ecctrl's own horizontal integrator — we drive velocity ourselves (MC-style).
+    // Drive like Minecraft: horizontal velocity + snap feet to terrain surface.
     controller.setMovement(STOPPED_MOVEMENT);
     controller.setForwardDir(forward);
 
     const WALK = 5.6;
     const RUN = 8.4;
+    const CAPSULE_HALF = 0.55;
+    const FEET_CLEAR = 0.05; // sit slightly above voxel top
     const vel = body.linvel();
     let vx = 0;
     let vz = 0;
@@ -207,23 +210,55 @@ export function PlayerController3D({
       vx = wishX * finalSpeed;
       vz = wishZ * finalSpeed;
     }
-    // Jump (Minecraft-like): grounded + jump key edge-ish
-    let vy = vel.y;
-    const grounded = controller.isOnGround;
-    if (enabled && movement.jump && grounded && vy <= 0.15) {
-      vy = 6.2;
+
+    const position = controller.currPos;
+    // Sample ground under player (and slightly ahead to reduce edge catches)
+    const sampleX = position.x + vx * 0.04;
+    const sampleZ = position.z + vz * 0.04;
+    let groundY = 0.55;
+    try {
+      groundY = walkSurfaceY(sampleX, sampleZ);
+    } catch {
+      groundY = 0.55;
     }
-    // Soft ground snap: kill tiny vertical bounce on heightfields when not jumping
-    if (grounded && !movement.jump && vy < 0) {
-      vy = Math.max(vy, -0.5);
+    // Body origin is capsule center for Ecctrl
+    const desiredCenterY = groundY + CAPSULE_HALF + FEET_CLEAR;
+
+    let vy = vel.y;
+    let grounded = position.y <= desiredCenterY + 0.2 && vy <= 0.4;
+    // Also trust Ecctrl ground ray when available
+    if (controller.isOnGround) grounded = true;
+
+    if (enabled && movement.jump && grounded && vy <= 0.2) {
+      vy = 6.5;
+      grounded = false;
     }
 
+    // Minecraft-like stick to ground when not jumping
+    if (enabled && grounded && !movement.jump) {
+      vy = 0;
+      // Unstick if buried in mesh / heightfield
+      if (position.y < desiredCenterY - 0.01 || position.y > desiredCenterY + 0.35) {
+        body.setTranslation({ x: position.x, y: desiredCenterY, z: position.z }, true);
+      } else {
+        // gentle settle
+        body.setTranslation(
+          { x: position.x, y: position.y * 0.35 + desiredCenterY * 0.65, z: position.z },
+          true,
+        );
+      }
+    } else if (enabled && position.y < desiredCenterY - 0.5 && vy <= 0) {
+      // Emergency unstick when deeply embedded
+      body.setTranslation({ x: position.x, y: desiredCenterY + 0.2, z: position.z }, true);
+      vy = 0;
+    }
+
+    body.wakeUp();
     if (!enabled) {
-      body.setLinvel({ x: 0, y: Math.min(vel.y, 0), z: 0 }, true);
+      body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     } else {
       body.setLinvel({ x: vx, y: vy, z: vz }, true);
     }
-    // Prevent spinning
     body.setAngvel({ x: 0, y: 0, z: 0 }, true);
 
     if (!navigationCommand && routeRef.current.commandId !== -1) {
@@ -232,13 +267,13 @@ export function PlayerController3D({
       routeRef.current.lastDistance = Number.POSITIVE_INFINITY;
     }
 
-    const position = controller.currPos;
+    const pos = controller.currPos;
     if (
-      position.y < -8 ||
-      position.x < scene.bounds.minX - 3 ||
-      position.x > scene.bounds.maxX + 3 ||
-      position.z < scene.bounds.minZ - 3 ||
-      position.z > scene.bounds.maxZ + 3
+      pos.y < -8 ||
+      pos.x < scene.bounds.minX - 3 ||
+      pos.x > scene.bounds.maxX + 3 ||
+      pos.z < scene.bounds.minZ - 3 ||
+      pos.z > scene.bounds.maxZ + 3
     ) {
       body.setTranslation(spawn, true);
       body.setLinvel({ x: 0, y: 0, z: 0 }, true);
@@ -282,10 +317,10 @@ export function PlayerController3D({
       jumpVel={0}
       capsuleHalfHeight={0.55}
       capsuleRadius={0.3}
-      floatHeight={0.18}
+      floatHeight={0.06}
       rayHitForgiveness={0.2}
-      springK={90}
-      dampingC={16}
+      springK={30}
+      dampingC={8}
       autoBalance={false}
       friction={0}
       linearDamping={0}
