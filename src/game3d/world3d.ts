@@ -25,11 +25,17 @@ export const campusPathNetwork3D: NavigationPath3D[] = [
   path('outpost-nw', [[-24, 6], [-34, -12], [-40, -28]], 2.6),
   path('outpost-se', [[16, 36], [28, 34], [38, 30]], 2.6),
   path('outpost-sw', [[-16, 36], [-30, 32], [-40, 24]], 2.6),
+  path('far-north', [[0, -48], [0, -70], [-20, -80], [20, -80]], 3.0),
+  path('far-east', [[48, -8], [70, -10], [80, 10]], 3.0),
+  path('far-west', [[-48, -16], [-70, -12], [-80, 8]], 3.0),
+  path('cave-spur-n', [[0, -36], [-8, -48], [-8, -52]], 2.4),
+  path('cave-spur-ne', [[24, -12], [34, -22], [42, -38]], 2.4),
+  path('cave-spur-nw', [[-24, -12], [-36, -28], [-46, -34]], 2.4),
 ];
 
 const campusWalkableZones: NavigationZone3D[] = [
   // Nearly whole open map is walkable; zones help pathfinding density near hubs.
-  zone(0, 0, 62, 62),
+  zone(0, 0, 96, 96),
   zone(0, 24, 8, 6),
   zone(0, 8, 10, 8),
   zone(-10, 4, 5, 4),
@@ -48,9 +54,9 @@ export const gameScenes3D: Record<Game3DSceneDefinition['id'], Game3DSceneDefini
   campus: {
     id: 'campus',
     name: '体素观测大陆',
-    subtitle: '开放探索 · 枢纽在中央 · 外圈前哨与地貌',
+    subtitle: '开放大陆 · 草甸/海岸/山脊 · 北脊可进洞穴',
     spawn: [0, 1.15, 22],
-    bounds: { minX: -72, maxX: 72, minZ: -72, maxZ: 72 },
+    bounds: { minX: -108, maxX: 108, minZ: -108, maxZ: 108 },
     navigation: {
       cellSize: 1.4,
       shape: 'rectangle',
@@ -181,6 +187,30 @@ export const gameScenes3D: Record<Game3DSceneDefinition['id'], Game3DSceneDefini
         '检查北脊信标',
         '信标闪着暖黄光：远距协作约定写在底座铜牌上。',
         [0, 0, -48],
+      ),
+      landmark(
+        'cave-north',
+        '进入北脊主洞',
+        '洞口被高度场压成缓坡，隧道里有发光晶体——也许是旧实验的频谱探针。',
+        [-8, 0, -52],
+      ),
+      landmark(
+        'cave-ne',
+        '勘查东北矿洞',
+        '岩壁上刻着被划掉的 seed 表，像有人想销毁复现证据。',
+        [42, 0, -38],
+      ),
+      landmark(
+        'cave-nw',
+        '进入西北苔洞',
+        '洞内潮湿，传感器线缆半埋在石缝里仍在闪。',
+        [-46, 0, -34],
+      ),
+      landmark(
+        'cave-mid',
+        '顺着脊线裂隙下探',
+        '裂隙尽头的晶体旁贴着一张「勿公开切分」的便签。',
+        [18, 0, -58],
       ),
     ],
   },

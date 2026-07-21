@@ -14,15 +14,18 @@ import * as THREE from 'three';
  * - Biomes: meadow / shore / ridge
  * - Streamed chunks around the player
  * - Per-chunk heightfield colliders for walkable relief
+ * - Ridge caves with walkable interiors
  * Original art; not affiliated with commercial block-game brands.
  */
 
 export const CELL = 2;
-export const WORLD_HALF = 72;
+/** Half-extent of the playable continent (world units). */
+export const WORLD_HALF = 108;
 const CHUNK_CELLS = 12;
 const CHUNK_WORLD = CHUNK_CELLS * CELL;
-const LOAD_RADIUS = 2;
-const MAX_CACHE = 48;
+/** Chunks loaded around the player → (2*r+1)^2 window. */
+const LOAD_RADIUS = 3;
+const MAX_CACHE = 80;
 
 export type BiomeId = 'meadow' | 'shore' | 'ridge';
 export type TerrainKind = 'grass' | 'sand' | 'dirt' | 'stone' | 'water' | 'path' | 'snow';
@@ -55,22 +58,47 @@ function fbm(x: number, z: number): number {
 }
 
 export function sampleBiome(wx: number, wz: number): BiomeId {
-  if (wz > 28 || Math.hypot(wx, wz) > 58) return 'shore';
-  if (wz < -28 || fbm(wx * 0.5, wz * 0.5) > 0.72) return 'ridge';
+  // Larger continent: shore on outer ring + south; ridge north and high plateaus.
+  if (wz > 36 || Math.hypot(wx, wz) > 78) return 'shore';
+  if (wz < -34 || fbm(wx * 0.45, wz * 0.45) > 0.7) return 'ridge';
   return 'meadow';
 }
 
 export function sampleHeight(wx: number, wz: number): number {
   const hubDist = Math.hypot(wx, wz - 8);
-  const island = 1 - Math.min(1, Math.hypot(wx * 0.011, wz * 0.011));
-  let h = fbm(wx, wz) * 5.2 * Math.max(0.15, island);
+  const island = 1 - Math.min(1, Math.hypot(wx * 0.008, wz * 0.008));
+  let h = fbm(wx, wz) * 5.6 * Math.max(0.12, island);
   if (hubDist < 20) h *= hubDist / 20;
   const biome = sampleBiome(wx, wz);
-  if (biome === 'shore') h = Math.min(h, 0.35 + fbm(wx + 9, wz) * 0.4);
-  if (biome === 'ridge') h += 1.2 + fbm(wx - 11, wz + 5) * 2.4;
+  if (biome === 'shore') h = Math.min(h, 0.35 + fbm(wx + 9, wz) * 0.45);
+  if (biome === 'ridge') h += 1.35 + fbm(wx - 11, wz + 5) * 2.6;
   if (Math.abs(wx) < 2.2 || Math.abs(wz - 8) < 2) h = Math.min(h, 0.35);
+  // Cave mouths: depress ridge surface into a ramp so heightfield stays walkable into the mouth.
+  for (const cave of CAVE_SITES) {
+    const d = Math.hypot(wx - cave.x, wz - cave.z);
+    if (d < cave.radius) {
+      const t = 1 - d / cave.radius;
+      h = Math.min(h, cave.floorY + (1 - t) * 1.2);
+    }
+  }
   return Math.max(0.05, h);
 }
+
+/** Fixed cave mouth sites (ridge). Floor is walkable via heightfield depression + interior tunnel. */
+export const CAVE_SITES: Array<{
+  id: string;
+  x: number;
+  z: number;
+  radius: number;
+  floorY: number;
+  facing: number; // yaw radians: tunnel goes inward
+  label: string;
+}> = [
+  { id: 'cave-north', x: -8, z: -52, radius: 5.5, floorY: 0.45, facing: Math.PI, label: '北脊主洞' },
+  { id: 'cave-ne', x: 42, z: -38, radius: 4.8, floorY: 0.5, facing: -2.2, label: '东北矿洞' },
+  { id: 'cave-nw', x: -46, z: -34, radius: 4.8, floorY: 0.5, facing: 2.2, label: '西北苔洞' },
+  { id: 'cave-mid', x: 18, z: -58, radius: 4.2, floorY: 0.4, facing: Math.PI * 0.9, label: '脊线裂隙' },
+];
 
 export function sampleTerrain(wx: number, wz: number): {
   h: number;
@@ -338,6 +366,89 @@ function VoxelOutpost({
   );
 }
 
+/** Walkable ridge cave: mouth ramp (via sampleHeight) + tunnel floor/walls/ceiling. */
+function RidgeCave({
+  x,
+  z,
+  floorY,
+  facing,
+  label,
+}: {
+  x: number;
+  z: number;
+  floorY: number;
+  facing: number;
+  label: string;
+}) {
+  const dirX = Math.sin(facing);
+  const dirZ = Math.cos(facing);
+  const segments = 7;
+  const spacing = 2.2;
+  const floorMeshes: Array<{ p: [number, number, number]; s: [number, number, number] }> = [];
+  const wallMeshes: Array<{ p: [number, number, number]; s: [number, number, number] }> = [];
+  for (let i = 0; i < segments; i += 1) {
+    const px = x + dirX * (i * spacing);
+    const pz = z + dirZ * (i * spacing);
+    const fy = floorY + i * 0.04;
+    floorMeshes.push({ p: [px, fy, pz], s: [3.2, 0.4, 2.4] });
+    // side walls
+    wallMeshes.push({ p: [px + dirZ * 1.7, fy + 1.2, pz - dirX * 1.7], s: [0.5, 2.4, 2.2] });
+    wallMeshes.push({ p: [px - dirZ * 1.7, fy + 1.2, pz + dirX * 1.7], s: [0.5, 2.4, 2.2] });
+    // ceiling
+    wallMeshes.push({ p: [px, fy + 2.5, pz], s: [3.4, 0.45, 2.4] });
+  }
+  // crystal cache at the end
+  const endX = x + dirX * (segments * spacing * 0.85);
+  const endZ = z + dirZ * (segments * spacing * 0.85);
+  const endY = floorY + segments * 0.04 + 0.9;
+
+  return (
+    <group>
+      {floorMeshes.map((b, i) => (
+        <mesh key={`cf-${i}`} receiveShadow position={b.p}>
+          <boxGeometry args={b.s} />
+          <meshStandardMaterial color="#4a4540" roughness={0.95} flatShading />
+        </mesh>
+      ))}
+      {wallMeshes.map((b, i) => (
+        <mesh key={`cw-${i}`} castShadow receiveShadow position={b.p}>
+          <boxGeometry args={b.s} />
+          <meshStandardMaterial color="#5c5854" roughness={0.92} flatShading />
+        </mesh>
+      ))}
+      {/* floor colliders along tunnel */}
+      {floorMeshes.map((b, i) => (
+        <RigidBody key={`cfc-${i}`} type="fixed" colliders={false} position={b.p} friction={1.15}>
+          <CuboidCollider args={[b.s[0] / 2, b.s[1] / 2, b.s[2] / 2]} />
+        </RigidBody>
+      ))}
+      {/* wall colliders (sides only) */}
+      {wallMeshes.slice(0, segments * 2).map((b, i) => (
+        <RigidBody key={`cwc-${i}`} type="fixed" colliders={false} position={b.p}>
+          <CuboidCollider args={[b.s[0] / 2, b.s[1] / 2, b.s[2] / 2]} />
+        </RigidBody>
+      ))}
+      <mesh position={[endX, endY, endZ]} castShadow>
+        <boxGeometry args={[0.7, 1.1, 0.7]} />
+        <meshStandardMaterial color="#7ec8ff" emissive="#2a6a9a" emissiveIntensity={0.45} flatShading />
+      </mesh>
+      <pointLight position={[endX, endY + 0.6, endZ]} intensity={1.1} distance={10} color="#9fd4ff" />
+      <pointLight
+        position={[x + dirX * 1.2, floorY + 1.6, z + dirZ * 1.2]}
+        intensity={0.55}
+        distance={8}
+        color="#ffd9a0"
+      />
+      {/* mouth marker (visual only) */}
+      <mesh position={[x, floorY + 2.8, z]}>
+        <boxGeometry args={[0.35, 0.35, 0.35]} />
+        <meshStandardMaterial color="#f0d78d" emissive="#b0892a" emissiveIntensity={0.35} flatShading />
+      </mesh>
+      <group visible={false} userData={{ caveLabel: label }} />
+    </group>
+  );
+}
+
 export function OpenWorldTerrain({
   reducedMotion,
   playerPosRef,
@@ -417,6 +528,22 @@ export function OpenWorldTerrain({
       <VoxelOutpost position={[0, 0, -48]} palette="#6f7f8a" />
       <VoxelOutpost position={[-22, 0, 42]} palette="#8a9060" />
       <VoxelOutpost position={[20, 0, 44]} palette="#906a60" />
+      {/* Far-ring outposts for larger continent */}
+      <VoxelOutpost position={[-70, 0, -10]} palette="#6a7a88" />
+      <VoxelOutpost position={[70, 0, -8]} palette="#887a6a" />
+      <VoxelOutpost position={[12, 0, 70]} palette="#6a886a" />
+      <VoxelOutpost position={[-14, 0, 68]} palette="#886a7a" />
+
+      {CAVE_SITES.map((cave) => (
+        <RidgeCave
+          key={cave.id}
+          x={cave.x}
+          z={cave.z}
+          floorY={cave.floorY}
+          facing={cave.facing}
+          label={cave.label}
+        />
+      ))}
     </group>
   );
 }

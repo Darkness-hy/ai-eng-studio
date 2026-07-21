@@ -642,7 +642,7 @@ export function ResearchGame3DShell({
 
       {!runtimeReady && playerProfile && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-[#b8dff5] text-[16px] text-[#2a4a40]">
-          正在生成开放体素大陆……
+          正在流式加载体素大陆与洞穴……
         </div>
       )}
 
