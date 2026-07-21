@@ -14,12 +14,19 @@ export function createMovementState3D(): MovementState3D {
 }
 
 export function clearMovement3D(ref: MutableRefObject<MovementState3D>): void {
-  Object.assign(ref.current, createMovementState3D());
+  ref.current.forward = false;
+  ref.current.backward = false;
+  ref.current.leftward = false;
+  ref.current.rightward = false;
+  ref.current.run = false;
+  ref.current.jump = false;
+  ref.current.joystick.x = 0;
+  ref.current.joystick.y = 0;
 }
 
 /**
  * Keyboard + shortcut input for the 3D island.
- * WASD / arrows drive Ecctrl via movementRef (required for both third- and first-person).
+ * WASD / arrows drive Ecctrl via movementRef (third- and first-person).
  * E interact · V person view · M map · J/Tab dossier · Esc close.
  */
 export function useGame3DInput(options: {
@@ -49,37 +56,42 @@ export function useGame3DInput(options: {
     run: false,
     jump: false,
   });
+  /** True while keyboard last wrote the joystick (so key-up can clear sticky walk). */
+  const keyboardOwnsStickRef = useRef(false);
 
   const applyKeysToMovement = () => {
     const k = keysRef.current;
     const m = movementRef.current;
-    // Joystick (mobile) wins when active; otherwise keyboard.
-    const stickActive = Math.hypot(m.joystick.x, m.joystick.y) > 0.05;
-    if (!stickActive) {
-      m.forward = k.forward;
-      m.backward = k.backward;
-      m.leftward = k.leftward;
-      m.rightward = k.rightward;
-      m.run = k.run;
-      m.jump = k.jump;
-      // Encode digital WASD as a unit joystick so Ecctrl custom-forward path is reliable.
-      let x = 0;
-      let y = 0;
-      if (k.leftward) x -= 1;
-      if (k.rightward) x += 1;
-      if (k.forward) y += 1;
-      if (k.backward) y -= 1;
-      const len = Math.hypot(x, y);
-      if (len > 0) {
-        m.joystick.x = x / len;
-        m.joystick.y = y / len;
-      } else {
-        m.joystick.x = 0;
-        m.joystick.y = 0;
-      }
-    } else {
-      m.run = k.run;
-      m.jump = k.jump;
+
+    m.forward = k.forward;
+    m.backward = k.backward;
+    m.leftward = k.leftward;
+    m.rightward = k.rightward;
+    m.run = k.run;
+    m.jump = k.jump;
+
+    let x = 0;
+    let y = 0;
+    if (k.leftward) x -= 1;
+    if (k.rightward) x += 1;
+    if (k.forward) y += 1;
+    if (k.backward) y -= 1;
+    const len = Math.hypot(x, y);
+
+    if (len > 0) {
+      // Keyboard directions always win over a stale stick value.
+      m.joystick.x = x / len;
+      m.joystick.y = y / len;
+      keyboardOwnsStickRef.current = true;
+      return;
+    }
+
+    // No keyboard direction held: clear stick only if keyboard owned it.
+    // Leave mobile virtual stick alone (it zeros itself on pointer up).
+    if (keyboardOwnsStickRef.current) {
+      m.joystick.x = 0;
+      m.joystick.y = 0;
+      keyboardOwnsStickRef.current = false;
     }
   };
 
@@ -93,6 +105,7 @@ export function useGame3DInput(options: {
         run: false,
         jump: false,
       };
+      keyboardOwnsStickRef.current = false;
       clearMovement3D(movementRef);
     }
   }, [movementEnabled]);
@@ -164,8 +177,21 @@ export function useGame3DInput(options: {
       }
 
       if (!movementEnabled) return;
+      if (event.repeat) {
+        // Ignore OS key-repeat so we don't fight keyup edge cases.
+        if (
+          event.code === 'KeyW' ||
+          event.code === 'KeyA' ||
+          event.code === 'KeyS' ||
+          event.code === 'KeyD' ||
+          event.code.startsWith('Arrow') ||
+          event.code === 'Space'
+        ) {
+          event.preventDefault();
+        }
+        return;
+      }
       if (setKey(event.code, true)) {
-        // Prevent page scroll on arrows/space while playing.
         if (
           event.code.startsWith('Arrow') ||
           event.code === 'Space' ||
@@ -181,7 +207,7 @@ export function useGame3DInput(options: {
     };
 
     const onKeyUp = (event: KeyboardEvent) => {
-      if (isEditableTarget(event.target)) return;
+      // Always clear movement keys even if focus moved to a button — otherwise sticky walk.
       if (setKey(event.code, false)) {
         applyKeysToMovement();
       }
@@ -196,6 +222,7 @@ export function useGame3DInput(options: {
         run: false,
         jump: false,
       };
+      keyboardOwnsStickRef.current = false;
       clearMovement3D(movementRef);
     };
 
@@ -206,6 +233,16 @@ export function useGame3DInput(options: {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('blur', onBlur);
+      keysRef.current = {
+        forward: false,
+        backward: false,
+        leftward: false,
+        rightward: false,
+        run: false,
+        jump: false,
+      };
+      keyboardOwnsStickRef.current = false;
+      clearMovement3D(movementRef);
     };
   }, [
     movementEnabled,

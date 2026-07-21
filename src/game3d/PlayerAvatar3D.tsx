@@ -145,7 +145,20 @@ export function PlayerController3D({
       if (cameraForwardRef.current.lengthSq() > 0.001) {
         controller.setForwardDir(cameraForwardRef.current.normalize());
       }
-      controller.setMovement(enabled ? movement : STOPPED_MOVEMENT);
+      // Pass a fresh snapshot every frame so Ecctrl never holds a sticky shared object.
+      if (!enabled) {
+        controller.setMovement(STOPPED_MOVEMENT);
+      } else {
+        controller.setMovement({
+          forward: movement.forward,
+          backward: movement.backward,
+          leftward: movement.leftward,
+          rightward: movement.rightward,
+          run: movement.run,
+          jump: movement.jump,
+          joystick: { x: movement.joystick.x, y: movement.joystick.y },
+        });
+      }
     }
 
     const body = controller.body;
