@@ -13,6 +13,7 @@ import type {
   LandmarkInteraction3D,
   Vec3,
 } from './types3d';
+import { OpenWorldTerrain } from './openWorldTerrain';
 import { campusPathNetwork3D } from './world3d';
 
 export function ResearchWorld3D({
@@ -36,8 +37,8 @@ export function ResearchWorld3D({
         attach="fog"
         args={[
           palette.fog,
-          cameraMode === 'map' ? (scene.id === 'campus' ? 100 : 60) : 28,
-          cameraMode === 'map' ? (scene.id === 'campus' ? 190 : 125) : scene.id === 'campus' ? 120 : 72,
+          cameraMode === 'map' ? (scene.id === 'campus' ? 140 : 70) : 40,
+          cameraMode === 'map' ? (scene.id === 'campus' ? 260 : 140) : scene.id === 'campus' ? 160 : 90,
         ]}
       />
       <hemisphereLight args={[palette.hemi, palette.ground, 1.55]} />
@@ -120,49 +121,27 @@ function CampusWorld({
   interactions,
   onSelectInteraction,
 }: WorldProps) {
+  // Open voxel continent + research hub (paths/buildings remain the dense core).
   return (
     <>
       <WaveOcean reducedMotion={reducedMotion} />
-      <RigidBody type="fixed" colliders={false} friction={1.1}>
-        <CuboidCollider args={[48, 0.55, 34]} position={[0, -0.55, 0]} />
-        <mesh position={[0, -0.5, 0]} scale={[48, 1, 34]} receiveShadow>
-          <cylinderGeometry args={[1, 1, 1, 72]} />
-          <TexturedSurfaceMaterial color="#b0c4a0" variance={0.075} repeat={[12, 9]} roughness={0.98} />
-        </mesh>
-        <mesh position={[0, -1.12, 0]} scale={[48.7, 1.25, 34.7]}>
-          <cylinderGeometry args={[1, 1, 1, 72]} />
-          <TexturedSurfaceMaterial color="#3f4341" variance={0.06} repeat={[14, 10]} roughness={1} />
-        </mesh>
-      </RigidBody>
-
+      <OpenWorldTerrain reducedMotion={reducedMotion} />
       <CampusPaths mapMode={cameraMode === 'map'} />
-      {/* coastal: no orchard */}
-      {cameraMode === 'map' ? (
-        <>
-          <CampusBuildings />
-          <CampusLandmarks
-            interactions={interactions}
-            reducedMotion={reducedMotion}
-            onSelect={onSelectInteraction}
-          />
-        </>
-      ) : (
-        <>
-          <CampusBuildings />
-          <CampusLandmarks
-            interactions={interactions}
-            reducedMotion={reducedMotion}
-            onSelect={onSelectInteraction}
-          />
-          <AgentFigure
-            agentId="campus-guide"
-            position={[1.4, 0, 15.5]}
-            color="#7a5c56"
-            reducedMotion={reducedMotion}
-            showLabel
-            onClick={() => selectById(interactions, 'guide', onSelectInteraction)}
-          />
-        </>
+      <CampusBuildings />
+      <CampusLandmarks
+        interactions={interactions}
+        reducedMotion={reducedMotion}
+        onSelect={onSelectInteraction}
+      />
+      {cameraMode !== 'map' && (
+        <AgentFigure
+          agentId="campus-guide"
+          position={[1.4, 0, 15.5]}
+          color="#7a5c56"
+          reducedMotion={reducedMotion}
+          showLabel
+          onClick={() => selectById(interactions, 'guide', onSelectInteraction)}
+        />
       )}
       <InteractionMarkers
         interactions={interactions}

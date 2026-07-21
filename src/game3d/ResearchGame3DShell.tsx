@@ -564,7 +564,7 @@ export function ResearchGame3DShell({
                   ? '卷宗将齐——打开组板送审'
                   : caseFile.flags.includes('knows_leak')
                     ? '去档案柜与机房钉证据'
-                    : 'WASD 移动 · E 交互 · V 切换视角')
+                    : '开放世界 · WASD 探索 · E 交互 · V 视角')
               : scene.subtitle}
           </p>
         </div>
@@ -642,7 +642,7 @@ export function ResearchGame3DShell({
 
       {!runtimeReady && playerProfile && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-[#b8dff5] text-[16px] text-[#2a4a40]">
-          正在构建体素观测站……
+          正在生成开放体素大陆……
         </div>
       )}
 

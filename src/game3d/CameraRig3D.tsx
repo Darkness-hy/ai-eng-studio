@@ -238,14 +238,14 @@ export function CameraRig3D({
         makeDefault={mode !== 'map'}
         fov={mode === 'first' ? 78 : 58}
         near={0.08}
-        far={220}
+        far={420}
         position={[0, 6, 12]}
       />
       <OrthographicCamera
         ref={mapRef}
         makeDefault={mode === 'map'}
         near={0.1}
-        far={260}
+        far={480}
         position={[0, 45, 0.001]}
       />
     </>

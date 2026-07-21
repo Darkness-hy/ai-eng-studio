@@ -7,53 +7,69 @@ import type {
 } from './types3d';
 
 /**
- * Coastal research station spine (south pier → north cliff).
- * Not a toy ring campus: linear axis + short service spurs.
+ * Open voxel world (Minicraft-like exploration scale) with a research-station hub.
+ * Hub remains densest; outer map is procedural terrain + outposts.
  */
 export const campusPathNetwork3D: NavigationPath3D[] = [
-  path('pier-spine', [[0, 26], [0, 18], [0, 10], [0, 2], [0, -6], [0, -14], [0, -20]], 3.6),
-  path('gate-yard', [[-4, 14], [0, 14], [4, 14]], 3.2),
+  // Hub spines
+  path('pier-spine', [[0, 28], [0, 18], [0, 8], [0, 0], [0, -12], [0, -24]], 4.2),
+  path('east-road', [[0, 8], [12, 8], [24, 8], [36, 4], [48, -8]], 3.4),
+  path('west-road', [[0, 8], [-12, 8], [-24, 6], [-36, -4], [-48, -16]], 3.4),
+  path('north-ridge', [[0, -24], [0, -36], [0, -48], [12, -52], [-12, -52]], 3.2),
+  path('south-beach', [[0, 28], [-16, 36], [16, 36], [0, 44]], 3.6),
   path('academy-spur', [[0, 4], [-6, 4], [-10, 4]], 2.8),
   path('plaza-spur', [[0, 8], [6, 8], [11, 8]], 2.8),
   path('lab-spur', [[0, -8], [-6, -8], [-10, -8]], 2.8),
   path('compute-spur', [[0, -6], [6, -6], [11, -6]], 2.8),
-  path('review-spur', [[0, -14], [0, -18]], 2.6),
-  path('radar-ring', [[-3, -2], [0, -4], [3, -2], [0, 0], [-3, -2]], 2.2),
+  path('outpost-ne', [[24, 8], [34, -10], [38, -22]], 2.6),
+  path('outpost-nw', [[-24, 6], [-34, -12], [-40, -28]], 2.6),
+  path('outpost-se', [[16, 36], [28, 34], [38, 30]], 2.6),
+  path('outpost-sw', [[-16, 36], [-30, 32], [-40, 24]], 2.6),
 ];
 
 const campusWalkableZones: NavigationZone3D[] = [
-  zone(0, 24, 4.5, 3.2), // pier head
-  zone(0, 14, 5.5, 4.2), // gate
-  zone(0, 2, 6, 5), // forum
-  zone(-10, 4, 4.2, 3.6), // academy pad
-  zone(11, 8, 4.2, 3.6), // plaza pad
-  zone(-10, -8, 4.2, 3.6), // research pad
-  zone(11, -6, 4.2, 3.6), // compute pad
-  zone(0, -18, 4.5, 3.4), // paper pad
-  zone(0, -2, 4, 4), // radar apron
+  // Nearly whole open map is walkable; zones help pathfinding density near hubs.
+  zone(0, 0, 62, 62),
+  zone(0, 24, 8, 6),
+  zone(0, 8, 10, 8),
+  zone(-10, 4, 5, 4),
+  zone(11, 8, 5, 4),
+  zone(-10, -8, 5, 4),
+  zone(11, -6, 5, 4),
+  zone(0, -18, 6, 5),
+  zone(-36, -28, 6, 6),
+  zone(34, -22, 6, 6),
+  zone(-40, 24, 6, 6),
+  zone(38, 30, 6, 6),
+  zone(0, -48, 8, 6),
 ];
 
 export const gameScenes3D: Record<Game3DSceneDefinition['id'], Game3DSceneDefinition> = {
   campus: {
     id: 'campus',
-    name: '临海观测站',
-    subtitle: '栈桥登陆 · 主轴北上 · 雷达罩与机房在崖侧',
-    spawn: [0, 1.15, 24],
-    bounds: { minX: -26, maxX: 26, minZ: -24, maxZ: 30 },
+    name: '体素观测大陆',
+    subtitle: '开放探索 · 枢纽在中央 · 外圈前哨与地貌',
+    spawn: [0, 1.15, 22],
+    bounds: { minX: -72, maxX: 72, minZ: -72, maxZ: 72 },
     navigation: {
-      cellSize: 0.55,
+      cellSize: 1.4,
       shape: 'rectangle',
-      padding: 1.0,
+      padding: 1.2,
       paths: campusPathNetwork3D,
       zones: campusWalkableZones,
       obstacles: [
-        // building masses (footprints)
-        obstacle(-10, 4, 5.6, 4.8), // academy
-        obstacle(11, 8, 5.2, 4.6), // plaza
-        obstacle(-10, -8, 5.4, 5.0), // research
-        obstacle(11, -6, 5.6, 5.2), // compute
-        obstacle(0, -18, 6.2, 4.4), // paper
-        obstacle(0, -2, 4.8, 4.8), // radar base
+        obstacle(-10, 4, 5.6, 4.8),
+        obstacle(11, 8, 5.2, 4.6),
+        obstacle(-10, -8, 5.4, 5.0),
+        obstacle(11, -6, 5.6, 5.2),
+        obstacle(0, -18, 6.2, 4.4),
+        obstacle(0, -2, 4.8, 4.8),
+        // outpost footprints (approx)
+        obstacle(-36, -28, 3.2, 3.2),
+        obstacle(34, -22, 3.2, 3.2),
+        obstacle(-40, 24, 3.2, 3.2),
+        obstacle(38, 30, 3.2, 3.2),
+        obstacle(0, -48, 3.4, 3.4),
       ],
     },
     interactions: [
@@ -140,6 +156,31 @@ export const gameScenes3D: Record<Game3DSceneDefinition['id'], Game3DSceneDefini
         '阅读值班交接',
         '有效协作从明确问题所有权、接口、证据标准和决策记录开始。',
         [3.2, 0, 6],
+      ),
+      // Outer open-world discovery nodes
+      landmark(
+        'ruin-ne',
+        '勘查东北前哨废墟',
+        '旧实验站留下的日志残页：有人改过切分协议却没写进海报。',
+        [34, 0, -22],
+      ),
+      landmark(
+        'ruin-nw',
+        '勘查西北苔原桩站',
+        '苔原上的传感器阵列仍在跳变——可能是噪声，也可能是泄漏信号。',
+        [-36, 0, -28],
+      ),
+      landmark(
+        'beach-cache',
+        '翻找南岸补给箱',
+        '补给箱里塞着打印失败的基准分数表，墨迹被潮水晕开。',
+        [20, 0, 44],
+      ),
+      landmark(
+        'ridge-beacon',
+        '检查北脊信标',
+        '信标闪着暖黄光：远距协作约定写在底座铜牌上。',
+        [0, 0, -48],
       ),
     ],
   },
