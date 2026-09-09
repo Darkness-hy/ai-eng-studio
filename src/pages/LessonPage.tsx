@@ -5,6 +5,9 @@ import { CodeTabs } from '../components/CodeTabs';
 import { INTERACTIVE } from '../components/interactive/registry';
 import { Markdown } from '../components/Markdown';
 import { Quiz } from '../components/Quiz';
+import { TutorAvatar } from '../components/TutorAvatar';
+import { classroomPack } from '../classroom/packs';
+import { useClassroomCompleted } from '../lib/classroom';
 import { fetchIndex, fetchLesson } from '../lib/data';
 import { lessonTitle, phaseTitle, useLang } from '../lib/i18n';
 import { extractToc, stripLessonHeader } from '../lib/md';
@@ -72,6 +75,8 @@ export function LessonPage() {
   const quiz = lesson ? ((lang === 'zh' && lesson.quizZh) || lesson.quizEn) : null;
   const preQuiz = useMemo(() => quiz?.filter((q) => q.stage === 'pre') ?? [], [quiz]);
   const postQuiz = useMemo(() => quiz?.filter((q) => q.stage !== 'pre') ?? [], [quiz]);
+  const pack = classroomPack(routeId);
+  const classroomDone = useClassroomCompleted(routeId);
 
   if (failed) return <div className="py-32 text-center text-faint">{t('load_failed')}</div>;
   if (!lesson || !index || !phase) {
@@ -129,6 +134,34 @@ export function LessonPage() {
             )}
           </div>
         </header>
+
+        {pack && (
+          <Link
+            to={`/lesson/${phase.slug}/${lesson.slug}/classroom`}
+            className="mt-6 flex items-start gap-4 rounded-lg border border-hairline bg-paper px-4 py-4 transition-all hover:-translate-y-0.5 hover:shadow-lift"
+          >
+            <TutorAvatar mode="greeting" size={48} />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-serif text-[17px] font-semibold">{t('classroom')}</span>
+                {classroomDone && (
+                  <span className="rounded-full bg-pale-green px-2 py-0.5 font-mono text-[10.5px] text-ink-green">
+                    {t('classroom_done')}
+                  </span>
+                )}
+                <span className="font-mono text-[11px] text-faint">
+                  {pack.durationMin}
+                  {lang === 'zh' ? ' 分钟' : ' min'} · {pack.scenes.length}
+                  {lang === 'zh' ? ' 页' : ' scenes'}
+                </span>
+              </div>
+              <p className="mt-1 text-[13.5px] leading-relaxed text-faint">{t('classroom_hint')}</p>
+              <p className="mt-2 font-mono text-[11.5px] text-ink">
+                {classroomDone ? t('classroom_replay') : t('classroom')} →
+              </p>
+            </div>
+          </Link>
+        )}
 
         {/* translation status */}
         {lang === 'zh' && !lesson.bodyZh && (

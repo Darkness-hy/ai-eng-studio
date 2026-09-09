@@ -22,6 +22,7 @@ export function Layout() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   useReview(); // re-render the due badge when the review queue changes
   const due = dueCount();
+  const isClassroom = pathname.endsWith('/classroom');
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -132,8 +133,9 @@ export function Layout() {
       </main>
 
       {/* Hide the AI tutor on the placement quiz so it can't be used to answer it. */}
-      {tutorEnabled && pathname !== '/find-your-level' && <TutorWidget />}
+      {tutorEnabled && pathname !== '/find-your-level' && !isClassroom && <TutorWidget />}
 
+      {!isClassroom && (
       <footer className="mt-24 border-t border-hairline">
         <div className="bg-bone/40">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-8 gap-y-4 px-5 py-6">
@@ -211,6 +213,7 @@ export function Layout() {
           </div>
         </div>
       </footer>
+      )}
 
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
     </div>
