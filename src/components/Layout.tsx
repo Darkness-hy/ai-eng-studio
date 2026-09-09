@@ -25,6 +25,7 @@ export function Layout() {
   // Fullscreen island only — case workbench keeps site chrome.
   const isResearchGame =
     pathname.startsWith('/research-game') && !pathname.startsWith('/research-game/case');
+  const isClassroom = pathname.endsWith('/classroom');
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -143,9 +144,11 @@ export function Layout() {
       </main>
 
       {/* Hide the AI tutor on the placement quiz so it can't be used to answer it. */}
-      {tutorEnabled && pathname !== '/find-your-level' && !isResearchGame && <TutorWidget />}
+      {tutorEnabled && pathname !== '/find-your-level' && !isResearchGame && !isClassroom && (
+        <TutorWidget />
+      )}
 
-      {!isResearchGame && (
+      {!isResearchGame && !isClassroom && (
       <footer className="mt-24 border-t border-hairline">
         <div className="bg-bone/40">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-8 gap-y-4 px-5 py-6">

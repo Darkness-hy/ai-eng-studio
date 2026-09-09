@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './lib/auth';
 import { LangProvider } from './lib/i18n';
 import { Dashboard } from './pages/Dashboard';
 import { GlossaryPage } from './pages/GlossaryPage';
+import { ClassroomPage } from './pages/ClassroomPage';
 import { LessonPage } from './pages/LessonPage';
 import { LeaderboardsPage } from './pages/LeaderboardsPage';
 import { LoginPage } from './pages/LoginPage';
@@ -45,6 +46,7 @@ export default function App() {
               <Route element={<Layout />}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/phase/:phaseSlug" element={<PhasePage />} />
+                <Route path="/lesson/:phaseSlug/:lessonSlug/classroom" element={<ClassroomPage />} />
                 <Route path="/lesson/:phaseSlug/:lessonSlug" element={<LessonPage />} />
                 <Route path="/glossary" element={<GlossaryPage />} />
                 <Route path="/progress" element={<ProgressPage />} />
