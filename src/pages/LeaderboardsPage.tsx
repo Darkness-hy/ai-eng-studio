@@ -3,6 +3,7 @@ import { useAuth } from '../lib/auth';
 import { fetchIndex } from '../lib/data';
 import {
   fetchLeaderboardSummary,
+  formatLeaderboardError,
   formatLeaderboardScore,
   leaderboardSubtitle,
   leaderboardTitle,
@@ -59,11 +60,11 @@ export function LeaderboardsPage() {
         setState({
           loading: false,
           summary: null,
-          error: err instanceof Error ? err.message : String(err),
+          error: formatLeaderboardError(err, lang),
         });
       }
     }
-  }, []);
+  }, [lang]);
 
   useEffect(() => {
     if (!enabled || !profile) return;
