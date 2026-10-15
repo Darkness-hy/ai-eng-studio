@@ -1,0 +1,40 @@
+[project]
+name = "ai-eng-studio-research-api"
+version = "0.4.0"
+description = "Bounded ResearchRun API and fixed CPU experiment runner"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "asyncpg==0.30.0",
+  "cryptography==44.0.1",
+  "fastapi==0.115.6",
+  "httpx==0.28.1",
+  "numpy==2.2.2",
+  "pydantic==2.10.4",
+  "PyJWT==2.10.1",
+  "rfc8785==0.1.4",
+  "scikit-learn==1.6.1",
+  "scipy==1.17.1",
+  "uvicorn[standard]==0.34.0",
+]
+
+[dependency-groups]
+dev = [
+  "pytest==8.3.4",
+  "pytest-asyncio==0.25.3",
+  "ruff==0.9.6",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

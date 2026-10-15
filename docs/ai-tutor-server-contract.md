@@ -25,6 +25,7 @@
   ],
   "lesson_id": "00-setup-and-tooling/01-dev-environment", // 选填:当前所在课(没有则 null)
   "context": "# 开发环境搭建\n\n<课文正文,已被前端截断到 ~4000 字>", // 选填:前端注入的 RAG 上下文
+  "assistant_id": null,                           // 选填:科研游戏 NPC 的服务端白名单 ID
   "lang": "zh",                                 // "zh" | "en":期望的回答语言
   "stream": true                               // 前端总是传 true
 }
@@ -34,8 +35,15 @@
 - `message` —— 本轮问题,**必填**。
 - `history` —— 多轮对话历史,按时间顺序;服务端应原样拼进对话。
 - `lesson_id` / `context` —— **RAG 注入**,见 §3。两者都可能为 `null`(用户在非课程页提问)。
+- `assistant_id` —— 科研游戏 NPC ID。允许值为 `campus-guide`、`research-mentor`、
+  `methods-mentor`、`experiment-engineer`、`reviewer`、`community-host`。省略或为 `null`
+  时保持普通“茜茜”AI 助教；未知值返回 `422`。NPC 的身份、语气和输出上限由服务端白名单决定，
+  前端 `context` 只能提供场景事实，不能定义系统身份。
 - `lang` —— 服务端应据此要求模型用中文或英文回答。
 - `stream` —— 固定 `true`;前端按 SSE 解析。
+
+科研游戏 NPC 默认使用 1-4 句自然对话。服务端为每个 NPC 设置独立角色提示和 180-280 token
+上限，并关闭 NPC 请求的 DeepSeek thinking；普通 AI 助教仍沿用全局推理配置。
 
 ### 响应(`stream: true`)
 

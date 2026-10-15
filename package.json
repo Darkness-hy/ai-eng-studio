@@ -12,10 +12,18 @@
     "deploy:build": "DEPLOY_BASE=/ai-eng-studio/ npm run build"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
+    "@react-three/rapier": "^2.2.0",
     "@supabase/supabase-js": "^2.108.1",
     "@tailwindcss/vite": "^4.3.0",
     "@types/qrcode": "^1.5.6",
+    "ecctrl": "^2.0.0",
+    "leva": "^0.10.1",
+    "lucide-react": "^1.24.0",
     "mermaid": "^11.15.0",
+    "pathfinding": "^0.4.18",
+    "phaser": "^3.90.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
@@ -23,13 +31,16 @@
     "react-router-dom": "^7.17.0",
     "remark-gfm": "^4.0.1",
     "shiki": "^4.2.0",
-    "tailwindcss": "^4.3.0"
+    "tailwindcss": "^4.3.0",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.12.3",
+    "@types/pathfinding": "^0.1.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.185.1",
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",

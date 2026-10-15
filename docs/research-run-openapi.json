@@ -1,0 +1,2319 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ai-eng-studio ResearchRun API",
+    "description": "Bounded ResearchRun workflow for 17 fixed offline capstone experiments. The runner accepts no user code or arbitrary configuration and makes no paid API calls.",
+    "version": "0.4.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/research-templates": {
+      "get": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "List Templates",
+        "operationId": "list_templates_v1_research_templates_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/research-runs": {
+      "get": {
+        "tags": [
+          "Runs"
+        ],
+        "summary": "List Runs",
+        "operationId": "list_runs_v1_research_runs_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/RunStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListRunsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "summary": "Create Run",
+        "operationId": "create_run_v1_research_runs_post",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRunRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunSnapshot"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/research-runs/{run_id}": {
+      "get": {
+        "tags": [
+          "Runs"
+        ],
+        "summary": "Get Run",
+        "operationId": "get_run_v1_research_runs__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunSnapshot"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/research-runs/{run_id}/hypothesis": {
+      "put": {
+        "tags": [
+          "Runs"
+        ],
+        "summary": "Put Hypothesis",
+        "operationId": "put_hypothesis_v1_research_runs__run_id__hypothesis_put",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HypothesisInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunSnapshot"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/research-runs/{run_id}/experiment-jobs": {
+      "get": {
+        "tags": [
+          "Runs"
+        ],
+        "summary": "List Jobs",
+        "operationId": "list_jobs_v1_research_runs__run_id__experiment_jobs_get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ExperimentJob"
+                    }
+                  },
+                  "title": "Response List Jobs V1 Research Runs  Run Id  Experiment Jobs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "summary": "Enqueue Experiments",
+        "operationId": "enqueue_experiments_v1_research_runs__run_id__experiment_jobs_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExperimentSuiteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperimentSuiteAccepted"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/research-runs/{run_id}/analysis": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "summary": "Analyze Run",
+        "operationId": "analyze_run_v1_research_runs__run_id__analysis_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionedCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandAccepted"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/research-runs/{run_id}/verify": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "summary": "Verify Run",
+        "operationId": "verify_run_v1_research_runs__run_id__verify_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionedCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandAccepted"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/research-runs/{run_id}/retry": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "summary": "Retry Run",
+        "operationId": "retry_run_v1_research_runs__run_id__retry_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionedCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandAccepted"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/research-runs/{run_id}/cancel": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "summary": "Cancel Run",
+        "operationId": "cancel_run_v1_research_runs__run_id__cancel_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionedCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandAccepted"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/research-runs/{run_id}/events": {
+      "get": {
+        "tags": [
+          "Runs"
+        ],
+        "summary": "Stream Events",
+        "operationId": "stream_events_v1_research_runs__run_id__events_get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 19,
+                  "pattern": "^[0-9]+$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          },
+          {
+            "name": "Last-Event-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 19,
+                  "pattern": "^[0-9]+$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last-Event-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/research-runs/{run_id}/artifacts": {
+      "get": {
+        "tags": [
+          "Artifacts"
+        ],
+        "summary": "List Artifacts",
+        "operationId": "list_artifacts_v1_research_runs__run_id__artifacts_get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ArtifactKind"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/research-artifacts/{artifact_id}/publish": {
+      "post": {
+        "tags": [
+          "Artifacts"
+        ],
+        "summary": "Publish Artifact",
+        "operationId": "publish_artifact_v1_research_artifacts__artifact_id__publish_post",
+        "parameters": [
+          {
+            "name": "artifact_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Artifact Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionedCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactCommandResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/research-artifacts/{artifact_id}/publication": {
+      "delete": {
+        "tags": [
+          "Artifacts"
+        ],
+        "summary": "Unpublish Artifact",
+        "operationId": "unpublish_artifact_v1_research_artifacts__artifact_id__publication_delete",
+        "parameters": [
+          {
+            "name": "artifact_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Artifact Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionedCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactCommandResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AggregateMetric": {
+        "properties": {
+          "primaryScoreMean": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Primaryscoremean"
+          },
+          "primaryScoreSampleStd": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Primaryscoresamplestd"
+          },
+          "secondaryMeans": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Secondarymeans"
+          },
+          "caseLatencyMsMean": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Caselatencymsmean"
+          },
+          "caseLatencyMsP95": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Caselatencymsp95"
+          },
+          "caseCount": {
+            "type": "integer",
+            "maximum": 2000.0,
+            "minimum": 2.0,
+            "title": "Casecount"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "primaryScoreMean",
+          "primaryScoreSampleStd",
+          "caseLatencyMsMean",
+          "caseLatencyMsP95",
+          "caseCount"
+        ],
+        "title": "AggregateMetric"
+      },
+      "ArtifactCommandResult": {
+        "properties": {
+          "artifact": {
+            "$ref": "#/components/schemas/ResearchArtifact"
+          },
+          "runVersion": {
+            "type": "integer",
+            "title": "Runversion"
+          },
+          "eventId": {
+            "type": "string",
+            "title": "Eventid"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "artifact",
+          "runVersion",
+          "eventId"
+        ],
+        "title": "ArtifactCommandResult"
+      },
+      "ArtifactKind": {
+        "type": "string",
+        "enum": [
+          "topic_brief",
+          "hypothesis",
+          "experiment_spec",
+          "source_bundle",
+          "experiment_log",
+          "raw_metrics",
+          "analysis",
+          "verification_bundle",
+          "research_card"
+        ],
+        "title": "ArtifactKind"
+      },
+      "ArtifactList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ResearchArtifact"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "ArtifactList"
+      },
+      "BenchmarkInput": {
+        "properties": {
+          "includeAllVariants": {
+            "type": "boolean",
+            "const": true,
+            "title": "Includeallvariants"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "includeAllVariants"
+        ],
+        "title": "BenchmarkInput"
+      },
+      "BootstrapMetric": {
+        "properties": {
+          "replicate": {
+            "type": "integer",
+            "exclusiveMaximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Replicate"
+          },
+          "primaryScore": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Primaryscore"
+          },
+          "sampleSha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Samplesha256"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "replicate",
+          "primaryScore",
+          "sampleSha256"
+        ],
+        "title": "BootstrapMetric"
+      },
+      "Budget": {
+        "properties": {
+          "cpuSecondsPerJob": {
+            "type": "integer",
+            "const": 120,
+            "title": "Cpusecondsperjob",
+            "default": 120
+          },
+          "memoryMbPerJob": {
+            "type": "integer",
+            "const": 1024,
+            "title": "Memorymbperjob",
+            "default": 1024
+          },
+          "maxConcurrentJobs": {
+            "type": "integer",
+            "const": 2,
+            "title": "Maxconcurrentjobs",
+            "default": 2
+          },
+          "maxAttemptsPerVariant": {
+            "type": "integer",
+            "const": 2,
+            "title": "Maxattemptspervariant",
+            "default": 2
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Budget"
+      },
+      "CaseMetric": {
+        "properties": {
+          "caseId": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9._-]*$",
+            "title": "Caseid"
+          },
+          "primaryScore": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Primaryscore"
+          },
+          "secondary": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Secondary"
+          },
+          "latencyMs": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Latencyms"
+          },
+          "evidence": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "title": "Evidence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "caseId",
+          "primaryScore",
+          "latencyMs"
+        ],
+        "title": "CaseMetric"
+      },
+      "CommandAccepted": {
+        "properties": {
+          "run": {
+            "$ref": "#/components/schemas/ResearchRun"
+          },
+          "eventId": {
+            "type": "string",
+            "title": "Eventid"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "run",
+          "eventId"
+        ],
+        "title": "CommandAccepted"
+      },
+      "CreateRunRequest": {
+        "properties": {
+          "topic": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 3,
+            "title": "Topic"
+          },
+          "templateId": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{2,79}$",
+            "title": "Templateid"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "topic",
+          "templateId"
+        ],
+        "title": "CreateRunRequest"
+      },
+      "ExpectedDirection": {
+        "type": "string",
+        "enum": [
+          "increase",
+          "decrease",
+          "no_change"
+        ],
+        "title": "ExpectedDirection"
+      },
+      "ExperimentConfig": {
+        "properties": {
+          "benchmarkVersion": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Benchmarkversion"
+          },
+          "method": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,63}$",
+            "title": "Method"
+          },
+          "parameters": {
+            "type": "object",
+            "title": "Parameters"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "benchmarkVersion",
+          "method"
+        ],
+        "title": "ExperimentConfig"
+      },
+      "ExperimentJob": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "runId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Runid"
+          },
+          "hypothesisId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Hypothesisid"
+          },
+          "suiteId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Suiteid"
+          },
+          "variant": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,63}$",
+            "title": "Variant"
+          },
+          "templateId": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{2,79}$",
+            "title": "Templateid"
+          },
+          "templateVersion": {
+            "type": "string",
+            "title": "Templateversion"
+          },
+          "attempt": {
+            "type": "integer",
+            "maximum": 2.0,
+            "minimum": 1.0,
+            "title": "Attempt"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          },
+          "bootstrapSeed": {
+            "type": "integer",
+            "const": 20260711,
+            "title": "Bootstrapseed",
+            "default": 20260711
+          },
+          "bootstrapReplicates": {
+            "type": "integer",
+            "const": 1000,
+            "title": "Bootstrapreplicates",
+            "default": 1000
+          },
+          "config": {
+            "$ref": "#/components/schemas/ExperimentConfig"
+          },
+          "resourceLimits": {
+            "$ref": "#/components/schemas/ResourceLimits"
+          },
+          "metrics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExperimentMetrics"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunFailure"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "queuedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Queuedat"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startedat"
+          },
+          "finishedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finishedat"
+          },
+          "durationMs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Durationms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "runId",
+          "hypothesisId",
+          "suiteId",
+          "variant",
+          "templateId",
+          "templateVersion",
+          "attempt",
+          "status",
+          "config",
+          "queuedAt"
+        ],
+        "title": "ExperimentJob"
+      },
+      "ExperimentMetrics": {
+        "properties": {
+          "caseResults": {
+            "items": {
+              "$ref": "#/components/schemas/CaseMetric"
+            },
+            "type": "array",
+            "maxItems": 2000,
+            "minItems": 2,
+            "title": "Caseresults"
+          },
+          "bootstrapResults": {
+            "items": {
+              "$ref": "#/components/schemas/BootstrapMetric"
+            },
+            "type": "array",
+            "maxItems": 1000,
+            "minItems": 1000,
+            "title": "Bootstrapresults"
+          },
+          "aggregate": {
+            "$ref": "#/components/schemas/AggregateMetric"
+          },
+          "resultSha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Resultsha256"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "caseResults",
+          "bootstrapResults",
+          "aggregate",
+          "resultSha256"
+        ],
+        "title": "ExperimentMetrics"
+      },
+      "ExperimentSuiteAccepted": {
+        "properties": {
+          "run": {
+            "$ref": "#/components/schemas/ResearchRun"
+          },
+          "suiteId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Suiteid"
+          },
+          "jobs": {
+            "items": {
+              "$ref": "#/components/schemas/ExperimentJob"
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 3,
+            "title": "Jobs"
+          },
+          "eventId": {
+            "type": "string",
+            "title": "Eventid"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "run",
+          "suiteId",
+          "jobs",
+          "eventId"
+        ],
+        "title": "ExperimentSuiteAccepted"
+      },
+      "ExperimentSuiteRequest": {
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expectedversion"
+          },
+          "benchmark": {
+            "$ref": "#/components/schemas/BenchmarkInput"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expectedVersion",
+          "benchmark"
+        ],
+        "title": "ExperimentSuiteRequest"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status",
+            "default": "ok"
+          },
+          "service": {
+            "type": "string",
+            "const": "research-api",
+            "title": "Service",
+            "default": "research-api"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "HealthResponse"
+      },
+      "HypothesisInput": {
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expectedversion"
+          },
+          "statement": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 10,
+            "title": "Statement"
+          },
+          "independentVariable": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Independentvariable"
+          },
+          "dependentMetric": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Dependentmetric"
+          },
+          "expectedDirection": {
+            "$ref": "#/components/schemas/ExpectedDirection"
+          },
+          "rationale": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 10,
+            "title": "Rationale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expectedVersion",
+          "statement",
+          "independentVariable",
+          "dependentMetric",
+          "expectedDirection",
+          "rationale"
+        ],
+        "title": "HypothesisInput"
+      },
+      "HypothesisStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "submitted",
+          "accepted",
+          "rejected"
+        ],
+        "title": "HypothesisStatus"
+      },
+      "JobStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "cancelled",
+          "timed_out"
+        ],
+        "title": "JobStatus"
+      },
+      "ListRunsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ResearchRun"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "ListRunsResponse"
+      },
+      "ResearchArtifact": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "runId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Runid"
+          },
+          "jobId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jobid"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/ResearchStage"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ArtifactKind"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Version"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filename"
+          },
+          "mimeType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mimetype"
+          },
+          "byteSize": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bytesize"
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256"
+          },
+          "verificationStatus": {
+            "$ref": "#/components/schemas/VerificationStatus"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/Visibility"
+          },
+          "downloadUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Downloadurl"
+          },
+          "downloadUrlExpiresAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Downloadurlexpiresat"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "publishedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publishedat"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "runId",
+          "stage",
+          "kind",
+          "version",
+          "verificationStatus",
+          "visibility",
+          "createdAt"
+        ],
+        "title": "ResearchArtifact"
+      },
+      "ResearchHypothesis": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "runId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Runid"
+          },
+          "statement": {
+            "type": "string",
+            "title": "Statement"
+          },
+          "independentVariable": {
+            "type": "string",
+            "title": "Independentvariable"
+          },
+          "dependentMetric": {
+            "type": "string",
+            "title": "Dependentmetric"
+          },
+          "expectedDirection": {
+            "$ref": "#/components/schemas/ExpectedDirection"
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale"
+          },
+          "status": {
+            "$ref": "#/components/schemas/HypothesisStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          },
+          "acceptedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acceptedat"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "runId",
+          "statement",
+          "independentVariable",
+          "dependentMetric",
+          "expectedDirection",
+          "rationale",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "ResearchHypothesis"
+      },
+      "ResearchRun": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "topic": {
+            "type": "string",
+            "title": "Topic"
+          },
+          "researchQuestion": {
+            "type": "string",
+            "title": "Researchquestion"
+          },
+          "engine": {
+            "type": "string",
+            "const": "minimal",
+            "title": "Engine",
+            "default": "minimal"
+          },
+          "templateId": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{2,79}$",
+            "title": "Templateid"
+          },
+          "templateVersion": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+            "title": "Templateversion"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RunStatus"
+          },
+          "currentStage": {
+            "$ref": "#/components/schemas/ResearchStage"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Version"
+          },
+          "budget": {
+            "$ref": "#/components/schemas/Budget"
+          },
+          "retryCount": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Retrycount",
+            "default": 0
+          },
+          "failure": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunFailure"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completedat"
+          },
+          "cancelledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelledat"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "topic",
+          "researchQuestion",
+          "templateId",
+          "templateVersion",
+          "status",
+          "currentStage",
+          "version",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "ResearchRun"
+      },
+      "ResearchStage": {
+        "type": "string",
+        "enum": [
+          "topic",
+          "hypothesis",
+          "experiment",
+          "analysis",
+          "verification",
+          "publication"
+        ],
+        "title": "ResearchStage"
+      },
+      "ResearchTemplate": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{2,79}$",
+            "title": "Id"
+          },
+          "capstoneNumber": {
+            "type": "integer",
+            "maximum": 17.0,
+            "minimum": 1.0,
+            "title": "Capstonenumber"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+            "title": "Version"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "nameZh": {
+            "type": "string",
+            "title": "Namezh"
+          },
+          "researchQuestion": {
+            "type": "string",
+            "title": "Researchquestion"
+          },
+          "dataset": {
+            "type": "string",
+            "title": "Dataset"
+          },
+          "benchmarkKind": {
+            "type": "string",
+            "enum": [
+              "public_snapshot",
+              "packaged_dataset",
+              "deterministic_fixture"
+            ],
+            "title": "Benchmarkkind"
+          },
+          "provenance": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Provenance"
+          },
+          "independentVariable": {
+            "type": "string",
+            "title": "Independentvariable"
+          },
+          "primaryMetric": {
+            "type": "string",
+            "title": "Primarymetric"
+          },
+          "primaryMetricLabel": {
+            "type": "string",
+            "title": "Primarymetriclabel"
+          },
+          "expectedDirection": {
+            "$ref": "#/components/schemas/ExpectedDirection",
+            "default": "increase"
+          },
+          "effectThreshold": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Effectthreshold"
+          },
+          "variants": {
+            "items": {
+              "$ref": "#/components/schemas/ResearchVariant"
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 3,
+            "title": "Variants"
+          },
+          "bootstrapSeed": {
+            "type": "integer",
+            "const": 20260711,
+            "title": "Bootstrapseed",
+            "default": 20260711
+          },
+          "bootstrapReplicates": {
+            "type": "integer",
+            "const": 1000,
+            "title": "Bootstrapreplicates",
+            "default": 1000
+          },
+          "secondaryMetrics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Secondarymetrics"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Limitations"
+          },
+          "externalValidation": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Externalvalidation"
+          },
+          "zeroApiCost": {
+            "type": "boolean",
+            "const": true,
+            "title": "Zeroapicost",
+            "default": true
+          },
+          "runtimeMode": {
+            "type": "string",
+            "const": "offline",
+            "title": "Runtimemode",
+            "default": "offline"
+          },
+          "budget": {
+            "$ref": "#/components/schemas/Budget"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "capstoneNumber",
+          "version",
+          "name",
+          "nameZh",
+          "researchQuestion",
+          "dataset",
+          "benchmarkKind",
+          "provenance",
+          "independentVariable",
+          "primaryMetric",
+          "primaryMetricLabel",
+          "effectThreshold",
+          "variants",
+          "secondaryMetrics",
+          "limitations"
+        ],
+        "title": "ResearchTemplate"
+      },
+      "ResearchVariant": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,63}$",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "pipeline": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Pipeline"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "pipeline"
+        ],
+        "title": "ResearchVariant"
+      },
+      "ResourceLimits": {
+        "properties": {
+          "cpuCount": {
+            "type": "integer",
+            "const": 1,
+            "title": "Cpucount",
+            "default": 1
+          },
+          "memoryMb": {
+            "type": "integer",
+            "const": 1024,
+            "title": "Memorymb",
+            "default": 1024
+          },
+          "timeoutSeconds": {
+            "type": "integer",
+            "const": 120,
+            "title": "Timeoutseconds",
+            "default": 120
+          },
+          "network": {
+            "type": "boolean",
+            "const": false,
+            "title": "Network",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ResourceLimits"
+      },
+      "RunFailure": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "RunFailure"
+      },
+      "RunSnapshot": {
+        "properties": {
+          "run": {
+            "$ref": "#/components/schemas/ResearchRun"
+          },
+          "hypothesis": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResearchHypothesis"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "jobs": {
+            "items": {
+              "$ref": "#/components/schemas/ExperimentJob"
+            },
+            "type": "array",
+            "title": "Jobs"
+          },
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/ResearchArtifact"
+            },
+            "type": "array",
+            "title": "Artifacts"
+          },
+          "lastEventId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lasteventid"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "run",
+          "hypothesis",
+          "jobs",
+          "artifacts",
+          "lastEventId"
+        ],
+        "title": "RunSnapshot"
+      },
+      "RunStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "hypothesis_ready",
+          "queued",
+          "running",
+          "analysis_ready",
+          "analyzing",
+          "verification_required",
+          "verifying",
+          "completed",
+          "failed",
+          "cancelled"
+        ],
+        "title": "RunStatus"
+      },
+      "TemplateList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ResearchTemplate"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "TemplateList"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VerificationStatus": {
+        "type": "string",
+        "enum": [
+          "unverified",
+          "passed",
+          "failed"
+        ],
+        "title": "VerificationStatus"
+      },
+      "VersionedCommand": {
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expectedversion"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expectedVersion"
+        ],
+        "title": "VersionedCommand"
+      },
+      "Visibility": {
+        "type": "string",
+        "enum": [
+          "private",
+          "public"
+        ],
+        "title": "Visibility"
+      }
+    }
+  }
+}

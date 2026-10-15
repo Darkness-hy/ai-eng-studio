@@ -478,12 +478,18 @@ export interface PlacementResult {
   date: string;
 }
 
-const KEY = 'aes:placement:v1';
+const ANON_KEY = 'aes:placement:v1';
 const listeners = new Set<() => void>();
 
-function read(): PlacementResult | null {
+let storageKey = ANON_KEY;
+
+function keyForUser(userId: string | null): string {
+  return userId ? `${ANON_KEY}:user:${userId}` : ANON_KEY;
+}
+
+function read(key = storageKey): PlacementResult | null {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as PlacementResult;
     return parsed?.v === 1 ? parsed : null;
@@ -496,19 +502,28 @@ let current: PlacementResult | null = read();
 
 function commit(next: PlacementResult | null) {
   current = next;
-  if (next) localStorage.setItem(KEY, JSON.stringify(next));
-  else localStorage.removeItem(KEY);
+  if (next) localStorage.setItem(storageKey, JSON.stringify(next));
+  else localStorage.removeItem(storageKey);
   listeners.forEach((fn) => fn());
 }
 
 // Cross-tab sync: adopt another tab's placement write into this tab's snapshot.
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e) => {
-    if (e.key === KEY) {
+    if (e.key === storageKey) {
       current = read();
       listeners.forEach((fn) => fn());
     }
   });
+}
+
+/** Switch between anonymous placement and a signed-in user's isolated cache. */
+export function setPlacementStorageUser(userId: string | null): void {
+  const nextKey = keyForUser(userId);
+  if (nextKey === storageKey) return;
+  storageKey = nextKey;
+  current = read();
+  listeners.forEach((fn) => fn());
 }
 
 export function savePlacement(result: PlacementResult) {
@@ -563,7 +578,7 @@ export async function deletePlacementCloud(userId: string): Promise<void> {
   if (error) console.warn('[placement] delete failed', error);
 }
 
-/** Pull on login: the newer of local/remote wins on both sides. */
+/** Pull on login: cloud is authoritative, including the "no placement yet" case. */
 export async function syncPlacementCloud(userId: string): Promise<void> {
   if (!cloudEnabled) return;
   const { data, error } = await getSupabase()
@@ -576,7 +591,7 @@ export async function syncPlacementCloud(userId: string): Promise<void> {
     return;
   }
   const remote = data as PlacementRow | null;
-  if (remote && (!current || remote.taken_at > current.date)) {
+  if (remote) {
     commit({
       v: 1,
       answers: remote.answers,
@@ -585,7 +600,7 @@ export async function syncPlacementCloud(userId: string): Promise<void> {
       entry: remote.entry,
       date: remote.taken_at,
     });
-  } else if (current && (!remote || current.date > remote.taken_at)) {
-    await pushPlacementCloud(userId);
+  } else {
+    commit(null);
   }
 }

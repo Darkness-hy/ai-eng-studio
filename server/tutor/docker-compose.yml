@@ -4,18 +4,22 @@ services:
     ports:
       - "8787:8787"
     environment:
-      # subscription token from `claude setup-token` — put it in .env (gitignored)
-      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:?set CLAUDE_CODE_OAUTH_TOKEN in .env}
-      TUTOR_MODEL: ${TUTOR_MODEL:-claude-sonnet-4-6}
-      TUTOR_EFFORT: ${TUTOR_EFFORT:-medium}
-      # multi-user knobs (tuned for one class on a single subscription)
+      TUTOR_PROVIDER: ${TUTOR_PROVIDER:-deepseek}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?set DEEPSEEK_API_KEY in .env}
+      TUTOR_API_BASE: ${TUTOR_API_BASE:-https://api.deepseek.com}
+      TUTOR_MODEL: ${TUTOR_MODEL:-deepseek-v4-pro}
+      TUTOR_TEMPERATURE: ${TUTOR_TEMPERATURE:-0.3}
+      TUTOR_THINKING: ${TUTOR_THINKING:-enabled}
+      TUTOR_REASONING_EFFORT: ${TUTOR_REASONING_EFFORT:-medium}
+      TUTOR_MAX_TOKENS: ${TUTOR_MAX_TOKENS:-}
+      # multi-user knobs
       TUTOR_MAX_CONCURRENCY: ${TUTOR_MAX_CONCURRENCY:-3}
       TUTOR_MAX_QUEUE: ${TUTOR_MAX_QUEUE:-15}
       TUTOR_TIMEOUT: ${TUTOR_TIMEOUT:-120}
       TUTOR_LOG_DIR: ${TUTOR_LOG_DIR:-logs}
       TUTOR_ALLOWED_ORIGINS: ${TUTOR_ALLOWED_ORIGINS:-https://darkness-hy.github.io,http://localhost:5180}
       TUTOR_BEARER: ${TUTOR_BEARER:-}
-      # abuse limits default ON (protect your one subscription); 0 to disable
+      # abuse limits default ON; 0 to disable
       TUTOR_RATE_PER_MIN: ${TUTOR_RATE_PER_MIN:-20}
       TUTOR_RATE_GLOBAL_PER_MIN: ${TUTOR_RATE_GLOBAL_PER_MIN:-60}
       # trust X-Forwarded-For from the reverse proxy; set 0 if :8787 is directly reachable

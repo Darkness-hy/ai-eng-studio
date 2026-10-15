@@ -6,6 +6,8 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { setPlacementStorageUser } from './placement';
+import { setProgressStorageUser } from './progress';
 import { cloudEnabled, getSupabase, type ProfileRow } from './supabase';
 import { flushNow, initialSync, startSync, stopSync } from './sync';
 
@@ -33,6 +35,11 @@ async function fetchProfile(userId: string): Promise<ProfileRow | null> {
   return data as ProfileRow | null;
 }
 
+function setLocalStorageUser(userId: string | null): void {
+  setProgressStorageUser(userId);
+  setPlacementStorageUser(userId);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(cloudEnabled);
@@ -46,12 +53,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!userId) {
         await flushNow(); // push the tail before tearing down sync
         stopSync();
+        setLocalStorageUser(null);
         if (live) {
           setProfile(null);
           setLoading(false);
         }
         return;
       }
+      await flushNow();
+      stopSync();
+      setLocalStorageUser(userId);
       const p = await fetchProfile(userId);
       if (!live) return;
       setProfile(p);
@@ -100,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     await flushNow(); // push the tail before tearing down sync
     stopSync();
+    setLocalStorageUser(null);
     await getSupabase().auth.signOut();
     setProfile(null);
   }, []);

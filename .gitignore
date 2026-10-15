@@ -1,5 +1,10 @@
 node_modules/
 dist/
+.venv/
+**/.venv/
+**/__pycache__/
+.pytest_cache/
+.ruff_cache/
 *.local
 .DS_Store
 *.log
@@ -9,3 +14,10 @@ dist/
 
 # AI 助教对话日志(含 IP + 完整问答,绝不入库)
 server/tutor/logs/
+
+# local/agent scratch — do not push
+.cc-connect/
+output/
+aes-handoff.zip
+server/tutor/__pycache__/
+**/__pycache__/

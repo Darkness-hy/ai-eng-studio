@@ -1,25 +1,23 @@
 # 裸装部署(不用 Docker)+ systemd 常驻
 
-Docker 在这里只是「替你装好 Node + Python + claude CLI」。你自己装这几样,就不需要 Docker。
+Docker 在这里只是「替你装好 Python 依赖」。你自己装 Python + venv,就不需要 Docker。
 
 ## 一、装运行时(全新服务器,一次)
 
 ```bash
 # Python ≥ 3.9(server.py 已兼容 3.9)。多数 Linux 自带,确认一下:
 python3 --version
-
-# Node ≥ 18(claude CLI 需要)。没有就装(Ubuntu/Debian 用 NodeSource):
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# claude CLI(全局)
-sudo npm i -g @anthropic-ai/claude-code
-claude --version
 ```
 
 ## 二、先前台跑通(在 `tutor/` 目录)
 
-`.env` 你已经写好了(`CLAUDE_CODE_OAUTH_TOKEN=...`)。直接:
+`.env` 需要包含 DeepSeek API key:
+
+```bash
+printf 'DEEPSEEK_API_KEY=%s\n' '<你的 DeepSeek API key>' > .env
+```
+
+然后直接:
 
 ```bash
 chmod +x run.sh
@@ -28,8 +26,8 @@ chmod +x run.sh
 curl localhost:8787/health     # 看到 max_concurrency/inflight 即正常
 ```
 
-`run.sh` 干的事:检查 python/node/claude → 建 venv 装依赖 → 把 `.env` 的 token 导入环境
-(这样 `claude` 子进程能继承到)→ `uvicorn server:app`。
+`run.sh` 干的事:检查 python → 建 venv 装依赖 → 把 `.env` 的 API key 导入环境
+→ `uvicorn server:app`。
 
 ## 三、常驻(systemd,开机自启 + 崩溃自拉)
 
@@ -47,7 +45,7 @@ Type=simple
 User=youruser
 WorkingDirectory=/home/youruser/ai-eng-studio/server/tutor
 EnvironmentFile=/home/youruser/ai-eng-studio/server/tutor/.env
-ExecStart=/home/youruser/ai-eng-studio/server/tutor/.venv/bin/python -m uvicorn server:app --host 0.0.0.0 --port 8787
+ExecStart=/home/youruser/ai-eng-studio/server/tutor/run.sh
 Restart=on-failure
 RestartSec=3
 
@@ -55,8 +53,8 @@ RestartSec=3
 WantedBy=multi-user.target
 ```
 
-> 前提:先跑过一次 `./run.sh`(或手动 `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`),
-> 确保 `.venv` 已存在。`EnvironmentFile=.env` 会把 token 注入服务环境。
+> `run.sh` 会自动创建/更新 `.venv` 并加载 `.env`。`EnvironmentFile=.env` 也保留在 systemd
+> 层,便于 `systemctl show`/日志排查时确认环境来源。
 
 启用:
 

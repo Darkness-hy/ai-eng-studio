@@ -36,6 +36,7 @@ class Handler(BaseHTTPRequestHandler):
         except json.JSONDecodeError:
             req = {}
         message = req.get("message", "")
+        assistant_id = req.get("assistant_id")
         zh = req.get("lang") == "zh"
         ctx_title = None
         if req.get("context"):
@@ -52,10 +53,11 @@ class Handler(BaseHTTPRequestHandler):
             lead = (f"关于《{ctx_title}》——" if zh else f"On “{ctx_title}” — ")
         else:
             lead = ("" if zh else "")
+        identity = f"NPC {assistant_id}" if assistant_id else "AI 助教"
         reply = lead + (
-            f"这是模拟回答。你问的是:{message}。真实服务接通后,这里会是 Claude 的流式回答。"
+            f"这是{identity}的模拟回答。你问的是:{message}。真实服务接通后,这里会是 DeepSeek 的流式回答。"
             if zh
-            else f"This is a mock reply. You asked: {message}. Real answers stream here once Claude is wired."
+            else f"This is a mock {identity} reply. You asked: {message}. Real DeepSeek answers stream here."
         )
         for ch in reply:
             self.wfile.write(sse({"type": "delta", "text": ch}))
